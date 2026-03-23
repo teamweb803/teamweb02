@@ -112,8 +112,6 @@ public class MemberService {
                 .collect(Collectors.toList());
     }
 
-    //회원 상세 조회
-
     //회원 강퇴
     public void kickMember(Long memberId) {
         memberRepository.deleteById(memberId);
