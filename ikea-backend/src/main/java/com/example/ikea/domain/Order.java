@@ -38,6 +38,6 @@ public class Order {
 
     @Builder.Default
     @OneToMany(mappedBy = "order")
-    private List<OrderProduct> orderProductList = new ArrayList<>();
+    private List<OrderItem> orderItemList = new ArrayList<>();
 
 }

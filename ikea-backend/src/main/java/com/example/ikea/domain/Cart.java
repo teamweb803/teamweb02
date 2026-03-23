@@ -25,5 +25,5 @@ public class Cart {
 
     @Builder.Default
     @OneToMany(mappedBy = "cart")
-    private List<CartProduct> cartProductList = new ArrayList<>();
+    private List<CartItem> cartItemList = new ArrayList<>();
 }
