@@ -25,7 +25,7 @@ public class Product {
     @Column(nullable = false)
     private Integer price;
 
-    @Column(nullable = false, length = 254)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String imgPath;
 
     @CreationTimestamp

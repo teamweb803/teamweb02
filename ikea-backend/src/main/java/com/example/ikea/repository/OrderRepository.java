@@ -9,9 +9,9 @@ import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    //내 주문내역 조회
+    //주문내역 조회
     List<Order> findByMember_MemberId(Long memberId);
 
-    //주문 상태표시(관리자)
+    //상태별 주문 목록 (관리자 판매 관리)
     List<Order> findByOrderStatus(OrderStatus status);
 }

@@ -17,7 +17,7 @@ public class ProductRequestDto {
     private Integer price;
     
     @NotBlank(message = "카테고리를 입력해주세요.")
-    private Category category;
+    private Long categoryId;
 
 
 }
