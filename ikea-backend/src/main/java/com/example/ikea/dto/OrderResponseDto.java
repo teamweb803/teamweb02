@@ -1,11 +1,13 @@
 package com.example.ikea.dto;
 
+import com.example.ikea.domain.Order;
 import com.example.ikea.domain.OrderItem;
 import com.example.ikea.domain.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @AllArgsConstructor
@@ -21,5 +23,16 @@ public class OrderResponseDto {
 
     private String address;
 
-    //===================여기서부터 작업 시작===================
+    private List<OrderItemDto> orderItems;
+
+    public OrderResponseDto(Order order) {
+        this.orderId = order.getOrderId();
+        this.orderStatus = order.getOrderStatus();
+        this.totalPrice = order.getTotalPrice();
+        this.payment = order.getPayment();
+        this.address = order.getAddress();
+        this.orderItems = order.getOrderItemList().stream()
+                .map(OrderItemDto::new)
+                .collect(Collectors.toList());
+    }
 }
