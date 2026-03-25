@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface ReviewRepository extends JpaRepository<ReviewRepository, Long> {
+public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     //상품 리뷰 목록
     List<Review> findByProduct_ProductId(Long productId);
@@ -14,5 +14,5 @@ public interface ReviewRepository extends JpaRepository<ReviewRepository, Long> 
     List<Review> findByMember_MemberId(Long memberId);
 
     //한 제품에 대한 리뷰 중복 방지
-    boolean existsByOrder_OrderIdandProduct_Productid(Long orderId, Long productId);
+    boolean existsByOrder_OrderIdAndProduct_Productid(Long orderId, Long productId);
 }

@@ -40,6 +40,6 @@ public class Review {
 
     @CreationTimestamp
     @Column(nullable = false)
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 
 }
