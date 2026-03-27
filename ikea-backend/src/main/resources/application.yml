@@ -1,6 +1,8 @@
 server:
   port: 8402
 spring:
+  profiles:
+    include: local
   datasource:
     url: jdbc:postgresql://localhost:5440/ikea
     username: postgres
@@ -15,4 +17,4 @@ spring:
 #        max-file-size: 10MB
 #        max-request-size: 20MB
 jwt:
-  secret: ikea-shopping-mall-secret-key-2026-spring-boot
+  secret: ${JWT_SECRET}

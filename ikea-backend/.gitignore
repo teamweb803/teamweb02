@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+## URL, Jwt Key Hidden ##
+ikea-backend/src/main/resources/application-local.yml

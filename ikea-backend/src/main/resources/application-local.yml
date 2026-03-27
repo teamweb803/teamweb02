@@ -1,0 +1,2 @@
+jwt:
+  secret: ikea-shopping-mall-secret-key-2026-spring-boot
