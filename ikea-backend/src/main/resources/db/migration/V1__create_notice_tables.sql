@@ -1,0 +1,22 @@
+--CREATE TABLE notices (
+--    notice_id   BIGSERIAL   PRIMARY KEY,
+--    title   VARCHAR(200)    NOT NULL,
+--    content TEXT    NOT NULL,
+--    writer  VARCHAR(50) NOT NULL,
+--    view_count  INTEGER NOT NULL DEFAULT 0,
+--    created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+--    updated_at  TIMESTAMP NOT NULL DEFAULT NOW()
+--);
+--
+--
+--CREATE TABLE notice_attachments (
+--    notice_attachment_id    BIGSERIAL PRIMARY KEY,
+--    notice_id   BIGINT  NOT NULL,
+--    original_name   VARCHAR(255)    NOT NULL,
+--    stored_name     VARCHAR(255),
+--    file_url        VARCHAR(255),
+--    content_type    VARCHAR(120),
+--    file_size       BIGINT          NOT NULL,
+--    file_data       BYTEA,
+--    FOREIGN KEY (notice_id) REFERENCES notices(notice_id)
+--);
