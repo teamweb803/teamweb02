@@ -48,7 +48,8 @@ public class SecurityConfig {
                                         "/api/auth/**",
                                         "/api/category/**",
                                         "/api/qna/**",
-                                        "/api/review/**"
+                                        "/api/review/**",
+                                        "/api/notice/**"
                                 ).permitAll()
                                 //관리자만 접근 가능
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
