@@ -1,0 +1,3557 @@
+{
+  "categories": [
+    {
+      "id": "SOFA",
+      "slug": "sofa",
+      "label": "소파",
+      "backendCategoryId": "20128",
+      "parentCrumb": "거실",
+      "cards": [
+        {
+          "slug": "two-seat",
+          "label": "2인용 소파",
+          "sourceLabel": "2인용 소파",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/two-seat-sofas-10668/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/two-seat-fabric-sofas-10668.jpeg?imwidth=160"
+        },
+        {
+          "slug": "three-seat",
+          "label": "3인용 소파",
+          "sourceLabel": "3인용 소파",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/three-seat-sofas-10670/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/three-seat-sofas-10670.jpeg?imwidth=160"
+        },
+        {
+          "slug": "recliner",
+          "label": "리클라이너 소파",
+          "sourceLabel": "리클라이너 소파",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/motion-reclining-sofas-700677/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/motion-sofas-700677.jpeg?imwidth=160"
+        },
+        {
+          "slug": "couch",
+          "label": "카우치형 소파",
+          "sourceLabel": "카우치형 소파",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/fabric-sofas-with-chaise-longues-47388/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/fabric-sofas-with-chaise-longues-47388.jpeg?imwidth=160"
+        },
+        {
+          "slug": "corner",
+          "label": "코너형 소파",
+          "sourceLabel": "코너형 소파",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/corner-sofas-10671/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/corner-sofas-10671.jpeg?imwidth=160"
+        },
+        {
+          "slug": "modular",
+          "label": "모듈형 소파",
+          "sourceLabel": "모듈형 소파",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/sofa-modules-31786/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/modular-sofas-31786.jpeg?imwidth=160"
+        }
+      ]
+    },
+    {
+      "id": "BED_MATTRESS",
+      "slug": "bed-mattress",
+      "label": "침대/매트리스",
+      "backendCategoryId": "BED_MATTRESS",
+      "parentCrumb": "침실",
+      "cards": [
+        {
+          "slug": "bed",
+          "label": "침대",
+          "sourceLabel": "침대",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/beds-bm003/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/beds-bm003.jpeg?imwidth=160"
+        },
+        {
+          "slug": "mattress",
+          "label": "매트리스",
+          "sourceLabel": "매트리스",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/mattresses-bm002/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/mattresses-bm002.jpeg?imwidth=160"
+        },
+        {
+          "slug": "bedding",
+          "label": "침구",
+          "sourceLabel": "침구",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/bedding-tl004/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/bedding-tl004.jpeg?imwidth=160"
+        },
+        {
+          "slug": "nightstand",
+          "label": "침대협탁",
+          "sourceLabel": "침대협탁",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/bedside-tables-20656/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/bedside-tables-20656.jpeg?imwidth=160"
+        }
+      ]
+    },
+    {
+      "id": "DINING",
+      "slug": "dining",
+      "label": "식탁/테이블/의자",
+      "backendCategoryId": "DINING",
+      "parentCrumb": "다이닝",
+      "cards": [
+        {
+          "slug": "dining-furniture",
+          "label": "다이닝 가구",
+          "sourceLabel": "다이닝 가구",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/daining-gagu-700417/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/dining-furniture-700417.jpeg?imwidth=160"
+        },
+        {
+          "slug": "table",
+          "label": "테이블",
+          "sourceLabel": "테이블",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/tables-700675/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/tables-700675.jpeg?imwidth=160"
+        },
+        {
+          "slug": "chair",
+          "label": "의자",
+          "sourceLabel": "의자",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/chairs-700676/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/chairs-700676.jpeg?imwidth=160"
+        },
+        {
+          "slug": "living-side-table",
+          "label": "거실테이블/사이드테이블",
+          "sourceLabel": "거실테이블/사이드테이블",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/coffee-side-tables-10705/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/coffee-side-tables-10705.jpeg?imwidth=160"
+        }
+      ]
+    },
+    {
+      "id": "DESK",
+      "slug": "desk",
+      "label": "책상",
+      "backendCategoryId": "DESK",
+      "parentCrumb": "서재",
+      "cards": [
+        {
+          "slug": "computer-desk",
+          "label": "컴퓨터 책상",
+          "sourceLabel": "책상/컴퓨터책상",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/desks-computer-desks-20649/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/desks-computer-desks-20649.jpeg?imwidth=160"
+        },
+        {
+          "slug": "meeting-table",
+          "label": "미팅/회의용 테이블",
+          "sourceLabel": "미팅/회의용 테이블",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/bekant-conference-meeting-tables-54173/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/conference-tables-54173.jpeg?imwidth=160"
+        },
+        {
+          "slug": "gaming-desk",
+          "label": "게임용 책상",
+          "sourceLabel": "게이밍 가구",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/gaming-furniture-55002/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/gaming-furniture-55002.jpeg?imwidth=160"
+        },
+        {
+          "slug": "office-desk",
+          "label": "오피스책상",
+          "sourceLabel": "오피스 책상/의자세트",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/hoeyiyong-teibeul-mic-yija-seteu-700424/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/conference-table-chair-sets-700424.jpeg?imwidth=160"
+        }
+      ]
+    },
+    {
+      "id": "KITCHEN_FURNITURE",
+      "slug": "kitchen-furniture",
+      "label": "주방가구",
+      "backendCategoryId": "KITCHEN_FURNITURE",
+      "parentCrumb": "주방",
+      "cards": [
+        {
+          "slug": "kitchen-appliance",
+          "label": "주방가전",
+          "sourceLabel": "주방 가전",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/appliances-ka002/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/appliances-ka002.jpeg?imwidth=160"
+        },
+        {
+          "slug": "kitchen-storage",
+          "label": "주방정리용품",
+          "sourceLabel": "주방정리용품",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/interior-fittings-24255/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/interior-organisers-24255.jpeg?imwidth=160"
+        },
+        {
+          "slug": "kitchen-rack-cart",
+          "label": "주방 선반/카트",
+          "sourceLabel": "주방 카트/아일랜드",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/kitchen-islands-trolleys-10471/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/kitchen-islands-trolleys-10471.jpeg?imwidth=160"
+        }
+      ]
+    },
+    {
+      "id": "KITCHENWARE",
+      "slug": "kitchenware",
+      "label": "주방용품",
+      "backendCategoryId": "KITCHENWARE",
+      "parentCrumb": "주방",
+      "cards": [
+        {
+          "slug": "kitchen-tools",
+          "label": "주방도구",
+          "sourceLabel": "주방도구",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/cooking-baking-supplies-kt002/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/kitchen-utensils-kt002.jpeg?imwidth=160"
+        },
+        {
+          "slug": "pot-pan",
+          "label": "냄비/팬",
+          "sourceLabel": "냄비 / 팬 / 오븐용기",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/cookware-kt003/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/cookware-kt003.jpeg?imwidth=160"
+        },
+        {
+          "slug": "knife-board",
+          "label": "도마/주방칼",
+          "sourceLabel": "도마 / 주방칼",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/knives-chopping-boards-15934/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/knives-chopping-boards-15934.jpeg?imwidth=160"
+        },
+        {
+          "slug": "glass-cup",
+          "label": "유리컵",
+          "sourceLabel": "유리컵 / 병 / 빨대",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/drinkware-18868/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/glassware-jugs-18868.jpeg?imwidth=160"
+        },
+        {
+          "slug": "cutlery",
+          "label": "수저/커트러리",
+          "sourceLabel": "수저 / 커트러리",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/cutlery-18865/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/cutlery-18865.jpeg?imwidth=160"
+        }
+      ]
+    },
+    {
+      "id": "PLANT",
+      "slug": "plant",
+      "label": "화분/식물",
+      "backendCategoryId": "PLANT",
+      "parentCrumb": "리빙",
+      "cards": [
+        {
+          "slug": "plant",
+          "label": "식물/조화",
+          "sourceLabel": "식물/조화",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/plants-flowers-pp003/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/plants-flowers-pp003.jpeg?imwidth=160"
+        },
+        {
+          "slug": "flowerpot",
+          "label": "화분",
+          "sourceLabel": "화분",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/flower-pots-planters-pp004/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/flower-pots-planters-pp004.jpeg?imwidth=160"
+        },
+        {
+          "slug": "plant-stand",
+          "label": "화분스탠드",
+          "sourceLabel": "화분스탠드",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/plant-stands-movers-20494/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/plant-stands-movers-20494.jpeg?imwidth=160"
+        },
+        {
+          "slug": "gardening",
+          "label": "원예용품",
+          "sourceLabel": "원예용품",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/growing-accessories-24887/",
+          "image": "https://www.ikea.com/global/assets/range-categorisation/images/product/mini-greenhouses-24887.jpeg?imwidth=160"
+        },
+        {
+          "slug": "watering-can",
+          "label": "물뿌리개",
+          "sourceLabel": "물뿌리개",
+          "sourceUrl": "https://www.ikea.com/kr/ko/cat/watering-cans-20493/",
+          "image": "https://www.ikea.com/kr/ko/range-categorisation/images/product/watering-cans-20493.jpeg?imwidth=160"
+        }
+      ]
+    }
+  ],
+  "products": [
+    {
+      "id": "10489009",
+      "categorySlug": "sofa",
+      "categoryLabel": "소파",
+      "parentCrumb": "거실",
+      "typeSlug": "two-seat",
+      "label": "2인용 소파",
+      "badge": "2인용",
+      "brand": "GLOSTAD",
+      "name": "GLOSTAD 글로스타드 2인용소파 - 크니사 다크그레이",
+      "description": "GLOSTAD 글로스타드 2인용소파 - 크니사 다크그레이.",
+      "price": 140000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.5,
+      "reviews": 619,
+      "size": null,
+      "material": null,
+      "color": "그레이",
+      "features": [
+        "2인용 소파",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0950864_pe800736_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__1059523_ph180677_s5.jpg",
+      "imageAlt": "GLOSTAD 글로스타드 2인용소파 - 크니사 다크그레이",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/glostad-2-seat-sofa-knisa-dark-grey-10489009/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/two-seat-sofas-10668/"
+    },
+    {
+      "id": "40595937",
+      "categorySlug": "sofa",
+      "categoryLabel": "소파",
+      "parentCrumb": "거실",
+      "typeSlug": "three-seat",
+      "label": "3인용 소파",
+      "badge": "3인용",
+      "brand": "GLOSTAD",
+      "name": "GLOSTAD 글로스타드 3인용소파 - 크니사 다크그레이",
+      "description": "GLOSTAD 글로스타드 3인용소파 - 크니사 다크그레이.",
+      "price": 199000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 3.8,
+      "reviews": 52,
+      "size": null,
+      "material": null,
+      "color": "그레이",
+      "features": [
+        "3인용 소파",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1234948_pe917261_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1235175_pe917294_s5.jpg",
+      "imageAlt": "GLOSTAD 글로스타드 3인용소파 - 크니사 다크그레이",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/glostad-3-seat-sofa-knisa-dark-grey-40595937/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/three-seat-sofas-10670/"
+    },
+    {
+      "id": "s89614331",
+      "categorySlug": "sofa",
+      "categoryLabel": "소파",
+      "parentCrumb": "거실",
+      "typeSlug": "recliner",
+      "label": "리클라이너 소파",
+      "badge": "리클라이너",
+      "brand": "RULLERUM",
+      "name": "RULLERUM 룰레룸 3인용소파+전동 리클라이너2 - 그란/봄스타드 골드브라운",
+      "description": "RULLERUM 룰레룸 3인용소파+전동 리클라이너2 - 그란/봄스타드 골드브라운.",
+      "price": 2040000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": null,
+      "reviews": 0,
+      "size": null,
+      "material": null,
+      "color": "브라운",
+      "features": [
+        "리클라이너 소파",
+        "브라운"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1303667_pe938431_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1325338_pe943861_s5.jpg",
+      "imageAlt": "RULLERUM 룰레룸 3인용소파+전동 리클라이너2 - 그란/봄스타드 골드브라운",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown-s89614331/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/motion-reclining-sofas-700677/"
+    },
+    {
+      "id": "s99495827",
+      "categorySlug": "sofa",
+      "categoryLabel": "소파",
+      "parentCrumb": "거실",
+      "typeSlug": "couch",
+      "label": "카우치형 소파",
+      "badge": "카우치형",
+      "brand": "HYLTARP",
+      "name": "HYLTARP 휠타르프 3인용소파+오른쪽긴의자 - 그란셀 내추럴",
+      "description": "HYLTARP 휠타르프 3인용소파+오른쪽긴의자 - 그란셀 내추럴.",
+      "price": 1209000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 3.9,
+      "reviews": 38,
+      "size": null,
+      "material": null,
+      "color": "베이지",
+      "features": [
+        "카우치형 소파",
+        "베이지"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1193836_pe901647_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1249961_pe923589_s5.jpg",
+      "imageAlt": "HYLTARP 휠타르프 3인용소파+오른쪽긴의자 - 그란셀 내추럴",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural-s99495827/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/fabric-sofas-with-chaise-longues-47388/"
+    },
+    {
+      "id": "s69536301",
+      "categorySlug": "sofa",
+      "categoryLabel": "소파",
+      "parentCrumb": "거실",
+      "typeSlug": "corner",
+      "label": "코너형 소파",
+      "badge": "코너형",
+      "brand": "LILLEHEM",
+      "name": "LILLEHEM 릴레헴 코너소파모듈2 - 군나레드 다크그레이/목재",
+      "description": "LILLEHEM 릴레헴 코너소파모듈2 - 군나레드 다크그레이/목재.",
+      "price": 648000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 5.0,
+      "reviews": 1,
+      "size": null,
+      "material": null,
+      "color": "그레이",
+      "features": [
+        "코너형 소파",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood__1247096_pe922509_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood__1247095_pe922508_s5.jpg",
+      "imageAlt": "LILLEHEM 릴레헴 코너소파모듈2 - 군나레드 다크그레이/목재",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood-s69536301/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/corner-sofas-10671/"
+    },
+    {
+      "id": "s69305616",
+      "categorySlug": "sofa",
+      "categoryLabel": "소파",
+      "parentCrumb": "거실",
+      "typeSlug": "modular",
+      "label": "모듈형 소파",
+      "badge": "모듈형",
+      "brand": "SÖDERHAMN",
+      "name": "SÖDERHAMN 쇠데르함 3인용섹션 - 비아르프 베이지/브라운",
+      "description": "SÖDERHAMN 쇠데르함 3인용섹션 - 비아르프 베이지/브라운.",
+      "price": 649000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.2,
+      "reviews": 463,
+      "size": null,
+      "material": null,
+      "color": "베이지",
+      "features": [
+        "모듈형 소파",
+        "베이지"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0802813_pe768605_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0802824_pe768608_s5.jpg",
+      "imageAlt": "SÖDERHAMN 쇠데르함 3인용섹션 - 비아르프 베이지/브라운",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/soederhamn-3-seat-section-viarp-beige-brown-s69305616/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/sofa-modules-31786/"
+    },
+    {
+      "id": "70571242",
+      "categorySlug": "bed-mattress",
+      "categoryLabel": "침대/매트리스",
+      "parentCrumb": "침실",
+      "typeSlug": "bed",
+      "label": "침대",
+      "badge": "침대",
+      "brand": "SLATTUM",
+      "name": "SLATTUM 슬라툼 쿠션형 침대프레임 - 비슬레 다크그레이 120x200 cm",
+      "description": "SLATTUM 슬라툼 쿠션형 침대프레임 - 비슬레 다크그레이 120x200 cm.",
+      "price": 139000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.3,
+      "reviews": 110,
+      "size": null,
+      "material": "패브릭",
+      "color": "그레이",
+      "features": [
+        "침대",
+        "패브릭",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259334_pe926648_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259366_pe926664_s5.jpg",
+      "imageAlt": "SLATTUM 슬라툼 쿠션형 침대프레임 - 비슬레 다크그레이 120x200 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/slattum-upholstered-bed-frame-vissle-dark-grey-70571242/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/beds-bm003/"
+    },
+    {
+      "id": "60470050",
+      "categorySlug": "bed-mattress",
+      "categoryLabel": "침대/매트리스",
+      "parentCrumb": "침실",
+      "typeSlug": "mattress",
+      "label": "매트리스",
+      "badge": "매트리스",
+      "brand": "VESTERÖY",
+      "name": "VESTERÖY 베스테뢰위 포켓스프링매트리스 - 매우 단단함/라이트블루 120x200 cm",
+      "description": "VESTERÖY 베스테뢰위 포켓스프링매트리스 - 매우 단단함/라이트블루 120x200 cm.",
+      "price": 219000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.3,
+      "reviews": 2593,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "매트리스",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1150853_pe884906_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1044459_pe842173_s5.jpg",
+      "imageAlt": "VESTERÖY 베스테뢰위 포켓스프링매트리스 - 매우 단단함/라이트블루 120x200 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/vesteroey-pocket-sprung-mattress-extra-firm-light-blue-60470050/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/mattresses-bm002/"
+    },
+    {
+      "id": "60594871",
+      "categorySlug": "bed-mattress",
+      "categoryLabel": "침대/매트리스",
+      "parentCrumb": "침실",
+      "typeSlug": "bedding",
+      "label": "침구",
+      "badge": "침구",
+      "brand": "SANDGRÄSMAL",
+      "name": "SANDGRÄSMAL 산드그레스말 이불,약간 따뜻함 150x200 cm",
+      "description": "SANDGRÄSMAL 산드그레스말 이불,약간 따뜻함 150x200 cm.",
+      "price": 10000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.5,
+      "reviews": 260,
+      "size": null,
+      "material": "패브릭",
+      "color": "화이트",
+      "features": [
+        "침구",
+        "패브릭",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/sandgraesmal-duvet-light-warm__1311039_pe939990_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/sandgraesmal-duvet-light-warm__1311043_pe939994_s5.jpg",
+      "imageAlt": "SANDGRÄSMAL 산드그레스말 이불,약간 따뜻함 150x200 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/sandgraesmal-duvet-light-warm-60594871/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/bedding-tl004/"
+    },
+    {
+      "id": "20247128",
+      "categorySlug": "bed-mattress",
+      "categoryLabel": "침대/매트리스",
+      "parentCrumb": "침실",
+      "typeSlug": "nightstand",
+      "label": "침대협탁",
+      "badge": "침대협탁",
+      "brand": "NESNA",
+      "name": "NESNA 네스나 침대협탁 - 대나무 36x35 cm",
+      "description": "NESNA 네스나 침대협탁 - 대나무 36x35 cm.",
+      "price": 19900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.6,
+      "reviews": 940,
+      "size": null,
+      "material": "대나무",
+      "color": "베이지",
+      "features": [
+        "침대협탁",
+        "대나무",
+        "베이지"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/nesna-bedside-table-bamboo__0133450_pe288918_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/nesna-bedside-table-bamboo__0380708_pe555588_s5.jpg",
+      "imageAlt": "NESNA 네스나 침대협탁 - 대나무 36x35 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/nesna-bedside-table-bamboo-20247128/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/bedside-tables-20656/"
+    },
+    {
+      "id": "s29416857",
+      "categorySlug": "dining",
+      "categoryLabel": "식탁/테이블/의자",
+      "parentCrumb": "다이닝",
+      "typeSlug": "dining-furniture",
+      "label": "다이닝 가구",
+      "badge": "다이닝 가구",
+      "brand": "DALSHULT",
+      "name": "DALSHULT 달스훌트 테이블 - 화이트/자작나무 185x90 cm",
+      "description": "DALSHULT 달스훌트 테이블 - 화이트/자작나무 185x90 cm.",
+      "price": 269000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.7,
+      "reviews": 70,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "다이닝 가구",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/dalshult-table-white-birch__0993483_pe820568_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/dalshult-table-white-birch__0993483_pe820568_s5.jpg",
+      "imageAlt": "DALSHULT 달스훌트 테이블 - 화이트/자작나무 185x90 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/dalshult-table-white-birch-s29416857/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/daining-gagu-700417/"
+    },
+    {
+      "id": "s09420394",
+      "categorySlug": "dining",
+      "categoryLabel": "식탁/테이블/의자",
+      "parentCrumb": "다이닝",
+      "typeSlug": "table",
+      "label": "테이블",
+      "badge": "테이블",
+      "brand": "SANDSBERG",
+      "name": "SANDSBERG 산스베리 테이블 - 블랙 110x67 cm",
+      "description": "SANDSBERG 산스베리 테이블 - 블랙 110x67 cm.",
+      "price": 60000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.7,
+      "reviews": 1039,
+      "size": null,
+      "material": "메탈",
+      "color": "블랙",
+      "features": [
+        "테이블",
+        "메탈",
+        "블랙"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1074348_pe856162_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1540631_pe1017812_s5.jpg",
+      "imageAlt": "SANDSBERG 산스베리 테이블 - 블랙 110x67 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/sandsberg-table-black-s09420394/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/tables-700675/"
+    },
+    {
+      "id": "90592738",
+      "categorySlug": "dining",
+      "categoryLabel": "식탁/테이블/의자",
+      "parentCrumb": "다이닝",
+      "typeSlug": "chair",
+      "label": "의자",
+      "badge": "의자",
+      "brand": "VIHALS",
+      "name": "VIHALS 비할스 접이식의자 - 화이트",
+      "description": "VIHALS 비할스 접이식의자 - 화이트.",
+      "price": 17000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.8,
+      "reviews": 210,
+      "size": null,
+      "material": "플라스틱",
+      "color": "화이트",
+      "features": [
+        "의자",
+        "플라스틱",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1370474_pe958747_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1414864_pe974941_s5.jpg",
+      "imageAlt": "VIHALS 비할스 접이식의자 - 화이트",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/vihals-folding-chair-white-90592738/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/chairs-700676/"
+    },
+    {
+      "id": "60557802",
+      "categorySlug": "dining",
+      "categoryLabel": "식탁/테이블/의자",
+      "parentCrumb": "다이닝",
+      "typeSlug": "living-side-table",
+      "label": "거실테이블/사이드테이블",
+      "badge": "거실테이블·사이드테이블",
+      "brand": "BOLLSIDAN",
+      "name": "BOLLSIDAN 볼시단 노트북스탠드 - 화이트 68x36 cm",
+      "description": "BOLLSIDAN 볼시단 노트북스탠드 - 화이트 68x36 cm.",
+      "price": 99900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.8,
+      "reviews": 552,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "거실테이블/사이드테이블",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/bollsidan-laptop-stand-white__1163783_pe890330_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/bollsidan-laptop-stand-white__1163780_pe890329_s5.jpg",
+      "imageAlt": "BOLLSIDAN 볼시단 노트북스탠드 - 화이트 68x36 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/bollsidan-laptop-stand-white-60557802/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/coffee-side-tables-10705/"
+    },
+    {
+      "id": "s09246408",
+      "categorySlug": "desk",
+      "categoryLabel": "책상",
+      "parentCrumb": "서재",
+      "typeSlug": "computer-desk",
+      "label": "컴퓨터 책상",
+      "badge": "컴퓨터",
+      "brand": "LINNMON",
+      "name": "LINNMON 린몬 / ADILS 아딜스 테이블 - 화이트 100x60 cm",
+      "description": "LINNMON 린몬 / ADILS 아딜스 테이블 - 화이트 100x60 cm.",
+      "price": 49900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.4,
+      "reviews": 1498,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "컴퓨터 책상",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__0737165_pe740925_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__1327991_pe944603_s5.jpg",
+      "imageAlt": "LINNMON 린몬 / ADILS 아딜스 테이블 - 화이트 100x60 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/linnmon-adils-table-white-s09246408/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/desks-computer-desks-20649/"
+    },
+    {
+      "id": "s99533382",
+      "categorySlug": "desk",
+      "categoryLabel": "책상",
+      "parentCrumb": "서재",
+      "typeSlug": "meeting-table",
+      "label": "미팅/회의용 테이블",
+      "badge": "미팅·회의용 테이블",
+      "brand": "MITTZON",
+      "name": "MITTZON 밋손 회의테이블 - 화이트 140x108x75 cm",
+      "description": "MITTZON 밋손 회의테이블 - 화이트 140x108x75 cm.",
+      "price": 289000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.7,
+      "reviews": 12,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "미팅/회의용 테이블",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1215871_pe912246_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1296182_pe935705_s5.jpg",
+      "imageAlt": "MITTZON 밋손 회의테이블 - 화이트 140x108x75 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/mittzon-conference-table-white-s99533382/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/bekant-conference-meeting-tables-54173/"
+    },
+    {
+      "id": "40500350",
+      "categorySlug": "desk",
+      "categoryLabel": "책상",
+      "parentCrumb": "서재",
+      "typeSlug": "gaming-desk",
+      "label": "게임용 책상",
+      "badge": "게임용",
+      "brand": "UTESPELARE",
+      "name": "UTESPELARE 우테스펠라레 게이밍 책상 - 블랙 160x80 cm",
+      "description": "UTESPELARE 우테스펠라레 게이밍 책상 - 블랙 160x80 cm.",
+      "price": 199000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.7,
+      "reviews": 624,
+      "size": null,
+      "material": "메탈",
+      "color": "블랙",
+      "features": [
+        "게임용 책상",
+        "메탈",
+        "블랙"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__0985179_pe816538_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__0997874_pe822843_s5.jpg",
+      "imageAlt": "UTESPELARE 우테스펠라레 게이밍 책상 - 블랙 160x80 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/utespelare-gaming-desk-black-40500350/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/gaming-furniture-55002/"
+    },
+    {
+      "id": "s89552639",
+      "categorySlug": "desk",
+      "categoryLabel": "책상",
+      "parentCrumb": "서재",
+      "typeSlug": "office-desk",
+      "label": "오피스책상",
+      "badge": "오피스책상",
+      "brand": "TROTTEN",
+      "name": "TROTTEN 트로텐 / LÅNGFJÄLL 롱피엘 회의테이블+의자 - 베이지 화이트/다크그레이 160x80 cm",
+      "description": "TROTTEN 트로텐 / LÅNGFJÄLL 롱피엘 회의테이블+의자 - 베이지 화이트/다크그레이 160x80 cm.",
+      "price": 759000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": null,
+      "reviews": 0,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "오피스책상",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/trotten-langfjaell-conference-table-and-chairs-beige-white-dark-grey__1244334_pe921152_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/trotten-langfjaell-conference-table-and-chairs-beige-white-dark-grey__1244334_pe921152_s5.jpg",
+      "imageAlt": "TROTTEN 트로텐 / LÅNGFJÄLL 롱피엘 회의테이블+의자 - 베이지 화이트/다크그레이 160x80 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/trotten-langfjaell-conference-table-and-chairs-beige-white-dark-grey-s89552639/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/hoeyiyong-teibeul-mic-yija-seteu-700424/"
+    },
+    {
+      "id": "40568019",
+      "categorySlug": "kitchen-furniture",
+      "categoryLabel": "주방가구",
+      "parentCrumb": "주방",
+      "typeSlug": "kitchen-appliance",
+      "label": "주방가전",
+      "badge": "주방가전",
+      "brand": "LAGAN",
+      "name": "LAGAN 라간 빌트인 식기세척기 60 cm",
+      "description": "LAGAN 라간 빌트인 식기세척기 60 cm.",
+      "price": 210000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": null,
+      "reviews": 0,
+      "size": null,
+      "material": "유리",
+      "color": null,
+      "features": [
+        "주방가전",
+        "유리"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1209974_pe909504_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1209973_pe909501_s5.jpg",
+      "imageAlt": "LAGAN 라간 빌트인 식기세척기 60 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/lagan-integrated-dishwasher-40568019/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/appliances-ka002/"
+    },
+    {
+      "id": "40164075",
+      "categorySlug": "kitchen-furniture",
+      "categoryLabel": "주방가구",
+      "parentCrumb": "주방",
+      "typeSlug": "kitchen-storage",
+      "label": "주방정리용품",
+      "badge": "주방정리용품",
+      "brand": "VARIERA",
+      "name": "VARIERA 바리에라 냄비뚜껑정리대 - 스테인리스",
+      "description": "VARIERA 바리에라 냄비뚜껑정리대 - 스테인리스.",
+      "price": 8900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.3,
+      "reviews": 640,
+      "size": null,
+      "material": "스테인리스",
+      "color": "그레이",
+      "features": [
+        "주방정리용품",
+        "스테인리스",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/variera-pot-lid-organiser-stainless-steel__0626878_pe693056_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/variera-pot-lid-organiser-stainless-steel__1505000_ph205264_s5.jpg",
+      "imageAlt": "VARIERA 바리에라 냄비뚜껑정리대 - 스테인리스",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/variera-pot-lid-organiser-stainless-steel-40164075/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/interior-fittings-24255/"
+    },
+    {
+      "id": "20586788",
+      "categorySlug": "kitchen-furniture",
+      "categoryLabel": "주방가구",
+      "parentCrumb": "주방",
+      "typeSlug": "kitchen-rack-cart",
+      "label": "주방 선반/카트",
+      "badge": "주방 선반·카트",
+      "brand": "RÅSKOG",
+      "name": "RÅSKOG 로스코그 카트 - 화이트 35x45x77 cm",
+      "description": "RÅSKOG 로스코그 카트 - 화이트 35x45x77 cm.",
+      "price": 42900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.6,
+      "reviews": 741,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "주방 선반/카트",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1366882_pe957173_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1366884_pe957177_s5.jpg",
+      "imageAlt": "RÅSKOG 로스코그 카트 - 화이트 35x45x77 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/raskog-trolley-white-20586788/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/kitchen-islands-trolleys-10471/"
+    },
+    {
+      "id": "90191934",
+      "categorySlug": "kitchenware",
+      "categoryLabel": "주방용품",
+      "parentCrumb": "주방",
+      "typeSlug": "kitchen-tools",
+      "label": "주방도구",
+      "badge": "주방도구",
+      "brand": "IDEALISK",
+      "name": "IDEALISK 이데알리스크 콜랜더 - 스테인리스/블랙 34x23 cm",
+      "description": "IDEALISK 이데알리스크 콜랜더 - 스테인리스/블랙 34x23 cm.",
+      "price": 8900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.4,
+      "reviews": 472,
+      "size": null,
+      "material": "스테인리스",
+      "color": "그레이",
+      "features": [
+        "주방도구",
+        "스테인리스",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/idealisk-colander-stainless-steel-black__0713133_pe729277_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/idealisk-colander-stainless-steel-black__63111_pe170496_s5.jpg",
+      "imageAlt": "IDEALISK 이데알리스크 콜랜더 - 스테인리스/블랙 34x23 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/idealisk-colander-stainless-steel-black-90191934/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/cooking-baking-supplies-kt002/"
+    },
+    {
+      "id": "60484330",
+      "categorySlug": "kitchenware",
+      "categoryLabel": "주방용품",
+      "parentCrumb": "주방",
+      "typeSlug": "pot-pan",
+      "label": "냄비/팬",
+      "badge": "냄비·팬",
+      "brand": "IKEA",
+      "name": "IKEA 365+ 이케아 365+ 조리용품6종 - 스테인리스",
+      "description": "IKEA 365+ 이케아 365+ 조리용품6종 - 스테인리스.",
+      "price": 49000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.4,
+      "reviews": 55,
+      "size": null,
+      "material": "스테인리스",
+      "color": "그레이",
+      "features": [
+        "냄비/팬",
+        "스테인리스",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1006151_pe825738_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1060289_pe849964_s5.jpg",
+      "imageAlt": "IKEA 365+ 이케아 365+ 조리용품6종 - 스테인리스",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/ikea-365-cookware-set-of-6-stainless-steel-60484330/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/cookware-kt003/"
+    },
+    {
+      "id": "90287936",
+      "categorySlug": "kitchenware",
+      "categoryLabel": "주방용품",
+      "parentCrumb": "주방",
+      "typeSlug": "knife-board",
+      "label": "도마/주방칼",
+      "badge": "도마·주방칼",
+      "brand": "IKEA",
+      "name": "IKEA 365+ 이케아 365+ 채소칼 - 스테인리스 16 cm",
+      "description": "IKEA 365+ 이케아 365+ 채소칼 - 스테인리스 16 cm.",
+      "price": 17000,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.5,
+      "reviews": 111,
+      "size": null,
+      "material": "스테인리스",
+      "color": "그레이",
+      "features": [
+        "도마/주방칼",
+        "스테인리스",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/ikea-365-vegetable-knife-stainless-steel__0710389_pe727517_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/ikea-365-vegetable-knife-stainless-steel__0333884_pe523344_s5.jpg",
+      "imageAlt": "IKEA 365+ 이케아 365+ 채소칼 - 스테인리스 16 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/ikea-365-vegetable-knife-stainless-steel-90287936/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/knives-chopping-boards-15934/"
+    },
+    {
+      "id": "90278362",
+      "categorySlug": "kitchenware",
+      "categoryLabel": "주방용품",
+      "parentCrumb": "주방",
+      "typeSlug": "glass-cup",
+      "label": "유리컵",
+      "badge": "유리컵",
+      "brand": "IKEA",
+      "name": "IKEA 365+ 이케아 365+ 고블렛 - 유리 30 cl",
+      "description": "IKEA 365+ 이케아 365+ 고블렛 - 유리 30 cl.",
+      "price": 2700,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.7,
+      "reviews": 567,
+      "size": null,
+      "material": "유리",
+      "color": "화이트",
+      "features": [
+        "유리컵",
+        "유리",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__0712435_pe728848_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__0334205_pe523529_s5.jpg",
+      "imageAlt": "IKEA 365+ 이케아 365+ 고블렛 - 유리 30 cl",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/ikea-365-goblet-clear-glass-90278362/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/drinkware-18868/"
+    },
+    {
+      "id": "50573322",
+      "categorySlug": "kitchenware",
+      "categoryLabel": "주방용품",
+      "parentCrumb": "주방",
+      "typeSlug": "cutlery",
+      "label": "수저/커트러리",
+      "badge": "수저·커트러리",
+      "brand": "GRÅSELLACK",
+      "name": "GRÅSELLACK 그로셀라크 식기도구2종",
+      "description": "GRÅSELLACK 그로셀라크 식기도구2종.",
+      "price": 1900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.4,
+      "reviews": 14,
+      "size": null,
+      "material": "스테인리스",
+      "color": "그레이",
+      "features": [
+        "수저/커트러리",
+        "스테인리스",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/grasellack-2-piece-cutlery-set__1271588_pe929507_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/grasellack-2-piece-cutlery-set__1271585_pe929506_s5.jpg",
+      "imageAlt": "GRÅSELLACK 그로셀라크 식기도구2종",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/grasellack-2-piece-cutlery-set-50573322/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/cutlery-18865/"
+    },
+    {
+      "id": "80586356",
+      "categorySlug": "plant",
+      "categoryLabel": "화분/식물",
+      "parentCrumb": "리빙",
+      "typeSlug": "plant",
+      "label": "식물/조화",
+      "badge": "식물·조화",
+      "brand": "FEJKA",
+      "name": "FEJKA 페이카 인조식물+화분 - 실내외겸용 라벤더",
+      "description": "FEJKA 페이카 인조식물+화분 - 실내외겸용 라벤더.",
+      "price": 17900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 5.0,
+      "reviews": 1,
+      "size": null,
+      "material": "플라스틱",
+      "color": "그린",
+      "features": [
+        "식물/조화",
+        "플라스틱",
+        "그린"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/fejka-artificial-potted-plant-with-pot-in-outdoor-lavender__1342007_pe948967_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/fejka-artificial-potted-plant-with-pot-in-outdoor-lavender__1389369_pe965193_s5.jpg",
+      "imageAlt": "FEJKA 페이카 인조식물+화분 - 실내외겸용 라벤더",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/fejka-artificial-potted-plant-with-pot-in-outdoor-lavender-80586356/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/plants-flowers-pp003/"
+    },
+    {
+      "id": "60334128",
+      "categorySlug": "plant",
+      "categoryLabel": "화분/식물",
+      "parentCrumb": "리빙",
+      "typeSlug": "flowerpot",
+      "label": "화분",
+      "badge": "화분",
+      "brand": "BINTJE",
+      "name": "BINTJE 빈셰 화분 - 아연도금 9 cm",
+      "description": "BINTJE 빈셰 화분 - 아연도금 9 cm.",
+      "price": 900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.7,
+      "reviews": 205,
+      "size": null,
+      "material": null,
+      "color": "그레이",
+      "features": [
+        "화분",
+        "그레이"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0638860_pe699222_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0768629_pe754507_s5.jpg",
+      "imageAlt": "BINTJE 빈셰 화분 - 아연도금 9 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/bintje-plant-pot-galvanised-60334128/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/flower-pots-planters-pp004/"
+    },
+    {
+      "id": "50612007",
+      "categorySlug": "plant",
+      "categoryLabel": "화분/식물",
+      "parentCrumb": "리빙",
+      "typeSlug": "plant-stand",
+      "label": "화분스탠드",
+      "badge": "화분스탠드",
+      "brand": "OLIVBLAD",
+      "name": "OLIVBLAD 올리브블라드 화분스탠드 - 실내외겸용/오프화이트 58 cm",
+      "description": "OLIVBLAD 올리브블라드 화분스탠드 - 실내외겸용/오프화이트 58 cm.",
+      "price": 29900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 5.0,
+      "reviews": 2,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "화분스탠드",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/olivblad-plant-stand-in-outdoor-off-white__1461686_pe994224_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/olivblad-plant-stand-in-outdoor-off-white__1469328_pe996601_s5.jpg",
+      "imageAlt": "OLIVBLAD 올리브블라드 화분스탠드 - 실내외겸용/오프화이트 58 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/olivblad-plant-stand-in-outdoor-off-white-50612007/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/plant-stands-movers-20494/"
+    },
+    {
+      "id": "10537171",
+      "categorySlug": "plant",
+      "categoryLabel": "화분/식물",
+      "parentCrumb": "리빙",
+      "typeSlug": "gardening",
+      "label": "원예용품",
+      "badge": "원예용품",
+      "brand": "ÅKERBÄR",
+      "name": "ÅKERBÄR 오케르베르 온실 - 실내외겸용/화이트 45 cm",
+      "description": "ÅKERBÄR 오케르베르 온실 - 실내외겸용/화이트 45 cm.",
+      "price": 29900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 3.9,
+      "reviews": 487,
+      "size": null,
+      "material": null,
+      "color": "화이트",
+      "features": [
+        "원예용품",
+        "화이트"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1122670_pe874640_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1176982_pe895190_s5.jpg",
+      "imageAlt": "ÅKERBÄR 오케르베르 온실 - 실내외겸용/화이트 45 cm",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/akerbaer-greenhouse-in-outdoor-white-10537171/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/growing-accessories-24887/"
+    },
+    {
+      "id": "90394154",
+      "categorySlug": "plant",
+      "categoryLabel": "화분/식물",
+      "parentCrumb": "리빙",
+      "typeSlug": "watering-can",
+      "label": "물뿌리개",
+      "badge": "물뿌리개",
+      "brand": "VATTENKRASSE",
+      "name": "VATTENKRASSE 바텡크라세 물뿌리개 - 아이보리/골드 0.9 l",
+      "description": "VATTENKRASSE 바텡크라세 물뿌리개 - 아이보리/골드 0.9 l.",
+      "price": 12900,
+      "originalPrice": null,
+      "discountRate": 0,
+      "rating": 4.7,
+      "reviews": 1008,
+      "size": null,
+      "material": null,
+      "color": "베이지",
+      "features": [
+        "물뿌리개",
+        "베이지"
+      ],
+      "image": "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__0614222_pe686847_s5.jpg",
+      "altImage": "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__0901102_pe687035_s5.jpg",
+      "imageAlt": "VATTENKRASSE 바텡크라세 물뿌리개 - 아이보리/골드 0.9 l",
+      "detailUrl": "https://www.ikea.com/kr/ko/p/vattenkrasse-watering-can-ivory-gold-colour-90394154/",
+      "categoryUrl": "https://www.ikea.com/kr/ko/cat/watering-cans-20493/"
+    }
+  ],
+  "detailContent": {
+    "10489009": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0950864_pe800736_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__1059523_ph180677_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0987393_pe817515_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0987395_pe817517_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0987394_pe817516_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0987398_pe817518_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0987399_pe817519_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0950899_pe800743_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/glostad-2-seat-sofa-knisa-dark-grey__0983590_pe816016_s5.jpg",
+      "heroHook": "GLOSTAD 글로스타드 2인용소파 - 크니사 다크그레이.",
+      "description": [
+        "GLOSTAD 글로스타드 2인용소파 - 크니사 다크그레이.",
+        "GLOSTAD 글로스타드 소파는 심플한 디자인을 자랑하며, 두툼한 시트와 푹신한 팔걸이, 부드러운 등쿠션이 제자리에 고정되어 있어 편안한 착석감을 선사해요.",
+        "소파의 무게가 가벼워 집에서 가구를 재배치하거나 새 집으로 이사할 때 쉽게 옮길 수 있습니다."
+      ],
+      "highlights": [
+        "2인용 소파",
+        "현재 컬러: 그레이",
+        "2인용 소파",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "104.890.09"
+        },
+        {
+          "label": "대표 분류",
+          "value": "2인용 소파"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "팔걸이 높이",
+          "value": "57 cm"
+        },
+        {
+          "label": "팔걸이 너비",
+          "value": "3.5 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "78 cm"
+        },
+        {
+          "label": "가구 밑 여유공간",
+          "value": "23 cm"
+        },
+        {
+          "label": "등받이H",
+          "value": "68 cm"
+        },
+        {
+          "label": "시트 깊이",
+          "value": "54 cm"
+        },
+        {
+          "label": "시트 높이",
+          "value": "41 cm"
+        },
+        {
+          "label": "시트 폭",
+          "value": "114 cm"
+        },
+        {
+          "label": "폭",
+          "value": "121 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "1인가구 작은소파로 좋아요.",
+          "body": "매장가서 보고 사왔어요. 이케아 소파들이 등받이가 다들 90도라 쿠션없이는 불편한데 이건 약간 사선이라 덜 불편합니다. 소파보다는 벤치에 가까워요. 발에 테니스공 끼우면 장롱 앞에 놔도 쓰윽 밀려서 문 열기 괜찮아요. 다만 꼭 누워야하는 사람이면 비추입니다. 2일만에 지인에게 양도하고 3인용으로 갈아탔어요.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "조립이 간편한 글로스타드",
+          "body": "소파 컬러가 개성이 있음",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "조립이 간편한 글로스타드",
+          "body": "가성비 있는 소파 크기도 적당하고 조립이 간편해서 좋음 내구성은 조금더 사용해 봐여 알것 같음",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "40595937": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1234948_pe917261_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1235175_pe917294_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1235915_pe917390_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1235896_pe917385_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1235914_pe917391_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1235913_pe917389_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1235176_pe917297_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/glostad-3-seat-sofa-knisa-dark-grey__1387199_pe964151_s5.jpg",
+      "heroHook": "GLOSTAD 글로스타드 3인용소파 - 크니사 다크그레이.",
+      "description": [
+        "GLOSTAD 글로스타드 3인용소파 - 크니사 다크그레이.",
+        "GLOSTAD 글로스타드 소파는 심플한 디자인을 자랑하며, 두툼한 시트와 푹신한 팔걸이, 부드러운 등쿠션이 제자리에 고정되어 있어 편안한 착석감을 선사해요.",
+        "소파의 무게가 가벼워 집에서 가구를 재배치하거나 새 집으로 이사할 때 쉽게 옮길 수 있습니다."
+      ],
+      "highlights": [
+        "3인용 소파",
+        "현재 컬러: 그레이",
+        "3인용 소파",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "405.959.37"
+        },
+        {
+          "label": "대표 분류",
+          "value": "3인용 소파"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "팔걸이 높이",
+          "value": "57 cm"
+        },
+        {
+          "label": "팔걸이 너비",
+          "value": "3.5 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "78 cm"
+        },
+        {
+          "label": "가구 밑 여유공간",
+          "value": "23 cm"
+        },
+        {
+          "label": "등받이H",
+          "value": "68 cm"
+        },
+        {
+          "label": "시트 높이",
+          "value": "41 cm"
+        },
+        {
+          "label": "시트 폭",
+          "value": "164 cm"
+        },
+        {
+          "label": "폭",
+          "value": "171 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "전반적으로 괜찮아요!",
+          "body": "좌방석이 생각보다 단단한 편이었는데 괜찮았습니다! 등받이가 원했던 만큼 푹신~하게 부풀어오르는 편은 아니긴 한데(오래 나뒀는데두요..) 그래도 기댈 맛은 나네용 아예 안락!!한걸 원하시면 토퍼나 쿠션 추가 구매 ㄱㄱ",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "저렴하고 가볍고 조립도 쉬워요.",
+          "body": "키 170이하는 다리펴고 누울수도 있습니다. 30평대 구측 아파트 거실에 에어컨과 장식장 때문에 가죽소파는 2인용만 들어가더라구요. 거의 남편 1인 게임용으로 사용하지만 어른 3명도 앉을 수 있습니다. 2인용 샀다가 크기가 아쉬워서 혼자사는 지인에게 양도하고 바로 재구매했습니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "등쿠션 결합이 매우 힘듦.",
+          "body": "등쿠션 결합이 매우 힘듦. 쿠션은 대문짝만한데 커버는 손바닥만함...",
+          "rating": 3.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "s89614331": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1303667_pe938431_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1325338_pe943861_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1314573_pe940154_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1314572_pe940153_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1303653_pe938421_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1314569_pe940150_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/rullerum-3-seat-sofa-w-2-electric-recliners-grann-bomstad-golden-brown__1303654_pe938422_s5.jpg",
+      "heroHook": "RULLERUM 룰레룸 3인용소파+전동 리클라이너2 - 그란/봄스타드 골드브라운.",
+      "description": [
+        "RULLERUM 룰레룸 3인용소파+전동 리클라이너2 - 그란/봄스타드 골드브라운.",
+        "휴식을 즐겨보세요!",
+        "버튼만 누르면 앉는 자세는 물론, 뒤로 기대서 책을 읽거나 낮잠을 자기 위해 몸을 쭉 뻗는 자세까지 원하는 정확한 자세를 찾을 수 있어요."
+      ],
+      "highlights": [
+        "리클라이너 소파",
+        "현재 컬러: 브라운",
+        "리클라이너 소파",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "896.143.31"
+        },
+        {
+          "label": "대표 분류",
+          "value": "리클라이너 소파"
+        },
+        {
+          "label": "컬러",
+          "value": "브라운"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "팔걸이 높이",
+          "value": "63 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "94 cm"
+        },
+        {
+          "label": "높이",
+          "value": "98 cm"
+        },
+        {
+          "label": "시트 깊이",
+          "value": "58 cm"
+        },
+        {
+          "label": "시트 높이",
+          "value": "48 cm"
+        },
+        {
+          "label": "폭",
+          "value": "259 cm"
+        },
+        {
+          "label": "시트 폭",
+          "value": "225 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "평균 평점 - 기준으로 실제 리뷰 데이터 연결을 준비한 상태입니다.",
+      "reviewHighlights": [
+        {
+          "title": "리뷰 데이터 연결 준비",
+          "body": "이 상품도 동일한 리뷰 영역 구조를 사용하며, 후속 연동 시 실제 구매 리뷰로 교체할 수 있습니다.",
+          "rating": null,
+          "meta": "시스템 안내"
+        }
+      ]
+    },
+    "s99495827": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1193836_pe901647_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1249961_pe923589_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1194602_pe902002_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1194010_pe901762_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1194011_pe901763_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/hyltarp-3-seat-sofa-w-chaise-longue-right-gransel-natural__1256068_pe924901_s5.jpg",
+      "heroHook": "HYLTARP 휠타르프 3인용소파+오른쪽긴의자 - 그란셀 내추럴.",
+      "description": [
+        "HYLTARP 휠타르프 3인용소파+오른쪽긴의자 - 그란셀 내추럴.",
+        "정교한 제작 기술과 완벽한 핏으로 항상 최상의 모습을 유지하는 소파입니다.",
+        "시트 아래에 수납공간을 더한 긴의자입니다."
+      ],
+      "highlights": [
+        "카우치형 소파",
+        "현재 컬러: 베이지",
+        "카우치형 소파",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "994.958.27"
+        },
+        {
+          "label": "대표 분류",
+          "value": "카우치형 소파"
+        },
+        {
+          "label": "컬러",
+          "value": "베이지"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "H(등쿠션포함)",
+          "value": "91 cm"
+        },
+        {
+          "label": "등받이H",
+          "value": "82 cm"
+        },
+        {
+          "label": "긴의자 D",
+          "value": "162 cm"
+        },
+        {
+          "label": "폭",
+          "value": "262 cm"
+        },
+        {
+          "label": "시트 깊이, 롱체어",
+          "value": "126 cm"
+        },
+        {
+          "label": "가구 밑 여유공간",
+          "value": "6 cm"
+        },
+        {
+          "label": "시트 깊이",
+          "value": "60 cm"
+        },
+        {
+          "label": "시트 높이",
+          "value": "48 cm"
+        },
+        {
+          "label": "팔걸이 너비",
+          "value": "11 cm"
+        },
+        {
+          "label": "팔걸이 높이",
+          "value": "63 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "93 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "평균 평점 3.9 기준으로 실제 리뷰 데이터 연결을 준비한 상태입니다.",
+      "reviewHighlights": [
+        {
+          "title": "리뷰 데이터 연결 준비",
+          "body": "이 상품도 동일한 리뷰 영역 구조를 사용하며, 후속 연동 시 실제 구매 리뷰로 교체할 수 있습니다.",
+          "rating": 3.9,
+          "meta": "시스템 안내"
+        }
+      ]
+    },
+    "s69536301": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood__1247096_pe922509_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood__1247095_pe922508_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood__1367868_ph184885_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood__1367864_ph184961_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/lillehem-modular-corner-sofa-2-seat-gunnared-dark-grey-wood__1367122_pe957248_s5.jpg",
+      "heroHook": "LILLEHEM 릴레헴 코너소파모듈2 - 군나레드 다크그레이/목재.",
+      "description": [
+        "LILLEHEM 릴레헴 코너소파모듈2 - 군나레드 다크그레이/목재.",
+        "유연한 솔루션이 있으면 여건이 바뀌었을 때 언제든지 새롭게 단장하고, 확장하고, 변화를 줄 수 있어요.",
+        "폼과 지그재그 스프링으로 만든 시트쿠션은 앉거나 누웠을 때 편안한 지지력을 선사합니다."
+      ],
+      "highlights": [
+        "코너형 소파",
+        "현재 컬러: 그레이",
+        "모듈형 소파",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "695.363.01"
+        },
+        {
+          "label": "대표 분류",
+          "value": "코너형 소파"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "깊이",
+          "value": "76 cm"
+        },
+        {
+          "label": "가구 밑 여유공간",
+          "value": "20 cm"
+        },
+        {
+          "label": "높이",
+          "value": "73 cm"
+        },
+        {
+          "label": "시트 깊이",
+          "value": "60 cm"
+        },
+        {
+          "label": "시트 높이",
+          "value": "42 cm"
+        },
+        {
+          "label": "폭, 왼쪽",
+          "value": "148 cm"
+        },
+        {
+          "label": "폭, 오른쪽",
+          "value": "148 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "1-2인용 가구에 적합한 미니멀 쇼파",
+          "body": "다른 쇼파에 비교해서 작은 사이즈이지만 훌륭한 가성비와 공간활용이 장점인 제품입니다. 20평 이상의 가정집에는 조금 더 큰 쇼파가 좋겠지만 오피스텔, 원룸에 작지만 유용한 좌석용 가구를 추가하고 싶다면 좋은 선택인 것 같습니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "s69305616": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0802813_pe768605_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0802824_pe768608_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__1014887_ph178133_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__1097375_ph180672_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0802812_pe768607_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0803568_pe768914_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0803569_pe768915_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__0803570_pe768913_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/soederhamn-3-seat-section-viarp-beige-brown__1349963_pe951588_s5.jpg",
+      "heroHook": "SÖDERHAMN 쇠데르함 3인용섹션 - 비아르프 베이지/브라운.",
+      "description": [
+        "SÖDERHAMN 쇠데르함 3인용섹션 - 비아르프 베이지/브라운.",
+        "SÖDERHAMN/쇠데르함 의자 시리즈는 깊숙하고 편안하게 앉을 수 있으며 등쿠션에 편하게 기댈 수 있습니다.",
+        "높은 다리에 가는 선까지 디자인은 가볍고 산뜻하지만 밑부분의 신축성 있는 직물과 시트 쿠션의 고탄성 폼이 편안함을 제공합니다."
+      ],
+      "highlights": [
+        "모듈형 소파",
+        "현재 컬러: 베이지",
+        "3인용 소파",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "693.056.16"
+        },
+        {
+          "label": "대표 분류",
+          "value": "모듈형 소파"
+        },
+        {
+          "label": "컬러",
+          "value": "베이지"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "폭",
+          "value": "186 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "99 cm"
+        },
+        {
+          "label": "높이",
+          "value": "83 cm"
+        },
+        {
+          "label": "시트 폭",
+          "value": "186 cm"
+        },
+        {
+          "label": "시트 깊이",
+          "value": "48 cm"
+        },
+        {
+          "label": "시트 높이",
+          "value": "40 cm"
+        },
+        {
+          "label": "H(등쿠션포함)",
+          "value": "83 cm"
+        },
+        {
+          "label": "등받이H",
+          "value": "69 cm"
+        },
+        {
+          "label": "가구 밑 여유공간",
+          "value": "14 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "엄청 예뻐요",
+          "body": "쇼룸에서 보고 반해서 바로 구매했습니다 생각보다 편하고 포인트 컬러로 거실이 멋스러워집니다",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "강추!",
+          "body": "너무 예쁘고 편해요! 가끔 소파에서도 자고 ㅋㅋㅋ 진짜 잘 산 것 같아요!",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "편하게 잘쓰고 있어요.",
+          "body": "저희는 두개를 연결해서 쓰는데요..설치할때 조금 시간이걸렸지...하고 나니 넘 편하게 쓰고있어서~빼서 세탁도 따로 할수있고..넘 유용하게 쓰고있어요.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "70571242": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259334_pe926648_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259366_pe926664_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259340_pe926652_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259339_pe926653_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259364_pe926662_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1259362_pe926661_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__1296229_pe935740_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/slattum-upholstered-bed-frame-vissle-dark-grey__0747514_pe744564_s5.jpg",
+      "heroHook": "SLATTUM 슬라툼 쿠션형 침대프레임 - 비슬레 다크그레이 120x200 cm.",
+      "description": [
+        "SLATTUM 슬라툼 쿠션형 침대프레임 - 비슬레 다크그레이 120x200 cm.",
+        "갈빗살을 포함한 전체 침대 프레임이 1개의 납작한 패키지로 포장되어 있어 간편하게 집에 가져갈 수 있습니다.",
+        "조립 과정이 쉬워서 빠르게 조립할 수 있어요."
+      ],
+      "highlights": [
+        "침대",
+        "현재 컬러: 그레이",
+        "쿠션형침대",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "705.712.42"
+        },
+        {
+          "label": "대표 분류",
+          "value": "침대"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        },
+        {
+          "label": "소재",
+          "value": "패브릭"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "206 cm"
+        },
+        {
+          "label": "폭",
+          "value": "124 cm"
+        },
+        {
+          "label": "침대 발판 높이",
+          "value": "40 cm"
+        },
+        {
+          "label": "침대 머리판 높이",
+          "value": "85 cm"
+        },
+        {
+          "label": "매트리스 길이",
+          "value": "200 cm"
+        },
+        {
+          "label": "매트리스 폭",
+          "value": "120 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "든든함",
+          "body": "좋아요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "저렴한가격 추천",
+          "body": "자취용으로 딱인듯 저렴하고 조립하기도 쉬워요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "침대프레임",
+          "body": "튼튼합니다. 조립도 직관적이구요. 만족합니다.",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "60470050": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1150853_pe884906_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1044459_pe842173_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1155952_pe886827_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1370976_pe958942_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1071101_pe854865_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1044424_pe842148_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__0905192_pe783062_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/vesteroey-pocket-sprung-mattress-extra-firm-light-blue__1094372_pe863392_s5.jpg",
+      "heroHook": "VESTERÖY 베스테뢰위 포켓스프링매트리스 - 매우 단단함/라이트블루 120x200 cm.",
+      "description": [
+        "VESTERÖY 베스테뢰위 포켓스프링매트리스 - 매우 단단함/라이트블루 120x200 cm.",
+        "포켓스프링은 독립적으로 반응하기 때문에 옆 사람의 움직임에도 방해받지 않을 수 있어요.",
+        "가장자리 끝에서 끝까지 적용한 포켓 스프링 덕분에 공기 순환이 잘 되어 통기성이 향상되며, 2개의 매트리스를 나란히 배치해도 편안하게 사용할 수 있어요."
+      ],
+      "highlights": [
+        "매트리스",
+        "현재 컬러: 화이트",
+        "스프링 매트리스",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "604.700.50"
+        },
+        {
+          "label": "대표 분류",
+          "value": "매트리스"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "200 cm"
+        },
+        {
+          "label": "폭",
+          "value": "120 cm"
+        },
+        {
+          "label": "두께",
+          "value": "20 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "3년동안 아주 잘쓰는중",
+          "body": "첫 자취생활의 아주 잘산 매트리스",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "좋은 매트리스 잘쓰고있습니다.",
+          "body": "단단함으로 표시되어있는데... 실제로는 꾀 푹신합니다. 한손으로 체중을 실어 누르면 푹 들어갑니다. 그래서 누우면 꾀 편안합니다. 좋아요",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "가성비 최고입니다",
+          "body": "가격은 싸지만 매우 단단해서 이런 종류의 매트를 원하신다면 당연히 추천합니다",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "60594871": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/sandgraesmal-duvet-light-warm__1311039_pe939990_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandgraesmal-duvet-light-warm__1311043_pe939994_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandgraesmal-duvet-light-warm__1311041_pe939993_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/sandgraesmal-duvet-light-warm__1311042_pe939992_s5.jpg",
+      "heroHook": "SANDGRÄSMAL 산드그레스말 이불,약간 따뜻함 150x200 cm.",
+      "description": [
+        "SANDGRÄSMAL 산드그레스말 이불,약간 따뜻함 150x200 cm.",
+        "재활용 폴리에스테르 100% 패브릭과 충전재로 만들어 내구성이 좋고 관리가 쉬운 이불이에요.",
+        "이러한 소재 덕분에 제품의 수명이 다하면 전체를 재활용할 수 있습니다."
+      ],
+      "highlights": [
+        "침구",
+        "현재 컬러: 화이트",
+        "폴리에스테르 이불",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "605.948.71"
+        },
+        {
+          "label": "대표 분류",
+          "value": "침구"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        },
+        {
+          "label": "소재",
+          "value": "패브릭"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "200 cm"
+        },
+        {
+          "label": "폭",
+          "value": "150 cm"
+        },
+        {
+          "label": "충전 중량",
+          "value": "300 g"
+        },
+        {
+          "label": "총중량",
+          "value": "760 g"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "굳",
+          "body": "세탁해도 젖은 빨래가 굉장히 가벼워서 건조기 옮기기도 편하고 자주 빨아도 부담없습니다 이불이 무거우면 잘때 답답하기 시작해서 가벼운 이불 찾았는데 좋은금액에 잘 쓰고 있어요 가벼운데 일단 따뜻해서 좋아요 하나 덮고 좀 서늘하다 싶으면 두개 덮으면 딱 좋아요 피부에 닿으면 시원한 재질은 아닌데 여름에는 또 어떨지 궁금하네요 오프라인으로 두개 샀는데 온라인으로 또사려고 들어왔어요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "여름이불",
+          "body": "여름에 사용할 속통으로 구입했어요. 얇고 가벼워서 마음에 들어요. 한장만 샀다가 한장 더 구매했어요^^*",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "가성비 좋아용",
+          "body": "손님용으로 샀어요 가볍고 부끄러워요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "20247128": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/nesna-bedside-table-bamboo__0133450_pe288918_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/nesna-bedside-table-bamboo__0380708_pe555588_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/nesna-bedside-table-bamboo__0381298_pe556039_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/nesna-bedside-table-bamboo__1234493_pe917147_s5.jpg",
+      "heroHook": "NESNA 네스나 침대협탁 - 대나무 36x35 cm.",
+      "description": [
+        "NESNA 네스나 침대협탁 - 대나무 36x35 cm.",
+        "대나무는 내구성이 좋은 천연 소재입니다.",
+        "취급주의!"
+      ],
+      "highlights": [
+        "침대협탁",
+        "현재 컬러: 베이지",
+        "침대협탁",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "202.471.28"
+        },
+        {
+          "label": "대표 분류",
+          "value": "침대협탁"
+        },
+        {
+          "label": "컬러",
+          "value": "베이지"
+        },
+        {
+          "label": "소재",
+          "value": "대나무"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "폭",
+          "value": "36 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "35 cm"
+        },
+        {
+          "label": "높이",
+          "value": "45 cm"
+        },
+        {
+          "label": "가구 밑 여유공간",
+          "value": "16 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "구멍이없는 제품",
+          "body": "흔들흔들~ 목공풀로 마감처리했어요",
+          "rating": 1.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "침대 옆 협탁으로 짱 좋음",
+          "body": "조립하기도 쉽고, 크기도 적당하고, 디자인도 훌륭. 가격이 2만원대라는게 믿기지 않을 정도!",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "깔끔하고 튼튼합니다",
+          "body": "조립쉽고 튼튼해요! 단 무거운거 올리기엔 적합하지 않아요!",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "s29416857": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/dalshult-table-white-birch__0993483_pe820568_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/dalshult-table-white-birch__0993484_pe820567_s5.jpg",
+      "heroHook": "DALSHULT 달스훌트 테이블 - 화이트/자작나무 185x90 cm.",
+      "description": [
+        "DALSHULT 달스훌트 테이블 - 화이트/자작나무 185x90 cm."
+      ],
+      "highlights": [
+        "다이닝 가구",
+        "현재 컬러: 화이트",
+        "6인용 식탁",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "294.168.57"
+        },
+        {
+          "label": "대표 분류",
+          "value": "다이닝 가구"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "185 cm"
+        },
+        {
+          "label": "폭",
+          "value": "90 cm"
+        },
+        {
+          "label": "높이",
+          "value": "73 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "이케아 평균 높이의 테이블보다 조금 낮은높이라 좋아요",
+          "body": "아이들과 함께 사용하기에 좋고 마감이나 디자인도 좋습니다. 만족해요~~",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "마음에들어요",
+          "body": "테이블 하나로 분위기가 바뀔수있다니~너무 화사하고 이쁘네요~",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "가성비 식탁입니다.",
+          "body": "세라믹 식탁을 고민하다가 구매했는데 아주 만족합니다. 같이 구매한 크렐보 의자하고도 조합이 좋습니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "s09420394": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1074348_pe856162_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1540631_pe1017812_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1540634_pe1017813_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1540633_pe1017814_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1540632_pe1017815_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1540612_ph205167_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1464036_pe994561_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/sandsberg-table-black__1031911_pe836694_s5.jpg",
+      "heroHook": "SANDSBERG 산스베리 테이블 - 블랙 110x67 cm.",
+      "description": [
+        "SANDSBERG 산스베리 테이블 - 블랙 110x67 cm.",
+        "슬림한 디자인이어서 실내 공간을 많이 차지하지 않고 인테리어와 조화롭게 어우러집니다.",
+        "내구성이 튼튼해 매일 사용해도 끄떡없어요."
+      ],
+      "highlights": [
+        "테이블",
+        "현재 컬러: 블랙",
+        "4인용 식탁",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "094.203.94"
+        },
+        {
+          "label": "대표 분류",
+          "value": "테이블"
+        },
+        {
+          "label": "컬러",
+          "value": "블랙"
+        },
+        {
+          "label": "소재",
+          "value": "메탈"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "110 cm"
+        },
+        {
+          "label": "폭",
+          "value": "67 cm"
+        },
+        {
+          "label": "높이",
+          "value": "75 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "산스베리 테이블",
+          "body": "단순한데 식탁도 가능하고 책상 도 가능하고.. 가격도 괜찮도 튼튼하고 여러모로 좋습니다. 감사합니다.",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "튼튼하고 좋아요",
+          "body": "흔들림 크지않고 조립도 쉽습니다. 단점으론 물같은거 흘리면 얼룩이 쉽게 생기는거같아요.",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "만족",
+          "body": "만족",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "90592738": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1370474_pe958747_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1414864_pe974941_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1414859_pe974936_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1414877_pe974963_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1414874_pe974960_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1414875_pe974961_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1414876_pe974962_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/vihals-folding-chair-white__1391724_pe965844_s5.jpg",
+      "heroHook": "VIHALS 비할스 접이식의자 - 화이트.",
+      "description": [
+        "VIHALS 비할스 접이식의자 - 화이트.",
+        "등받이와 시트가 몸에 맞게 디자인되어 있어서 편안하게 앉을 수 있습니다.",
+        "접이식 의자로 간편하게 보관할 수 있습니다."
+      ],
+      "highlights": [
+        "의자",
+        "현재 컬러: 화이트",
+        "접이식의자",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "905.927.38"
+        },
+        {
+          "label": "대표 분류",
+          "value": "의자"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        },
+        {
+          "label": "소재",
+          "value": "플라스틱"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "폭",
+          "value": "43 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "47 cm"
+        },
+        {
+          "label": "높이",
+          "value": "80 cm"
+        },
+        {
+          "label": "시트 폭",
+          "value": "39 cm"
+        },
+        {
+          "label": "시트 깊이",
+          "value": "41 cm"
+        },
+        {
+          "label": "시트 높이",
+          "value": "45 cm"
+        },
+        {
+          "label": "시험 중량",
+          "value": "110 kg"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "가볍고 편안한 의자",
+          "body": "가볍고 접을 수 있어서 사용 후 보관하기가 용이해요. 흰색이라 깨끗하고 아주 만족스럽습니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "접이식의자 중에는 나에게 최고",
+          "body": "공간을 크게 사용하고 싶어서 손님의자는 접어놓을수있는 걸 찾았는데 광명에가서 디피용 모두 앉아 보고 골랐어요 역시네요 기본적으로 편안한구조로 이루어져있고 쿠션을 올리니 기본 2시간은 편안하게 앉아계시더라구요 추가구매했어요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "접이의자 구입 적극 추천",
+          "body": "비할스 흰색 접이의자를 식탁과 같이 구입했는데 편하고 좋습니다. 식탁겸 책상으로 사용할 확장형 테이블과 같은 흰색이라 잘 어울리고 깔금해 보입니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "60557802": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/bollsidan-laptop-stand-white__1163783_pe890330_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bollsidan-laptop-stand-white__1163780_pe890329_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bollsidan-laptop-stand-white__1171879_pe893206_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/bollsidan-laptop-stand-white__1163782_pe890331_s5.jpg",
+      "heroHook": "BOLLSIDAN 볼시단 노트북스탠드 - 화이트 68x36 cm.",
+      "description": [
+        "BOLLSIDAN 볼시단 노트북스탠드 - 화이트 68x36 cm.",
+        "집 전체에서 다양한 활동에 사용할 수 있는 유연한 만능 솔루션이에요.",
+        "가스 스프링 장치를 사용해 높이를 조절할 수 있어요."
+      ],
+      "highlights": [
+        "거실테이블/사이드테이블",
+        "현재 컬러: 화이트",
+        "노트북 테이블",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "605.578.02"
+        },
+        {
+          "label": "대표 분류",
+          "value": "거실테이블/사이드테이블"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "최대 높이",
+          "value": "103 cm"
+        },
+        {
+          "label": "최대 하중",
+          "value": "7 kg"
+        },
+        {
+          "label": "최소 높이",
+          "value": "65 cm"
+        },
+        {
+          "label": "폭",
+          "value": "68 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "36 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "만족합니다",
+          "body": "어제 고양점에서 구입해서 집에 가져와 바로 조립했습니다. 볼트 8개만 조리면 조립이 끝납니다. 소파 앞에서 할 수 있는 것들이 많아져서 좋습니다!!",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "스탠드",
+          "body": "너무나 잘 사용하네요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "멋진 제품",
+          "body": "거실 에서 책도 일고 차도 마시고 컴퓨터 작업 도 할 수 있는 이동식 테이블이 필요 하여 온라인 몰 을 검색해도 원하는 게 없어 이케아 매장 을 방문하여 구입 하여 사요 해보니 여러 용도 로 사요 해도 부족함이 없네요 집에 놀라온 지인 이 제품을 보고 주문 을 부탁 하여 두번째 구입 하게 되었습니다",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "s09246408": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__0737165_pe740925_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__1327991_pe944603_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__1369094_pe958025_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__1369093_pe958026_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__0734654_pe739562_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/linnmon-adils-table-white__0734621_pe739540_s5.jpg",
+      "heroHook": "LINNMON 린몬 / ADILS 아딜스 테이블 - 화이트 100x60 cm.",
+      "description": [
+        "LINNMON 린몬 / ADILS 아딜스 테이블 - 화이트 100x60 cm.",
+        "상판에는 일자형 다리를 쉽게 조립할 수 있도록 나사 구멍이 뚫려 있습니다.",
+        "다리받침의 높이를 조절할 수 있어서 고르지 않은 바닥에도 안정적으로 세울 수 있습니다."
+      ],
+      "highlights": [
+        "컴퓨터 책상",
+        "현재 컬러: 화이트",
+        "콤비네이션",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "092.464.08"
+        },
+        {
+          "label": "대표 분류",
+          "value": "컴퓨터 책상"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "100 cm"
+        },
+        {
+          "label": "폭",
+          "value": "60 cm"
+        },
+        {
+          "label": "높이",
+          "value": "74 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "깔끔 그 자체",
+          "body": "ㄴ자로 붙여서 깔끔해졌어요. 크기도 넉넉. 화이트라 환하고 좋아요. 조립도 간단",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "책상으로는 묵직함 1도 없어서 별로에요",
+          "body": "리뷰가 많은 제품이라 그거하나 믿고 샀는데, 웬걸 이토록 묵직함이 없다보니 쉬이 흔들리고 잡고 의자를 끌으려하면 같이 딸려오고 ㅜ 아무리 저학년용으로 길게 쓸 용도가 아니였더래도 이건 좀 아니네요 ㅜ 산것중 젤로 후회되요. 돈 좀 더 보태서 견고한걸로 살껄 힝 너모너모 별로에요",
+          "rating": 1.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "전동 드라이버 없으면 조립요청 해서 구매하세요",
+          "body": "사람 손으로 조립할 수 없습니다. 전동 드라이버를 하나 구매하시거나 조립 요청해서 받으세요..",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "s99533382": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1215871_pe912246_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1296182_pe935705_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1243363_pe920591_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1301521_pe937465_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1243362_pe920589_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/mittzon-conference-table-white__1306322_pe939676_s5.jpg",
+      "heroHook": "MITTZON 밋손 회의테이블 - 화이트 140x108x75 cm.",
+      "description": [
+        "MITTZON 밋손 회의테이블 - 화이트 140x108x75 cm.",
+        "10년간 품질 보증을 제공합니다.",
+        "자세한 내용은 품질보증서의 약관을 참조하세요."
+      ],
+      "highlights": [
+        "미팅/회의용 테이블",
+        "현재 컬러: 화이트",
+        "MITTZON 밋손 회의 테이블",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "995.333.82"
+        },
+        {
+          "label": "대표 분류",
+          "value": "미팅/회의용 테이블"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "최대 하중",
+          "value": "50 kg"
+        },
+        {
+          "label": "높이",
+          "value": "75 cm"
+        },
+        {
+          "label": "길이",
+          "value": "108 cm"
+        },
+        {
+          "label": "폭",
+          "value": "140 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "2년째사용중입니다",
+          "body": "만족하고있지만 이제는 멀티탭자리에 멀티탭이 아닌 제품설명이미지에 보이는 트레이를 결합하여 사용하고싶은데 이름도 구매도 할수없습니다 이것에 대해 피드백 기다립니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "40500350": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__0985179_pe816538_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__0997874_pe822843_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__1470014_pe996778_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__1470015_pe996779_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__0985180_pe816539_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__0997873_pe822844_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__0997777_pe822755_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/utespelare-gaming-desk-black__1005475_pe825421_s5.jpg",
+      "heroHook": "UTESPELARE 우테스펠라레 게이밍 책상 - 블랙 160x80 cm.",
+      "description": [
+        "UTESPELARE 우테스펠라레 게이밍 책상 - 블랙 160x80 cm.",
+        "다리 높이는 68~78cm까지 6단계로 직접 조절할 수 있기 때문에 항상 편안한 높이에 맞춰 앉을 수 있어요.",
+        "테이블 상판은 두 가지 방식으로 배치할 수 있어요."
+      ],
+      "highlights": [
+        "게임용 책상",
+        "현재 컬러: 블랙",
+        "게임용책상",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "405.003.50"
+        },
+        {
+          "label": "대표 분류",
+          "value": "게임용 책상"
+        },
+        {
+          "label": "컬러",
+          "value": "블랙"
+        },
+        {
+          "label": "소재",
+          "value": "메탈"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "최대 하중",
+          "value": "50 kg"
+        },
+        {
+          "label": "폭",
+          "value": "160 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "80 cm"
+        },
+        {
+          "label": "최대 높이",
+          "value": "78 cm"
+        },
+        {
+          "label": "최소 높이",
+          "value": "68 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "좋은 책상입니다.",
+          "body": "굿",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "조립 및 사용성",
+          "body": "1. 조립 -. 메뉴얼이 잘 되어 있어 순서대로 하다보니 조립이 완성 -. 초반 다리부를 조립할 때 구멍이 맞지 않아 재 조립을 하였음. 구멍에 따른 높이에 대한 설명이 있었으면 실수를 안했고 시간 낭비가 없어을 것 같음. -. 나머지 조립은 어려움이 없음 * 똥손이지만 조립은 쉬움 (메뉴얼만 따라가면 됨) 2. 사용성 -. 그물형태 보관 . 누구 아이디어인지 칭찬하고 싶음 . 선처리를 별도로 하지 않아도 너무 깔끔함. -. 책상크기 . 넓고 좋음 -. 코너 모서리 직각이라 날카로움.",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "괜찮은 책상",
+          "body": "높이 조절되고 튼튼한 책상이지만 높이 조절 할 때 책상에 있는 물건들을 다 치우고 해야 해서 수시로 높이 조절해야 하는 사람은 모션 데스크 추천",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "s89552639": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/trotten-langfjaell-conference-table-and-chairs-beige-white-dark-grey__1244334_pe921152_s5.jpg"
+      ],
+      "dimensionImage": null,
+      "heroHook": "TROTTEN 트로텐 / LÅNGFJÄLL 롱피엘 회의테이블+의자 - 베이지 화이트/다크그레이 160x80 cm.",
+      "description": [
+        "TROTTEN 트로텐 / LÅNGFJÄLL 롱피엘 회의테이블+의자 - 베이지 화이트/다크그레이 160x80 cm.",
+        "가정 외 일반적인 공공장소에서 사용할 수 있도록 테스트를 거쳤으며 EN 15372 및 ANSI/BIFMA X:5.5의 안전성 및 내구성, 안정성 기준에 부합하는 테이블입니다.",
+        "공공장소에서 사용할 수 있도록 검사를 마쳤으며 다음의 안전성 및 내구성, 안정성 기준에 부합하는 의자입니다."
+      ],
+      "highlights": [
+        "오피스책상",
+        "현재 컬러: 화이트",
+        "오피스 책상/의자세트",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "895.526.39"
+        },
+        {
+          "label": "대표 분류",
+          "value": "오피스책상"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "160 cm"
+        },
+        {
+          "label": "폭",
+          "value": "80 cm"
+        },
+        {
+          "label": "높이",
+          "value": "75 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "평균 평점 - 기준으로 실제 리뷰 데이터 연결을 준비한 상태입니다.",
+      "reviewHighlights": [
+        {
+          "title": "리뷰 데이터 연결 준비",
+          "body": "이 상품도 동일한 리뷰 영역 구조를 사용하며, 후속 연동 시 실제 구매 리뷰로 교체할 수 있습니다.",
+          "rating": null,
+          "meta": "시스템 안내"
+        }
+      ]
+    },
+    "40568019": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1209974_pe909504_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1209973_pe909501_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1337761_pe948092_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1337760_pe948091_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1337788_pe948115_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1337787_pe948114_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1337802_pe948129_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1372411_pe959433_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/lagan-integrated-dishwasher__1372412_pe959434_s5.jpg",
+      "heroHook": "LAGAN 라간 빌트인 식기세척기 60 cm.",
+      "description": [
+        "LAGAN 라간 빌트인 식기세척기 60 cm.",
+        "2년 품질보증을 제공합니다.",
+        "자세한 내용은 품질보증서의 약관에서 확인하세요."
+      ],
+      "highlights": [
+        "주방가전",
+        "식기세척기",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "405.680.19"
+        },
+        {
+          "label": "대표 분류",
+          "value": "주방가전"
+        },
+        {
+          "label": "소재",
+          "value": "유리"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "폭",
+          "value": "59.8 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "55.5 cm"
+        },
+        {
+          "label": "높이",
+          "value": "82.0 cm"
+        },
+        {
+          "label": "최대 설치 높이",
+          "value": "90.0 cm"
+        },
+        {
+          "label": "최소 설치 높이",
+          "value": "82.0 cm"
+        },
+        {
+          "label": "코드 길이",
+          "value": "130.0 cm"
+        },
+        {
+          "label": "중량",
+          "value": "36 kg"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "평균 평점 - 기준으로 실제 리뷰 데이터 연결을 준비한 상태입니다.",
+      "reviewHighlights": [
+        {
+          "title": "리뷰 데이터 연결 준비",
+          "body": "이 상품도 동일한 리뷰 영역 구조를 사용하며, 후속 연동 시 실제 구매 리뷰로 교체할 수 있습니다.",
+          "rating": null,
+          "meta": "시스템 안내"
+        }
+      ]
+    },
+    "40164075": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/variera-pot-lid-organiser-stainless-steel__0626878_pe693056_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/variera-pot-lid-organiser-stainless-steel__1505000_ph205264_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/variera-pot-lid-organiser-stainless-steel__0867283_pe607180_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/variera-pot-lid-organiser-stainless-steel__1466073_ph196082_s5.jpg",
+      "heroHook": "VARIERA 바리에라 냄비뚜껑정리대 - 스테인리스.",
+      "description": [
+        "VARIERA 바리에라 냄비뚜껑정리대 - 스테인리스.",
+        "냄비 뚜껑을 정리된 상태로 유지하여 쉽게 찾을 수 있습니다.",
+        "크기에 맞춰서 길이를 조절할 수 있습니다."
+      ],
+      "highlights": [
+        "주방정리용품",
+        "현재 컬러: 그레이",
+        "서랍 정리 칸막이",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "401.640.75"
+        },
+        {
+          "label": "대표 분류",
+          "value": "주방정리용품"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        },
+        {
+          "label": "소재",
+          "value": "스테인리스"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "최소 길이",
+          "value": "8.5 cm"
+        },
+        {
+          "label": "최대 길이",
+          "value": "50 cm"
+        },
+        {
+          "label": "폭",
+          "value": "14.5 cm"
+        },
+        {
+          "label": "높이",
+          "value": "10 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "연마제 제거가 힘들어요",
+          "body": "후라이펜 관리용으로 샀는데 써도 되나요? ㅎㅎ 연마제 제거가 너무 빡세네여",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "이건 뭐 어디든 쓰기 좋아요",
+          "body": "냄비 뚜껑 말고 접시 정리하는데 이거 쓰고 있는데요 너비 조절이 되니까 활용도가 좋습니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "책상 정리용으로 사용중인데 의외의 발견입니다.",
+          "body": "쇠맛나는 스테인리스 소재로 책상 정리도 잘되고 주방용품인게 티가 안날정도로 디자인도 멋있습니다. 주방용으로 하나 더 살 것 같습니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "20586788": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1366882_pe957173_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1366884_pe957177_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1366886_pe957175_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1366885_pe957176_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1366883_pe957174_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/raskog-trolley-white__1521835_pe1013368_s5.jpg",
+      "heroHook": "RÅSKOG 로스코그 카트 - 화이트 35x45x77 cm.",
+      "description": [
+        "RÅSKOG 로스코그 카트 - 화이트 35x45x77 cm.",
+        "주방이나 추가 수납공간이 조금 더 필요한 곳이면 어디든 사용하기 좋으며, 좁은 공간에도 충분히 들어갈 정도로 작아요.",
+        "튼튼한 구조와 부드럽게 굴러가는 네 개의 바퀴 덕분에 카트를 간편하게 이동하고 정확하게 원하는 곳에 둘 수 있어요."
+      ],
+      "highlights": [
+        "주방 선반/카트",
+        "현재 컬러: 화이트",
+        "주방 카트/아일랜드",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "205.867.88"
+        },
+        {
+          "label": "대표 분류",
+          "value": "주방 선반/카트"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "높이",
+          "value": "77 cm"
+        },
+        {
+          "label": "길이",
+          "value": "35 cm"
+        },
+        {
+          "label": "층별 하중",
+          "value": "6 kg"
+        },
+        {
+          "label": "최대 하중",
+          "value": "18 kg"
+        },
+        {
+          "label": "폭",
+          "value": "45 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "트롤리",
+          "body": "조립이 쉽고 간편합니다. 유튜브에 조립 동영상이 있어서 참고하면 도움이 됩니다. 트롤리의 색상이나 재질도 마음에 들어요.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "카트",
+          "body": "사용하기 좋아요.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "편해요",
+          "body": "다용도실에 뒀는데 너무 튼튼해요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "90191934": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/idealisk-colander-stainless-steel-black__0713133_pe729277_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/idealisk-colander-stainless-steel-black__63111_pe170496_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/idealisk-colander-stainless-steel-black__0894766_pe607898_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/idealisk-colander-stainless-steel-black__0172232_pe304487_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/idealisk-colander-stainless-steel-black__0379136_ph125512_s5.jpg",
+      "heroHook": "IDEALISK 이데알리스크 콜랜더 - 스테인리스/블랙 34x23 cm.",
+      "description": [
+        "IDEALISK 이데알리스크 콜랜더 - 스테인리스/블랙 34x23 cm.",
+        "손잡이를 조절할 수 있어서 대부분의 싱크대에서 사용할 수 있습니다.",
+        "플라스틱 커버 손잡이를 이용하여 싱크볼 가장자리에 안정적으로 걸어둘 수 있어요."
+      ],
+      "highlights": [
+        "주방도구",
+        "현재 컬러: 그레이",
+        "체 / 채반",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "901.919.34"
+        },
+        {
+          "label": "대표 분류",
+          "value": "주방도구"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        },
+        {
+          "label": "소재",
+          "value": "스테인리스"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "길이",
+          "value": "34 cm"
+        },
+        {
+          "label": "폭",
+          "value": "23 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "비추천",
+          "body": "사용하기 편하나 테두리에서 녹물이 흘러나와요",
+          "rating": 2.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "좋아요.",
+          "body": "실물이.더이쁘고.길이조전되서넘.좋아요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "이데알리스크 리뷰",
+          "body": "비슷한 제품들 사서 써봤는데 오히려 싱크대에 걸리적거려 사용을 안하게 되었는데 이 제품은 디자인이 긴가민가 하다가 사서 사용해보니 활용도가 높고 싱크대에서 걸리적 거리지 않네요.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "60484330": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1006151_pe825738_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1060289_pe849964_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1061266_pe850392_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1062091_pe850656_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1061267_pe850393_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-cookware-set-of-6-stainless-steel__1397296_pe967517_s5.jpg"
+      ],
+      "dimensionImage": null,
+      "heroHook": "IKEA 365+ 이케아 365+ 조리용품6종 - 스테인리스.",
+      "description": [
+        "IKEA 365+ 이케아 365+ 조리용품6종 - 스테인리스.",
+        "인덕션레인지를 비롯한 모든 유형의 레인지에서 사용할 수 있습니다.",
+        "냄비 손잡이는 열전도율을 줄이도록 설계되었어요."
+      ],
+      "highlights": [
+        "냄비/팬",
+        "현재 컬러: 그레이",
+        "조리용품세트",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "604.843.30"
+        },
+        {
+          "label": "대표 분류",
+          "value": "냄비/팬"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        },
+        {
+          "label": "소재",
+          "value": "스테인리스"
+        }
+      ],
+      "measurements": [],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "마음에 들어요",
+          "body": "이런 제품 찾고 싶었는데 .....디자인 예뻐요",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "재질 정보가 없네요",
+          "body": "할인한다고 해서 구매 넣고 사용중인데 304인지 316인지, 아님 그 아랫등급인지 설명이 없네요 그래서인지 괜스레 더 신경쓰이게 봐서 그런가 뭔가 더 잘 눌러붙는거 같고 그러네요",
+          "rating": 3.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "사용하기 좋아요",
+          "body": "많이 무겁지않아 사용하기편리해요 연마제도 생각보단 많이나오지않았어요 물도 빨리끓고 뚜껑세척후 물얼룩이 좀 남아요",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "90287936": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-vegetable-knife-stainless-steel__0710389_pe727517_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-vegetable-knife-stainless-steel__0333884_pe523344_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-vegetable-knife-stainless-steel__0333885_pe523345_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-vegetable-knife-stainless-steel__0333886_pe523346_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/ikea-365-vegetable-knife-stainless-steel__0378902_ph124582_s5.jpg",
+      "heroHook": "IKEA 365+ 이케아 365+ 채소칼 - 스테인리스 16 cm.",
+      "description": [
+        "IKEA 365+ 이케아 365+ 채소칼 - 스테인리스 16 cm.",
+        "칼날에 홈이 파여 있고 잘라지는 단면으로 공기가 순환되기 때문에 음식이 칼날에 달라붙지 않습니다.",
+        "스테인리스스틸 소재를 사용하여 내구성이 뛰어나고 안정적이며 쉽게 잘 닦입니다."
+      ],
+      "highlights": [
+        "도마/주방칼",
+        "현재 컬러: 그레이",
+        "칼",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "902.879.36"
+        },
+        {
+          "label": "대표 분류",
+          "value": "도마/주방칼"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        },
+        {
+          "label": "소재",
+          "value": "스테인리스"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "칼날 길이",
+          "value": "16 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "너무 무거워요",
+          "body": "기존에서 올스탠 칼을 사용하는데 하나더 구입하려고 샀는데 잘 손이 안가네요 제 기준너무 무거워요 그러고 케이스에서 분리하는것도 좀 힘듦니다 . 케이스가 너무 단단해서 자르기 쉽지 않고 딱맞아서 빼기 쉽지않았어요",
+          "rating": 2.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "좋아요",
+          "body": "오래 동안 잘 사용 할게요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "이쁘고 성능 좋아요",
+          "body": "일체형이라 위생적이고 세척 편하고 디자인 매끈하니 이쁘고 잘 들어요 진작 살걸 정말 잘 들어서 손목 힘 안들이고 슥슥 하니까 수박 한 손으로 썰렸어요 채소칼 16CM샀는데 육류나 생선 손질은 안해서 이거면 딱 다루기 편하고 충분한 거 같아요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "90278362": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__0712435_pe728848_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__0334205_pe523529_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__1432410_pe982799_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__1432373_pe982795_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__1432409_pe982800_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/ikea-365-goblet-clear-glass__0374973_ph123897_s5.jpg",
+      "heroHook": "IKEA 365+ 이케아 365+ 고블렛 - 유리 30 cl.",
+      "description": [
+        "IKEA 365+ 이케아 365+ 고블렛 - 유리 30 cl.",
+        "뜨거운 음료에도 사용할 수 있습니다.",
+        "위쪽이 넓은 디자인으로 맛있는 디저트를 예쁘게 담아서 대접할 수 있습니다."
+      ],
+      "highlights": [
+        "유리컵",
+        "현재 컬러: 화이트",
+        "유리잔 / 물컵",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "902.783.62"
+        },
+        {
+          "label": "대표 분류",
+          "value": "유리컵"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        },
+        {
+          "label": "소재",
+          "value": "유리"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "높이",
+          "value": "12 cm"
+        },
+        {
+          "label": "부피",
+          "value": "30 cl"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "가볍고 좋아요",
+          "body": "무거울 줄 알았는데 의외로 가벼워 1차놀람 메이드인프랑스에 2차놀람ㅋㅋ",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "예쁨",
+          "body": "음료가 더 맛있는듯 ㅎ 요거트나 아이스 먹기도 예뻐요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "생각보다 커요",
+          "body": "꼼꼼한 포장과 함께 잘 받았어요 생각보다 크고 잘 사용하게 될 듯 합니다",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "50573322": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/grasellack-2-piece-cutlery-set__1271588_pe929507_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/grasellack-2-piece-cutlery-set__1271585_pe929506_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/grasellack-2-piece-cutlery-set__1271586_pe929509_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/grasellack-2-piece-cutlery-set__1271587_pe929508_s5.jpg"
+      ],
+      "dimensionImage": null,
+      "heroHook": "GRÅSELLACK 그로셀라크 식기도구2종.",
+      "description": [
+        "GRÅSELLACK 그로셀라크 식기도구2종.",
+        "스테인리스 스틸로 만들어 내구성이 우수하고 세척하기 쉽습니다.",
+        "깔끔한 디자인의 식기도구로, 다양한 상차림에 잘 어울립니다."
+      ],
+      "highlights": [
+        "수저/커트러리",
+        "현재 컬러: 그레이",
+        "식기도구 세트",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "505.733.22"
+        },
+        {
+          "label": "대표 분류",
+          "value": "수저/커트러리"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        },
+        {
+          "label": "소재",
+          "value": "스테인리스"
+        }
+      ],
+      "measurements": [],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "반짝반짝 가벼운 식기",
+          "body": "가볍고 좋습니다.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "일부 제품에서 검은색물이 계속나옴",
+          "body": "구매직후 확인바람",
+          "rating": 1.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "이가격에 넘좋아요",
+          "body": "더샀을껄 후회되게 좋네요 가볍고 젓가락은 사각형태라 내려둿을때 굴러가지않아서 좋아요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "80586356": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/fejka-artificial-potted-plant-with-pot-in-outdoor-lavender__1342007_pe948967_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/fejka-artificial-potted-plant-with-pot-in-outdoor-lavender__1389369_pe965193_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/fejka-artificial-potted-plant-with-pot-in-outdoor-lavender__1342006_pe948966_s5.jpg",
+      "heroHook": "FEJKA 페이카 인조식물+화분 - 실내외겸용 라벤더.",
+      "description": [
+        "FEJKA 페이카 인조식물+화분 - 실내외겸용 라벤더.",
+        "실물처럼 보이는 인조식물로 오랫동안 산뜻하게 사용할 수 있습니다.",
+        "진짜 식물은 아니지만 언제든지 자연의 아름다움을 느낄 수 있습니다."
+      ],
+      "highlights": [
+        "식물/조화",
+        "현재 컬러: 그린",
+        "인조탁상플랜트",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "805.863.56"
+        },
+        {
+          "label": "대표 분류",
+          "value": "식물/조화"
+        },
+        {
+          "label": "컬러",
+          "value": "그린"
+        },
+        {
+          "label": "소재",
+          "value": "플라스틱"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "폭",
+          "value": "35 cm"
+        },
+        {
+          "label": "높이",
+          "value": "42 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "Fejka",
+          "body": "질리지 않는 바이올렛 &amp; 한국 기준 이국적 식물 느낌 굿",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "60334128": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0638860_pe699222_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0768629_pe754507_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0684707_ph142793_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0811072_pe771564_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0684704_ph143327_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0899418_pe724767_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0899171_pe639172_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/bintje-plant-pot-galvanised__0899175_pe639174_s5.jpg",
+      "heroHook": "BINTJE 빈셰 화분 - 아연도금 9 cm.",
+      "description": [
+        "BINTJE 빈셰 화분 - 아연도금 9 cm.",
+        "아연도금이 되어 있어서 잘 부식되지 않습니다.",
+        "식물과 화분을 이용하여 나만의 스타일로 집을 꾸며보세요."
+      ],
+      "highlights": [
+        "화분",
+        "현재 컬러: 그레이",
+        "실내용화분",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "603.341.28"
+        },
+        {
+          "label": "대표 분류",
+          "value": "화분"
+        },
+        {
+          "label": "컬러",
+          "value": "그레이"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "높이",
+          "value": "10 cm"
+        },
+        {
+          "label": "외부 지름",
+          "value": "11 cm"
+        },
+        {
+          "label": "식물최대지름",
+          "value": "9 cm"
+        },
+        {
+          "label": "내부 지름",
+          "value": "10 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "빈셰 화분",
+          "body": "빈셰 화분 잘 사용하고 있어요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "리모콘 보관용도로 사용",
+          "body": "**폰 자석거치용을 밑에 대고 리모콘 보관용으로 사용중입니다. 쇠테리어 소형협탁에 붙여두고 사용하는 중인데~ 나름 유용한 듯",
+          "rating": 4.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "잘 사용하고 있어요",
+          "body": "잘 사용하고 있어요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "50612007": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/olivblad-plant-stand-in-outdoor-off-white__1461686_pe994224_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/olivblad-plant-stand-in-outdoor-off-white__1469328_pe996601_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/olivblad-plant-stand-in-outdoor-off-white__1469326_pe996600_s5.jpg",
+      "heroHook": "OLIVBLAD 올리브블라드 화분스탠드 - 실내외겸용/오프화이트 58 cm.",
+      "description": [
+        "OLIVBLAD 올리브블라드 화분스탠드 - 실내외겸용/오프화이트 58 cm.",
+        "화분스탠드로 화초를 더 예쁘게 꾸밀 수 있고 허전한 공간에 색을 더하고 초록의 생기가 넘치도록 바꿀 수 있어요.",
+        "화분스탠드는 작은 화초의 키를 높여 산뜻한 느낌을 연출해줍니다."
+      ],
+      "highlights": [
+        "화분스탠드",
+        "현재 컬러: 화이트",
+        "화분스탠드",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "506.120.07"
+        },
+        {
+          "label": "대표 분류",
+          "value": "화분스탠드"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "높이",
+          "value": "58 cm"
+        },
+        {
+          "label": "지름",
+          "value": "45 cm"
+        },
+        {
+          "label": "최대 하중",
+          "value": "25 kg"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "평균 평점 5.0 기준으로 실제 리뷰 데이터 연결을 준비한 상태입니다.",
+      "reviewHighlights": [
+        {
+          "title": "리뷰 데이터 연결 준비",
+          "body": "이 상품도 동일한 리뷰 영역 구조를 사용하며, 후속 연동 시 실제 구매 리뷰로 교체할 수 있습니다.",
+          "rating": 5.0,
+          "meta": "시스템 안내"
+        }
+      ]
+    },
+    "10537171": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1122670_pe874640_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1176982_pe895190_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1176980_pe895192_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1176981_pe895191_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1176979_pe895189_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1176978_pe895188_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1166829_pe891289_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1357160_pe953473_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/akerbaer-greenhouse-in-outdoor-white__1538043_ph207426_s5.jpg",
+      "heroHook": "ÅKERBÄR 오케르베르 온실 - 실내외겸용/화이트 45 cm.",
+      "description": [
+        "ÅKERBÄR 오케르베르 온실 - 실내외겸용/화이트 45 cm.",
+        "새싹이 자라나기 좋은 환경을 제공합니다.",
+        "온실 앞면을 한 손으로 열 수 있어 화초를 쉽게 만지고 관리할 수 있어요."
+      ],
+      "highlights": [
+        "원예용품",
+        "현재 컬러: 화이트",
+        "원예용품",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "105.371.71"
+        },
+        {
+          "label": "대표 분류",
+          "value": "원예용품"
+        },
+        {
+          "label": "컬러",
+          "value": "화이트"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "폭",
+          "value": "45 cm"
+        },
+        {
+          "label": "깊이",
+          "value": "22 cm"
+        },
+        {
+          "label": "높이",
+          "value": "35 cm"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "화장품 정리",
+          "body": "화장품 정리 용도로 잘 쓰고 있다고 후기 적으려고보니 이미 그렇게 사용하시는 분들이 많은 것 같네요 ㅎㅎ 높이도 높아서 브러쉬 정리 하기에도 좋아요",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "화장품 수납함으로 딱이예요.",
+          "body": "바디로션이나 스프레이같은 길쭉한 제품도 싹 수납되고 여닫기 편하고 먼지안타고 화장품 수납함으로 넘 잘쓰고 있어요.",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "화장대 위 수납",
+          "body": "화장품에 먼지 쌓이는게 싫어서 쓸만한걸 찾던 중 매장구경하다가 발견했네요 아주 잘 쓰고 있어서 온라인으로 하나 더 주문합니다",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    },
+    "90394154": {
+      "galleryImages": [
+        "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__0614222_pe686847_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__0901102_pe687035_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__0684709_ph152715_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__0684710_ph153736_s5.jpg",
+        "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__0901099_pe686846_s5.jpg"
+      ],
+      "dimensionImage": "https://www.ikea.com/kr/ko/images/products/vattenkrasse-watering-can-ivory-gold-colour__1095040_pe863700_s5.jpg",
+      "heroHook": "VATTENKRASSE 바텡크라세 물뿌리개 - 아이보리/골드 0.9 l.",
+      "description": [
+        "VATTENKRASSE 바텡크라세 물뿌리개 - 아이보리/골드 0.9 l.",
+        "실용적일 뿐 아니라 멋진 디자인까지 갖춘 물뿌리개입니다.",
+        "놀랍고 재미있는 장식으로 모두의 눈길을 사로잡아보세요."
+      ],
+      "highlights": [
+        "물뿌리개",
+        "현재 컬러: 베이지",
+        "물뿌리개",
+        "IKEA 공식 상세 기준 최소 정보"
+      ],
+      "quickFacts": [
+        {
+          "label": "제품 번호",
+          "value": "903.941.54"
+        },
+        {
+          "label": "대표 분류",
+          "value": "물뿌리개"
+        },
+        {
+          "label": "컬러",
+          "value": "베이지"
+        }
+      ],
+      "measurements": [
+        {
+          "label": "높이",
+          "value": "16 cm"
+        },
+        {
+          "label": "부피",
+          "value": "0.9 l"
+        }
+      ],
+      "dimensionCaption": "배치 전에 확인할 수 있도록 주요 치수만 먼저 정리했습니다.",
+      "reviewIntro": "대표 구매자 후기에서 먼저 보이는 반응만 최소한으로 정리했습니다.",
+      "reviewHighlights": [
+        {
+          "title": "디자인 좋음",
+          "body": "디자인과 기능성이 좋음",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "물뿌리개가 녹이 쓸어요",
+          "body": "물뿌리개를 사용하고 나면 자연스럽게 안에 물이 몇 방울 남게 마련인데 바로 샛노랗게 녹이 슬어요. 물뿌리개에 녹이 쓴다는 사실이 너무 어이 없습니다. 장식용인가봐요.",
+          "rating": 1.0,
+          "meta": "인증된 구매자"
+        },
+        {
+          "title": "예뻐요",
+          "body": "디자인 예쁘고 편리합니다",
+          "rating": 5.0,
+          "meta": "인증된 구매자"
+        }
+      ]
+    }
+  }
+}
