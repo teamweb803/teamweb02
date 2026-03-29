@@ -19,6 +19,10 @@ public class OrderResponseDto {
 
     private Integer totalPrice;
 
+    private Integer finalPrice;
+
+    private String orderNo;
+
     private String payment;
 
     private String address;
@@ -29,7 +33,8 @@ public class OrderResponseDto {
         this.orderId = order.getOrderId();
         this.orderStatus = order.getOrderStatus();
         this.totalPrice = order.getTotalPrice();
-        this.payment = order.getPayment();
+        this.finalPrice = order.getFinalPrice();
+        this.orderNo = order.getOrderNo();
         this.address = order.getAddress();
         this.orderItems = order.getOrderItemList().stream()
                 .map(OrderItemDto::new)

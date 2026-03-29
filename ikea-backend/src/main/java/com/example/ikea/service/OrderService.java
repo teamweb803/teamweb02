@@ -9,7 +9,10 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Transactional(readOnly = true)
@@ -53,12 +56,19 @@ public class OrderService {
                 .mapToInt(cp -> cp.getProduct().getPrice() * cp.getQuantity())
                 .sum();
 
+        //주문번호 자동 생성 코드
+        String orderNo = "ORDER_"
+                + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                + "_" + UUID.randomUUID().toString().substring(0, 8);
+
+
         //주문 생성
         Order order = Order.builder()
                 .member(member)
-                .orderStatus(OrderStatus.ORDERED)
+                .orderNo(orderNo)
+                .orderStatus(OrderStatus.PENDING)
                 .totalPrice(totalPrice)
-                .payment(dto.getPayment())
+                .finalPrice(totalPrice)
                 .address(dto.getAddress())
                 .build();
 

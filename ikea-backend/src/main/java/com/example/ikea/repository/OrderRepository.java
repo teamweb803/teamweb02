@@ -6,6 +6,7 @@ import org.aspectj.weaver.ast.Or;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
@@ -14,4 +15,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     //상태별 주문 목록 (관리자 판매 관리)
     List<Order> findByOrderStatus(OrderStatus status);
+
+    // 토스/카카오에서 orderNo로 조회
+    Optional<Order> findByOrderNo(String orderNo);
 }

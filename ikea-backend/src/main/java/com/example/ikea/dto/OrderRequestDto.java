@@ -8,9 +8,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class OrderRequestDto {
 
-    @NotBlank(message = "결제 수단을 선택해주세요")
-    private String payment;
-
     @NotBlank(message = "주소는 필수 입력")
     private String address;
 

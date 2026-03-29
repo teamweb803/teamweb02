@@ -1,2 +1,9 @@
 jwt:
   secret: ikea-shopping-mall-secret-key-2026-spring-boot
+
+payment:
+  toss:
+    secret-key: test_sk_여기에실제키입력
+    client-key: test_ck_여기에실제키입력
+  kakao:
+    admin-key: 여기에실제키입력
