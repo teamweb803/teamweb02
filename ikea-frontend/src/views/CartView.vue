@@ -1,0 +1,942 @@
+<script setup>
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import SiteChrome from '../components/layout/SiteChrome.vue';
+import { useCommerceCart } from '../composables/useCommerceCart';
+import { useCartViewState } from '../composables/useCartViewState';
+import { ROUTE_PATHS } from '../constants/routes';
+
+const router = useRouter();
+const noticeVisible = ref(true);
+const showShippingGuideModal = ref(false);
+const shippingGuideTitle = ref('');
+const shippingGuideBody = ref('');
+
+const {
+  cartItems,
+  selectedItems,
+  allSelected,
+  recommendations,
+  updateQuantity,
+  removeItem,
+  removeSelected,
+} = useCommerceCart();
+
+onMounted(() => {
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+});
+
+const {
+  discountTotal,
+  finalTotal,
+  formatPrice,
+  goToCheckout,
+  productTotal,
+  recommendProducts,
+  shippingTotal,
+} = useCartViewState(router, ROUTE_PATHS.orderCheckout, selectedItems, recommendations);
+
+function _formatPriceLegacy(value) {
+  return `${Number(value ?? 0).toLocaleString('ko-KR')}원`;
+}
+
+function _goToCheckoutLegacy(mode = 'all', itemId = '') {
+  const query = { mode };
+
+  if (itemId) {
+    query.itemId = itemId;
+  }
+
+  router.push({
+    path: ROUTE_PATHS.orderCheckout,
+    query,
+  });
+}
+
+function openShippingGuide(title, body) {
+  shippingGuideTitle.value = title || '배송 안내';
+  shippingGuideBody.value = body || '결제 단계에서 배송 일정과 추가 비용을 다시 확인할 수 있습니다.';
+  showShippingGuideModal.value = true;
+}
+
+function closeShippingGuide() {
+  showShippingGuideModal.value = false;
+}
+</script>
+
+<template>
+  <SiteChrome>
+    <main class="cart-page">
+      <div class="cart-page__inner">
+        <nav class="cart-breadcrumb" aria-label="breadcrumb">
+          <RouterLink to="/" class="cart-breadcrumb__home" aria-label="홈으로 이동">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M4 10.5L12 4L20 10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M7 9.8V19H17V9.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </RouterLink>
+          <span>&gt;</span>
+          <span>장바구니</span>
+        </nav>
+
+        <section class="cart-section">
+          <div class="cart-section__title-row">
+            <h1>장바구니 ({{ cartItems.length }})</h1>
+          </div>
+
+          <div v-if="noticeVisible" class="cart-notice">
+            <span>선택한 상품 기준으로 배송 조건과 결제 금액을 먼저 확인할 수 있습니다.</span>
+            <button type="button" aria-label="안내 닫기" @click="noticeVisible = false">×</button>
+          </div>
+
+          <div class="cart-table">
+            <div class="cart-table__head">
+              <label class="cart-check cart-table__check">
+                <input v-model="allSelected" type="checkbox" />
+              </label>
+              <span class="cart-table__thumb-placeholder" aria-hidden="true"></span>
+              <span class="cart-table__info-col">상품정보</span>
+              <span>수량</span>
+              <span>상품금액</span>
+              <span>배송정보</span>
+              <span>주문하기</span>
+            </div>
+
+            <template v-if="cartItems.length">
+              <div class="cart-delivery-row">
+                <label class="cart-check cart-table__check">
+                  <input v-model="allSelected" type="checkbox" />
+                </label>
+                <div class="cart-table__thumb-placeholder" aria-hidden="true"></div>
+                <div class="cart-delivery-row__copy">
+                  <strong>HOMiO 배송 묶음</strong>
+                  <span>선택한 상품 기준으로 배송 일정과 배송비를 확인합니다.</span>
+                </div>
+              </div>
+
+              <article v-for="item in cartItems" :key="item.id" class="cart-item">
+                <div class="cart-item__select">
+                  <label class="cart-check">
+                    <input v-model="item.selected" type="checkbox" />
+                  </label>
+                </div>
+
+                <RouterLink :to="item.detailPath" class="cart-item__thumb-link">
+                  <img :src="item.image" :alt="item.name" />
+                </RouterLink>
+
+                <div class="cart-item__copy">
+                  <div class="cart-item__brand-line">
+                    <strong>{{ item.brand }}</strong>
+                    <span>{{ item.seller }}</span>
+                  </div>
+
+                  <h2>
+                    <RouterLink :to="item.detailPath" class="cart-item__title-link">
+                      {{ item.name }}
+                    </RouterLink>
+                  </h2>
+                  <p>{{ item.option }}</p>
+                </div>
+
+                <div class="cart-item__qty">
+                  <div class="qty-stepper">
+                    <button type="button" aria-label="수량 감소" @click="updateQuantity(item.id, -1)">−</button>
+                    <span>{{ item.quantity }}</span>
+                    <button type="button" aria-label="수량 증가" @click="updateQuantity(item.id, 1)">+</button>
+                  </div>
+                </div>
+
+                <div class="cart-item__price">
+                  <strong>{{ formatPrice(item.price * item.quantity) }}</strong>
+                  <span v-if="(item.originalPrice ?? item.price) > item.price">
+                    {{ formatPrice((item.originalPrice ?? item.price) * item.quantity) }}
+                  </span>
+                </div>
+
+                <div class="cart-item__shipping">
+                  <button
+                    class="cart-shipping-trigger"
+                    type="button"
+                    @click="openShippingGuide(item.shippingText, item.shippingSubText)"
+                  >
+                    {{ item.shippingText }}
+                  </button>
+                  <p>{{ item.shippingSubText }}</p>
+                </div>
+
+                <div class="cart-item__actions">
+                  <button class="cart-item__order-btn" type="button" @click="goToCheckout('single', item.productId)">바로주문</button>
+                  <button class="cart-item__wish-btn" type="button">찜</button>
+                  <button class="cart-item__remove-btn" type="button" @click="removeItem(item.id)">삭제</button>
+                </div>
+              </article>
+            </template>
+
+            <div v-else class="cart-empty">장바구니에 담긴 상품이 없습니다.</div>
+          </div>
+
+          <div class="cart-actions-row">
+            <button class="cart-delete-btn" type="button" @click="removeSelected">선택상품 삭제</button>
+          </div>
+
+          <ul class="cart-policy-list">
+            <li>수량을 조정하면 장바구니에서 바로 금액이 반영됩니다.</li>
+            <li>배송비와 설치 조건은 상품 유형과 배송지에 따라 결제 단계에서 다시 확인됩니다.</li>
+            <li>선택 주문과 전체 주문은 현재 장바구니 상태를 기준으로 결제 페이지에 반영됩니다.</li>
+          </ul>
+
+          <section class="cart-summary">
+            <div class="cart-summary__totals">
+              <article>
+                <p>총 상품금액</p>
+                <strong>{{ formatPrice(productTotal) }}</strong>
+              </article>
+              <span class="cart-summary__symbol">−</span>
+              <article>
+                <p>총 할인금액</p>
+                <strong>{{ formatPrice(discountTotal) }}</strong>
+              </article>
+              <span class="cart-summary__symbol">+</span>
+              <article>
+                <p>총 배송비</p>
+                <strong>{{ formatPrice(shippingTotal) }}</strong>
+              </article>
+              <span class="cart-summary__symbol">=</span>
+              <article class="is-accent">
+                <p>총 결제예정금액</p>
+                <strong>{{ formatPrice(finalTotal) }}</strong>
+              </article>
+            </div>
+
+            <div class="cart-summary__detail">
+              <div>
+                <p>상품금액</p>
+                <strong>{{ formatPrice(productTotal) }}</strong>
+              </div>
+              <div>
+                <p>상품할인</p>
+                <strong>{{ formatPrice(discountTotal) }}</strong>
+              </div>
+              <div>
+                <p>배송비</p>
+                <strong>{{ formatPrice(shippingTotal) }}</strong>
+              </div>
+            </div>
+
+            <div class="cart-summary__notes">
+              <p>* 배송비가 미정인 상품은 결제 단계에서 지역과 설치 조건에 따라 다시 계산됩니다.</p>
+              <p>* 현재 합계는 선택된 상품 기준이며, 실제 주문 시점의 혜택 적용 여부에 따라 달라질 수 있습니다.</p>
+            </div>
+
+            <div class="cart-summary__buttons">
+              <button type="button" @click="goToCheckout('selected')">선택 상품 주문</button>
+              <button class="is-dark" type="button" @click="goToCheckout('all')">전체 상품 주문</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="cart-recommend">
+          <div class="cart-recommend__head">
+            <h2>장바구니와 함께 보면 좋은 상품</h2>
+          </div>
+
+          <div class="cart-recommend__grid">
+            <article v-for="item in recommendProducts" :key="item.id" class="recommend-card">
+              <RouterLink :to="item.detailPath" class="recommend-card__link">
+                <div class="recommend-card__image-wrap">
+                  <span class="recommend-card__badge">{{ item.badge }}</span>
+                  <img :src="item.image" :alt="item.title" />
+                </div>
+                <p>{{ item.brand }}</p>
+                <h3>{{ item.title }}</h3>
+                <div class="recommend-card__price">
+                  <span v-if="item.originalPrice > item.price">{{ formatPrice(item.originalPrice) }}</span>
+                  <strong>{{ formatPrice(item.price) }}</strong>
+                </div>
+              </RouterLink>
+            </article>
+          </div>
+        </section>
+
+        <section class="cart-guide">
+          <h2>장바구니 이용안내</h2>
+          <ul>
+            <li>상품 상세에서 확인한 이미지와 옵션 정보가 같은 기준으로 장바구니에 이어집니다.</li>
+            <li>선택한 상품만 주문하거나 전체 상품을 한 번에 결제할 수 있습니다.</li>
+            <li>배송지와 결제수단 설정은 주문서작성 화면에서 이어서 확인할 수 있습니다.</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <Teleport to="body">
+      <div v-if="showShippingGuideModal" class="cart-modal-overlay" @click.self="closeShippingGuide">
+        <section class="cart-modal" role="dialog" aria-modal="true" aria-label="배송 안내">
+          <button class="cart-modal__close" type="button" aria-label="닫기" @click="closeShippingGuide">×</button>
+          <h2>{{ shippingGuideTitle }}</h2>
+          <div class="cart-modal__divider"></div>
+          <p>{{ shippingGuideBody }}</p>
+          <ul>
+            <li>배송 일정과 추가 비용은 주문서작성 단계에서 주소와 설치 환경을 기준으로 다시 계산됩니다.</li>
+            <li>대형 가구와 설치 상품은 현장 여건에 따라 추가 안내가 발생할 수 있습니다.</li>
+          </ul>
+          <button class="cart-modal__confirm" type="button" @click="closeShippingGuide">확인</button>
+        </section>
+      </div>
+    </Teleport>
+  </SiteChrome>
+</template>
+
+<style scoped>
+.cart-page {
+  padding: 28px 0 88px;
+  background: #ffffff;
+}
+
+.cart-page__inner {
+  width: min(1280px, calc(100% - 40px));
+  margin: 0 auto;
+  display: grid;
+  gap: 48px;
+}
+
+.cart-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #8f8f8f;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.cart-breadcrumb__home {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  color: #8f8f8f;
+}
+
+.cart-breadcrumb__home svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cart-section,
+.cart-recommend,
+.cart-guide {
+  display: grid;
+  gap: 22px;
+}
+
+.cart-section__title-row h1,
+.cart-recommend h2,
+.cart-guide h2 {
+  margin: 0;
+  color: #111111;
+  letter-spacing: -0.04em;
+}
+
+.cart-section__title-row h1 {
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.cart-recommend h2,
+.cart-guide h2 {
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.cart-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  background: #f7f9fb;
+  border: 1px solid #d9e2ec;
+  color: #111827;
+  font-size: 15px;
+}
+
+.cart-notice button {
+  border: 0;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.cart-table {
+  border-top: 2px solid #111111;
+}
+
+.cart-table__head,
+.cart-delivery-row,
+.cart-item {
+  display: grid;
+  grid-template-columns: 56px 136px minmax(0, 1fr) 132px 160px 188px 124px;
+  align-items: center;
+}
+
+.cart-table__head {
+  min-height: 58px;
+  border-bottom: 1px solid #d8dde5;
+  color: #555555;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cart-table__head > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-table__info-col {
+  justify-content: flex-start !important;
+}
+
+.cart-delivery-row {
+  min-height: 72px;
+  border-bottom: 1px solid #d8dde5;
+}
+
+.cart-delivery-row__copy {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+}
+
+.cart-delivery-row__copy strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.cart-delivery-row__copy span {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cart-table__check,
+.cart-item__select {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.cart-table__thumb-placeholder {
+  display: block;
+  width: 136px;
+  height: 1px;
+}
+
+.cart-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #111111;
+}
+
+.cart-item {
+  min-height: 176px;
+  padding: 24px 0;
+  border-bottom: 1px solid #eceff3;
+}
+
+.cart-item__thumb-link {
+  display: block;
+}
+
+.cart-item__thumb-link img {
+  display: block;
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  background: #ffffff;
+}
+
+.cart-item__copy {
+  display: grid;
+  gap: 10px;
+  padding-right: 20px;
+}
+
+.cart-item__brand-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.cart-item__brand-line strong {
+  color: #111827;
+}
+
+.cart-item__copy h2 {
+  margin: 0;
+}
+
+.cart-item__title-link {
+  color: #111827;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.cart-item__copy p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.cart-item__qty,
+.cart-item__price,
+.cart-item__shipping,
+.cart-item__actions {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 12px;
+}
+
+.qty-stepper {
+  display: inline-grid;
+  grid-template-columns: 36px 44px 36px;
+  align-items: center;
+  height: 38px;
+  border: 1px solid #d8dde5;
+  background: #ffffff;
+}
+
+.qty-stepper button {
+  border: 0;
+  background: #ffffff;
+  height: 100%;
+  color: #111111;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.qty-stepper span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-left: 1px solid #d8dde5;
+  border-right: 1px solid #d8dde5;
+}
+
+.cart-item__price strong {
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+  color: #111111;
+}
+
+.cart-item__price span {
+  color: #9ca3af;
+  font-size: 13px;
+  text-decoration: line-through;
+}
+
+.cart-item__shipping {
+  text-align: center;
+}
+
+.cart-shipping-trigger,
+.cart-shipping-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cart-shipping-trigger {
+  color: #0058a3;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cart-item__shipping p {
+  margin: 0;
+  color: #6b7280;
+  white-space: pre-line;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cart-shipping-link {
+  color: #4b5563;
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+.cart-item__actions {
+  justify-items: stretch;
+}
+
+.cart-item__order-btn,
+.cart-summary__buttons button,
+.cart-modal__confirm {
+  min-height: 46px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cart-item__order-btn,
+.cart-summary__buttons .is-dark,
+.cart-modal__confirm {
+  width: 100%;
+  border: 1px solid #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.cart-item__wish-btn,
+.cart-delete-btn {
+  min-width: 92px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid #d8dde5;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+}
+
+.cart-item__wish-btn,
+.cart-summary__buttons button:not(.is-dark) {
+  border-radius: 999px;
+}
+
+.cart-item__remove-btn {
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.cart-empty {
+  padding: 48px 0;
+  text-align: center;
+  color: #6b7280;
+}
+
+.cart-actions-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.cart-policy-list,
+.cart-guide ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cart-summary {
+  display: grid;
+  gap: 24px;
+  padding-top: 28px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cart-summary__totals {
+  display: grid;
+  grid-template-columns: repeat(7, auto);
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.cart-summary__totals article {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.cart-summary__totals p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.cart-summary__totals strong {
+  font-size: 34px;
+  letter-spacing: -0.04em;
+  color: #111827;
+}
+
+.cart-summary__symbol {
+  color: #9ca3af;
+  font-size: 30px;
+}
+
+.cart-summary__detail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.cart-summary__detail div {
+  min-height: 120px;
+  padding: 20px 22px;
+  border: 1px solid #e5e7eb;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.cart-summary__detail p,
+.cart-summary__notes p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.cart-summary__detail strong {
+  font-size: 26px;
+  letter-spacing: -0.04em;
+}
+
+.cart-summary__notes {
+  display: grid;
+  gap: 8px;
+}
+
+.cart-summary__buttons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+}
+
+.cart-summary__buttons button {
+  flex: 0 0 248px;
+  width: 248px;
+  min-width: 248px;
+  min-height: 46px;
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+.cart-summary__buttons button:not(.is-dark) {
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid #d8dde5;
+  background: #ffffff;
+  color: #374151;
+}
+
+.cart-summary__buttons .is-dark {
+  width: 248px;
+}
+
+.cart-recommend__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.recommend-card__link {
+  display: grid;
+  gap: 14px;
+  color: inherit;
+}
+
+.recommend-card__image-wrap {
+  position: relative;
+  min-height: 220px;
+  border: 1px solid #eceff3;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recommend-card__image-wrap img {
+  width: 86%;
+  height: auto;
+  object-fit: contain;
+}
+
+.recommend-card__badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #364152;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recommend-card p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.recommend-card h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: -0.03em;
+}
+
+.recommend-card__price {
+  display: grid;
+  gap: 4px;
+}
+
+.recommend-card__price span {
+  color: #9ca3af;
+  font-size: 13px;
+  text-decoration: line-through;
+}
+
+.recommend-card__price strong {
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.cart-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.cart-modal {
+  position: relative;
+  width: min(520px, 100%);
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+  display: grid;
+  gap: 18px;
+}
+
+.cart-modal h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+}
+
+.cart-modal p,
+.cart-modal li {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.cart-modal ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.cart-modal__divider {
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.cart-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+@media (max-width: 1180px) {
+  .cart-table__head,
+  .cart-delivery-row,
+  .cart-item {
+    grid-template-columns: 44px 104px minmax(0, 1fr) 112px 132px 156px 112px;
+  }
+
+  .cart-item__thumb-link img {
+    width: 96px;
+    height: 96px;
+  }
+
+  .cart-recommend__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .cart-page__inner {
+    width: min(100%, calc(100% - 24px));
+    gap: 32px;
+  }
+
+  .cart-table__head {
+    display: none;
+  }
+
+  .cart-delivery-row,
+  .cart-item {
+    grid-template-columns: 32px 88px minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+  }
+
+  .cart-delivery-row {
+    padding: 18px 0;
+    min-height: 0;
+  }
+
+  .cart-item {
+    padding: 20px 0;
+  }
+
+  .cart-item__qty,
+  .cart-item__price,
+  .cart-item__shipping,
+  .cart-item__actions {
+    grid-column: 3;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .cart-item__shipping p {
+    text-align: left;
+  }
+
+  .cart-summary__totals {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .cart-summary__detail,
+  .cart-recommend__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-summary__buttons {
+    flex-direction: column;
+  }
+}
+</style>

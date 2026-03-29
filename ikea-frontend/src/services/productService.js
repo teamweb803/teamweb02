@@ -1,0 +1,41 @@
+import httpRequester from '../libs/httpRequester';
+import { getBackendCategoryId } from '../constants/routes';
+import {
+  getFallbackCatalogProductDetailContent,
+  getFallbackCatalogProductDetailSeed,
+  getFallbackCatalogProducts,
+} from './catalogFallbackService';
+
+export function getProductList() {
+  return httpRequester.get('/product');
+}
+
+export function getProductCategory(categoryId) {
+  return httpRequester.get(`/product/category/${categoryId}`);
+}
+
+export function getProductCategoryBySlug(categorySlug) {
+  return getProductCategory(getBackendCategoryId(categorySlug));
+}
+
+export function searchProducts(keyword) {
+  return httpRequester.get('/product/search', {
+    params: { keyword },
+  });
+}
+
+export function getProductDetail(productId) {
+  return httpRequester.get(`/product/${productId}`);
+}
+
+export function getFallbackProductList() {
+  return getFallbackCatalogProducts();
+}
+
+export function getFallbackProductDetailSeed(productId) {
+  return getFallbackCatalogProductDetailSeed(productId);
+}
+
+export function getFallbackProductDetailContent(product) {
+  return getFallbackCatalogProductDetailContent(product);
+}
