@@ -1,8 +1,11 @@
 <script setup>
+import AdminBreakdownBars from './AdminBreakdownBars.vue';
+import AdminCompletionCard from './AdminCompletionCard.vue';
 import AdminDonutChart from './AdminDonutChart.vue';
 import AdminLineChart from './AdminLineChart.vue';
 import AdminMetricCard from './AdminMetricCard.vue';
 import AdminPanel from './AdminPanel.vue';
+import AdminSegmentedBarChart from './AdminSegmentedBarChart.vue';
 
 defineProps({
   categoryChart: {
@@ -21,6 +24,10 @@ defineProps({
     type: Array,
     default: () => [],
   },
+  salesChart: {
+    type: Object,
+    required: true,
+  },
   statusChart: {
     type: Object,
     required: true,
@@ -34,10 +41,6 @@ defineProps({
     default: () => [],
   },
   supportChart: {
-    type: Object,
-    required: true,
-  },
-  salesChart: {
     type: Object,
     required: true,
   },
@@ -74,7 +77,7 @@ defineProps({
     </div>
 
     <div class="admin-overview-section__grid admin-overview-section__grid--charts">
-      <AdminPanel title="카테고리 판매 비중">
+      <AdminPanel title="카테고리 비중">
         <AdminDonutChart
           :chart="categoryChart"
           :legend-rows="Math.max((categoryChart.segments ?? []).length, (statusChart.segments ?? []).length)"
@@ -82,26 +85,17 @@ defineProps({
       </AdminPanel>
 
       <AdminPanel title="주문 상태">
-        <AdminDonutChart
-          :chart="statusChart"
-          :legend-rows="Math.max((categoryChart.segments ?? []).length, (statusChart.segments ?? []).length)"
-        />
+        <AdminSegmentedBarChart :chart="statusChart" />
       </AdminPanel>
     </div>
 
-    <div class="admin-overview-section__grid admin-overview-section__grid--donuts">
-      <AdminPanel title="결제수단 비중">
-        <AdminDonutChart
-          :chart="paymentChart"
-          :legend-rows="Math.max((paymentChart.segments ?? []).length, (supportChart.segments ?? []).length)"
-        />
+    <div class="admin-overview-section__grid admin-overview-section__grid--mixed">
+      <AdminPanel title="결제 수단 비중">
+        <AdminBreakdownBars :chart="paymentChart" />
       </AdminPanel>
 
       <AdminPanel title="문의 처리 현황">
-        <AdminDonutChart
-          :chart="supportChart"
-          :legend-rows="Math.max((paymentChart.segments ?? []).length, (supportChart.segments ?? []).length)"
-        />
+        <AdminCompletionCard :chart="supportChart" />
       </AdminPanel>
     </div>
 
@@ -122,7 +116,7 @@ defineProps({
         </div>
       </AdminPanel>
 
-      <AdminPanel title="검토 상품">
+      <AdminPanel title="주목 상품">
         <div class="admin-overview-section__watch-list">
           <RouterLink
             v-for="item in watchProducts.slice(0, 4)"
@@ -208,6 +202,25 @@ defineProps({
   width: 100%;
 }
 
+.admin-overview-section__grid--mixed {
+  align-items: stretch;
+}
+
+.admin-overview-section__grid--mixed :deep(.admin-panel) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.admin-overview-section__grid--mixed :deep(.admin-panel__body) {
+  display: flex;
+  flex: 1;
+}
+
+.admin-overview-section__grid--mixed :deep(.admin-panel__body > *) {
+  width: 100%;
+}
+
 .admin-overview-section__simple-list,
 .admin-overview-section__watch-list,
 .admin-overview-section__stock-list {
@@ -218,89 +231,68 @@ defineProps({
 .admin-overview-section__watch-row,
 .admin-overview-section__stock-row {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
   align-items: center;
-  min-height: 72px;
+  padding: 16px 0;
   border-bottom: 1px solid #efefef;
 }
 
-.admin-overview-section__simple-row:last-child,
-.admin-overview-section__watch-row:last-child,
-.admin-overview-section__stock-row:last-child {
-  border-bottom: 0;
-}
-
-.admin-overview-section__simple-row,
-.admin-overview-section__stock-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
 .admin-overview-section__watch-row {
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
   color: inherit;
   text-decoration: none;
 }
 
 .admin-overview-section__watch-row img {
-  width: 72px;
-  height: 72px;
-  object-fit: contain;
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
   border: 1px solid #efefef;
-  background: #ffffff;
+  background: #f8f8f8;
 }
 
-.admin-overview-section__copy strong {
-  display: block;
-  color: #111111;
-  font-size: 16px;
-  line-height: 1.45;
-  word-break: keep-all;
+.admin-overview-section__copy {
+  min-width: 0;
 }
 
 .admin-overview-section__copy span {
   display: block;
-  margin-top: 6px;
   color: #777777;
   font-size: 13px;
 }
 
-.admin-overview-section__simple-row b,
-.admin-overview-section__stock-row b {
+.admin-overview-section__copy strong {
+  display: block;
+  margin-top: 6px;
   color: #111111;
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.admin-overview-section__stock-row b,
+.admin-overview-section__simple-row b {
+  color: #111111;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .admin-overview-section__stock-row b.is-critical {
-  color: #c0392b;
+  color: #cf4a4a;
 }
 
 .admin-overview-section__stock-row b.is-warning {
-  color: #b57216;
+  color: #c87a12;
 }
 
 .admin-overview-section__stock-row b.is-stable {
-  color: #1c6b45;
+  color: #28663f;
 }
 
-@media (max-width: 1080px) {
-  .admin-overview-section__metrics,
-  .admin-overview-section__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .admin-overview-section__metrics,
   .admin-overview-section__grid {
     grid-template-columns: 1fr;
-  }
-
-  .admin-overview-section__simple-row,
-  .admin-overview-section__stock-row,
-  .admin-overview-section__watch-row {
-    grid-template-columns: 1fr;
-    padding: 14px 0;
   }
 }
 </style>

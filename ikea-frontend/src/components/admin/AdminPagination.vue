@@ -59,6 +59,7 @@ function moveTo(page) {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 20px;
 }

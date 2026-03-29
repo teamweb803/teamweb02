@@ -49,12 +49,14 @@ function handleKeydown(event) {
     <div class="hs-product-card__copy">
       <p>{{ item.brand }}</p>
       <h3>{{ item.title }}</h3>
-      <p class="hs-product-card__meta">{{ item.metaText }}</p>
-      <div class="hs-price">
-        <span v-if="item.discount" class="hs-price__discount">{{ item.discount }}</span>
-        <strong>{{ item.price }}</strong>
+      <div class="hs-product-card__price-block">
+        <span v-if="item.originalPrice" class="hs-price__original hs-price__original--top">{{ item.originalPrice }}</span>
+        <div class="hs-price">
+          <span v-if="item.discount" class="hs-price__discount">{{ item.discount }}</span>
+          <strong>{{ item.price }}</strong>
+        </div>
       </div>
-      <span v-if="item.originalPrice" class="hs-price__original">{{ item.originalPrice }}</span>
+      <p class="hs-product-card__meta">{{ item.metaText }}</p>
     </div>
   </article>
 </template>
@@ -111,7 +113,12 @@ function handleKeydown(event) {
 
 .hs-product-card__copy {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+}
+
+.hs-product-card__price-block {
+  display: grid;
+  gap: 4px;
 }
 
 .hs-product-card__copy p {
@@ -156,5 +163,10 @@ function handleKeydown(event) {
   color: #9ca3af;
   font-size: 14px;
   text-decoration: line-through;
+}
+
+.hs-price__original--top {
+  display: inline-block;
+  line-height: 1.2;
 }
 </style>

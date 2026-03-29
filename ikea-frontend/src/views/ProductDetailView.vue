@@ -5,6 +5,10 @@ import SiteChrome from '../components/layout/SiteChrome.vue';
 import ProductDimensionDiagram from '../components/product/ProductDimensionDiagram.vue';
 import { useProductGallery } from '../composables/useProductGallery';
 import {
+  buildProductDeliveryMessage,
+  buildProductOptionSummary,
+} from '../constants/productAttributeConfig';
+import {
   ROUTE_PATHS,
   buildProductCategoryPath,
   buildProductDetailPath,
@@ -61,15 +65,8 @@ const reviewHighlights = computed(() => detailContent.value.reviewHighlights ?? 
 const dimensionImage = computed(() => detailContent.value.dimensionImage ?? '');
 const shouldUseDimensionImage = computed(() => Boolean(detailContent.value.useDimensionImage && dimensionImage.value));
 
-const deliveryMessage = computed(() => (
-  currentProduct.value.color
-    ? `${currentProduct.value.color} / 주문 시점에 배송 일정을 확인할 수 있습니다.`
-    : '주문 시점에 배송 일정을 확인할 수 있습니다.'
-));
-
-const purchaseOptionCopy = computed(() => (
-  [currentProduct.value.color, currentProduct.value.material, currentProduct.value.label].filter(Boolean).join(' / ')
-));
+const deliveryMessage = computed(() => buildProductDeliveryMessage(currentProduct.value));
+const purchaseOptionCopy = computed(() => buildProductOptionSummary(currentProduct.value));
 
 const relatedProducts = computed(() => {
   const currentId = currentProduct.value.id;

@@ -69,7 +69,7 @@ const {
       </section>
 
       <p class="hs-footer__escrow">
-        KEB하나은행 구매안전서비스(채무지급보증) 서비스 가입사실 확인
+        KEB하나은행 구매안전서비스 채무지급보증 서비스 가입사실 확인
       </p>
       <p class="hs-footer__copy">(C) HOMiO. All rights reserved.</p>
       <p v-if="footerNotice" class="hs-footer__notice">{{ footerNotice }}</p>

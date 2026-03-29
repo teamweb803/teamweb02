@@ -16,7 +16,6 @@ import {
 } from '../mappers/catalogMapper';
 
 const fallbackCategories = getFallbackCategoryList();
-const fallbackProducts = getFallbackProductList();
 
 const DEFAULT_FALLBACK_CATEGORY = fallbackCategories[0] ?? {
   slug: 'sofa',
@@ -27,7 +26,7 @@ const DEFAULT_FALLBACK_CATEGORY = fallbackCategories[0] ?? {
 export const useCatalogStore = defineStore('catalog', {
   state: () => ({
     categories: normalizeCategoryCollection(fallbackCategories),
-    products: normalizeProductCollection(fallbackProducts),
+    products: normalizeProductCollection(getFallbackProductList()),
     categoriesLoadedFromApi: false,
     productsLoadedFromApi: false,
   }),
@@ -100,12 +99,16 @@ export const useCatalogStore = defineStore('catalog', {
     async loadProducts() {
       try {
         const response = await getProductList();
-        this.products = normalizeProductCollection(response, fallbackProducts);
+        this.products = normalizeProductCollection(response, getFallbackProductList());
         this.productsLoadedFromApi = true;
       } catch {
-        this.products = normalizeProductCollection(fallbackProducts);
+        this.products = normalizeProductCollection(getFallbackProductList());
         this.productsLoadedFromApi = false;
       }
+    },
+    refreshFromFallbackProducts() {
+      this.products = normalizeProductCollection(getFallbackProductList());
+      this.productsLoadedFromApi = false;
     },
   },
 });

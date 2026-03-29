@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAccountSession } from '../composables/useAccountSession';
 import SiteChrome from '../components/layout/SiteChrome.vue';
@@ -8,13 +8,23 @@ import { ROUTE_PATHS } from '../constants/routes';
 const router = useRouter();
 const inquiryType = ref('phone');
 const rememberId = ref(false);
-const { loginError, loginForm, loginSubmitting, submitLogin } = useAccountSession();
-
-const inquiryPlaceholder = computed(() => {
-  return inquiryType.value === 'order'
-    ? '주문 시 문자 발송된 주문번호'
-    : '주문 시 입력한 휴대폰번호(- 없이 입력)';
+const guestLookupForm = reactive({
+  buyerName: '',
+  orderNumber: '',
+  phoneNumber: '',
 });
+const {
+  loginError,
+  loginForm,
+  loginSubmitting,
+  submitLogin,
+} = useAccountSession();
+
+const inquiryPlaceholder = computed(() => (
+  inquiryType.value === 'order'
+    ? '주문번호를 입력해 주세요.'
+    : '휴대전화번호를 입력해 주세요.'
+));
 
 async function handleSubmitLogin() {
   try {
@@ -22,6 +32,24 @@ async function handleSubmitLogin() {
   } catch {
     // The composable exposes the current error message.
   }
+}
+
+function openGuestLookup() {
+  const query = {
+    name: guestLookupForm.buyerName.trim(),
+    mode: inquiryType.value,
+  };
+
+  if (inquiryType.value === 'order') {
+    query.orderNumber = guestLookupForm.orderNumber.trim();
+  } else {
+    query.phoneNumber = guestLookupForm.phoneNumber.trim();
+  }
+
+  router.push({
+    path: ROUTE_PATHS.guestOrderLookup,
+    query,
+  });
 }
 </script>
 
@@ -41,20 +69,31 @@ async function handleSubmitLogin() {
         </div>
 
         <section class="login-panel">
-          <h1>회원 로그인</h1>
+          <h1>로그인</h1>
 
           <div class="login-columns">
             <section class="login-box login-box--member">
-              <h2>회원로그인</h2>
+              <h2>회원 로그인</h2>
 
               <label class="login-field">
                 <span>아이디 또는 이메일</span>
-                <input v-model.trim="loginForm.loginId" type="text" placeholder="아이디 또는 이메일 입력" autocomplete="username" />
+                <input
+                  v-model.trim="loginForm.loginId"
+                  type="text"
+                  placeholder="아이디 또는 이메일 입력"
+                  autocomplete="username"
+                />
               </label>
 
               <label class="login-field">
                 <span>비밀번호</span>
-                <input v-model="loginForm.password" type="password" placeholder="비밀번호" autocomplete="current-password" @keydown.enter="handleSubmitLogin" />
+                <input
+                  v-model="loginForm.password"
+                  type="password"
+                  placeholder="비밀번호"
+                  autocomplete="current-password"
+                  @keydown.enter="handleSubmitLogin"
+                />
               </label>
 
               <label class="login-check login-check--small">
@@ -69,7 +108,7 @@ async function handleSubmitLogin() {
               </button>
 
               <div class="login-actions">
-                <button type="button">아이디/비밀번호 찾기</button>
+                <button type="button">아이디·비밀번호 찾기</button>
                 <button type="button" @click="router.push(ROUTE_PATHS.memberJoin)">회원가입</button>
               </div>
             </section>
@@ -79,7 +118,7 @@ async function handleSubmitLogin() {
 
               <label class="login-field">
                 <span>이름</span>
-                <input type="text" />
+                <input v-model.trim="guestLookupForm.buyerName" type="text" />
               </label>
 
               <div class="login-radio-row">
@@ -89,24 +128,24 @@ async function handleSubmitLogin() {
                 </label>
                 <label class="login-radio">
                   <input v-model="inquiryType" type="radio" value="phone" />
-                  <span>휴대폰번호</span>
+                  <span>휴대전화번호</span>
                 </label>
               </div>
 
               <div v-if="inquiryType === 'phone'" class="login-inline login-inline--phone">
-                <input type="text" :placeholder="inquiryPlaceholder" />
-                <button type="button">본인인증</button>
+                <input v-model.trim="guestLookupForm.phoneNumber" type="text" :placeholder="inquiryPlaceholder" />
+                <button type="button" @click="router.push(ROUTE_PATHS.guestOrderLookup)">조회 페이지</button>
               </div>
               <div v-else class="login-inline login-inline--order">
-                <input type="text" :placeholder="inquiryPlaceholder" />
+                <input v-model.trim="guestLookupForm.orderNumber" type="text" :placeholder="inquiryPlaceholder" />
               </div>
 
               <p class="login-help">
-                주문번호를 잊으신 경우,<br />
+                주문번호를 찾을 수 없는 경우,<br />
                 HOMiO 고객센터 1688-4945로 문의해 주세요.
               </p>
 
-              <button class="login-primary" type="button">조회</button>
+              <button class="login-primary" type="button" @click="openGuestLookup">조회</button>
             </section>
           </div>
         </section>

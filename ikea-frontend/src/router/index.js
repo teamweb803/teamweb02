@@ -11,18 +11,28 @@ import {
 
 const HomeView = () => import('../views/HomeView.vue');
 const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
+const AdminProductsView = () => import('../views/AdminProductsView.vue');
+const AdminInventoryView = () => import('../views/AdminInventoryView.vue');
+const AdminMembersView = () => import('../views/AdminMembersView.vue');
+const AdminOrdersView = () => import('../views/AdminOrdersView.vue');
+const AdminQnaView = () => import('../views/AdminQnaView.vue');
+const AdminReviewsView = () => import('../views/AdminReviewsView.vue');
+const AdminNoticesView = () => import('../views/AdminNoticesView.vue');
 const ProductCategoryView = () => import('../views/ProductCategoryView.vue');
 const CartView = () => import('../views/CartView.vue');
 const CheckoutView = () => import('../views/CheckoutView.vue');
 const OrderCompleteView = () => import('../views/OrderCompleteView.vue');
 const CustomerServiceView = () => import('../views/CustomerServiceView.vue');
+const CustomerServiceQnaWriteView = () => import('../views/CustomerServiceQnaWriteView.vue');
 const CustomerServiceNoticeDetailView = () => import('../views/CustomerServiceNoticeDetailView.vue');
+const GuestOrderLookupView = () => import('../views/GuestOrderLookupView.vue');
 const LoginView = () => import('../views/LoginView.vue');
 const MyPageView = () => import('../views/MyPageView.vue');
 const JoinTermsView = () => import('../views/JoinTermsView.vue');
 const JoinFormView = () => import('../views/JoinFormView.vue');
 const JoinCompleteView = () => import('../views/JoinCompleteView.vue');
 const ProductDetailView = () => import('../views/ProductDetailView.vue');
+const SearchResultsView = () => import('../views/SearchResultsView.vue');
 
 const router = createRouter({
   history: createWebHistory(),
@@ -46,6 +56,41 @@ const router = createRouter({
       path: ROUTE_PATHS.adminDashboard,
       name: 'admin-dashboard',
       component: AdminDashboardView,
+    },
+    {
+      path: ROUTE_PATHS.adminProducts,
+      name: 'admin-products',
+      component: AdminProductsView,
+    },
+    {
+      path: ROUTE_PATHS.adminInventory,
+      name: 'admin-inventory',
+      component: AdminInventoryView,
+    },
+    {
+      path: ROUTE_PATHS.adminMembers,
+      name: 'admin-members',
+      component: AdminMembersView,
+    },
+    {
+      path: ROUTE_PATHS.adminOrders,
+      name: 'admin-orders',
+      component: AdminOrdersView,
+    },
+    {
+      path: ROUTE_PATHS.adminQna,
+      name: 'admin-qna',
+      component: AdminQnaView,
+    },
+    {
+      path: ROUTE_PATHS.adminReviews,
+      name: 'admin-reviews',
+      component: AdminReviewsView,
+    },
+    {
+      path: ROUTE_PATHS.adminNotices,
+      name: 'admin-notices',
+      component: AdminNoticesView,
     },
     {
       path: ROUTE_PATHS.productCategoryBase,
@@ -91,9 +136,19 @@ const router = createRouter({
       component: CustomerServiceView,
     },
     {
+      path: ROUTE_PATHS.customerServiceQnaWrite,
+      name: 'customer-service-qna-write',
+      component: CustomerServiceQnaWriteView,
+    },
+    {
       path: ROUTE_PATHS.customerServiceQna,
       name: 'customer-service-qna',
       component: CustomerServiceView,
+    },
+    {
+      path: ROUTE_PATHS.guestOrderLookup,
+      name: 'guest-order-lookup',
+      component: GuestOrderLookupView,
     },
     {
       path: ROUTE_PATHS.memberLogin,
@@ -124,6 +179,11 @@ const router = createRouter({
       path: `${ROUTE_PATHS.productBase}/:productId`,
       name: 'product-detail',
       component: ProductDetailView,
+    },
+    {
+      path: ROUTE_PATHS.search,
+      name: 'search-results',
+      component: SearchResultsView,
     },
     {
       path: `${ROUTE_PATHS.productCategoryLegacyBase}/:categoryValue`,

@@ -1,5 +1,7 @@
 import httpRequester from '../libs/httpRequester';
 import { orderReviewItems, qnaThreads } from '../data/adminDashboardSeed';
+import { adminMemberSeed, adminOrderSeed } from '../data/adminManagementSeed';
+import { adminNoticeSeed } from '../data/adminNoticeSeed';
 import {
   getFallbackCatalogCategories,
   getFallbackCatalogProducts,
@@ -29,12 +31,37 @@ export function getAdminMembers(query) {
   return httpRequester.get('/admin/member');
 }
 
+export function getAdminMemberDetail(memberId) {
+  return httpRequester.get(`/admin/member/${memberId}`);
+}
+
+export function updateAdminMemberRole(memberId, memberRole) {
+  return httpRequester.patch(`/admin/member/${memberId}/role`, null, {
+    params: { memberRole },
+  });
+}
+
+export function deleteAdminMember(memberId) {
+  return httpRequester.delete(`/admin/member/${memberId}`);
+}
+
 export function getAdminReviews() {
   return httpRequester.get('/admin/review');
 }
 
 export function getAdminQnas() {
   return httpRequester.get('/admin/qna');
+}
+
+function buildJsonPartFormData(dto, files = [], fileFieldName) {
+  const formData = new FormData();
+  formData.append('dto', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+
+  files.forEach((file) => {
+    formData.append(fileFieldName, file);
+  });
+
+  return formData;
 }
 
 export function getProductCatalog(query) {
@@ -47,6 +74,36 @@ export function getProductCatalog(query) {
   return httpRequester.get('/product');
 }
 
+export function createAdminProduct(payload) {
+  const dto = {
+    name: payload.name,
+    price: Number(payload.price),
+    categoryId: Number(payload.categoryId),
+  };
+
+  return httpRequester.post(
+    '/admin/product',
+    buildJsonPartFormData(dto, payload.files ?? [], 'imgFile'),
+  );
+}
+
+export function updateAdminProduct(productId, payload) {
+  const dto = {
+    name: payload.name,
+    price: Number(payload.price),
+    categoryId: Number(payload.categoryId),
+  };
+
+  return httpRequester.put(
+    `/admin/product/${productId}`,
+    buildJsonPartFormData(dto, payload.files ?? [], 'imgFile'),
+  );
+}
+
+export function deleteAdminProduct(productId) {
+  return httpRequester.delete(`/admin/product/${productId}`);
+}
+
 export function updateAdminOrderStatus(orderId, status) {
   return httpRequester.patch(`/admin/order/${orderId}/status`, null, {
     params: { status },
@@ -57,22 +114,71 @@ export function removeAdminReview(reviewId) {
   return httpRequester.delete(`/admin/review/${reviewId}`);
 }
 
+export function createAdminQnaAnswer(parentId, payload) {
+  return httpRequester.post(`/admin/qna/${parentId}/answer`, null, {
+    params: payload,
+  });
+}
+
+export function updateAdminQnaAnswer(qnaId, payload) {
+  return httpRequester.put(`/admin/qna/${qnaId}/answer`, null, {
+    params: payload,
+  });
+}
+
+export function deleteAdminQnaAnswer(qnaId) {
+  return httpRequester.delete(`/admin/qna/${qnaId}/answer`);
+}
+
+export function getAdminNoticeList() {
+  return httpRequester.get('/notices');
+}
+
+export function getAdminNoticeDetail(noticeId) {
+  return httpRequester.get(`/notices/${noticeId}`);
+}
+
+export function createAdminNotice(payload) {
+  const dto = {
+    title: payload.title,
+    content: payload.content,
+    writer: payload.writer,
+  };
+
+  return httpRequester.post(
+    '/admin/notices',
+    buildJsonPartFormData(dto, payload.files ?? [], 'files'),
+  );
+}
+
+export function updateAdminNotice(noticeId, payload) {
+  const dto = {
+    title: payload.title,
+    content: payload.content,
+    writer: payload.writer,
+  };
+
+  return httpRequester.patch(
+    `/admin/notices/${noticeId}`,
+    buildJsonPartFormData(dto, payload.files ?? [], 'files'),
+  );
+}
+
+export function deleteAdminNotice(noticeId) {
+  return httpRequester.delete(`/admin/notices/${noticeId}`);
+}
+
 export function getFallbackAdminCategories() {
   return getFallbackCatalogCategories();
 }
 
 export function getFallbackAdminProducts() {
   return getFallbackCatalogProducts().map((product) => ({
+    ...product,
     productId: String(product.id),
-    name: product.name,
-    price: product.price,
     imgPath: product.image,
     categoryName: product.categoryLabel,
-    categorySlug: product.categorySlug,
-    reviews: product.reviews,
-    rating: product.rating,
-    brand: product.brand,
-    createdAt: null,
+    createdAt: product.createdAt ?? null,
   }));
 }
 
@@ -82,4 +188,16 @@ export function getFallbackAdminReviewItems() {
 
 export function getFallbackAdminQnaThreads() {
   return qnaThreads;
+}
+
+export function getFallbackAdminMembers() {
+  return adminMemberSeed;
+}
+
+export function getFallbackAdminOrders() {
+  return adminOrderSeed;
+}
+
+export function getFallbackAdminNotices() {
+  return adminNoticeSeed;
 }

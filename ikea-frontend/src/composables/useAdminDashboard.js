@@ -16,7 +16,7 @@ export function useAdminDashboard() {
   } = storeToRefs(accountStore);
 
   const operatorLabel = computed(
-    () => memberName.value || loginId.value || '운영 담당자',
+    () => memberName.value || loginId.value || '운영 관리자',
   );
 
   onMounted(() => {

@@ -1,0 +1,355 @@
+<script setup>
+import { computed, shallowRef, watch } from 'vue';
+import { useAdminInventory } from '../../composables/useAdminInventory';
+import AdminPagination from './AdminPagination.vue';
+import AdminPanel from './AdminPanel.vue';
+
+const {
+  adjustmentForm,
+  filteredItems,
+  resolveStockStateKey,
+  resolveStockStateLabel,
+  searchKeyword,
+  selectedItem,
+  selectedProductId,
+  selectItem,
+  statusMessage,
+  submitAdjustment,
+  summary,
+} = useAdminInventory();
+
+const currentPage = shallowRef(1);
+const pageSize = 5;
+
+const pageCount = computed(() => Math.max(Math.ceil(filteredItems.value.length / pageSize), 1));
+const pagedItems = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return filteredItems.value.slice(start, start + pageSize);
+});
+
+watch(searchKeyword, () => {
+  currentPage.value = 1;
+});
+
+watch(
+  () => filteredItems.value.length,
+  () => {
+    if (currentPage.value > pageCount.value) {
+      currentPage.value = pageCount.value;
+    }
+  },
+);
+</script>
+
+<template>
+  <section class="admin-inventory-manager">
+    <div class="admin-inventory-manager__summary">
+      <article>
+        <span>총 재고</span>
+        <strong>{{ summary.totalStock.toLocaleString('ko-KR') }}개</strong>
+      </article>
+      <article>
+        <span>주의 상품</span>
+        <strong>{{ summary.cautionCount }}개</strong>
+      </article>
+      <article>
+        <span>품절 상품</span>
+        <strong>{{ summary.soldOutCount }}개</strong>
+      </article>
+    </div>
+
+    <AdminPanel title="재고 목록" description="현재 수량, 안전 재고, 상태를 빠르게 확인합니다.">
+      <template #action>
+        <input
+          v-model="searchKeyword"
+          type="text"
+          class="admin-inventory-manager__search"
+          placeholder="상품명 또는 SKU 검색"
+        />
+      </template>
+
+      <div class="admin-inventory-manager__table">
+        <div class="admin-inventory-manager__head">
+          <span>상품</span>
+          <span>SKU</span>
+          <span>현재 수량</span>
+          <span>안전 재고</span>
+          <span>상태</span>
+        </div>
+
+        <button
+          v-for="item in pagedItems"
+          :key="item.productId"
+          type="button"
+          class="admin-inventory-manager__row"
+          :class="{ 'is-active': selectedProductId === item.productId }"
+          @click="selectItem(item.productId)"
+        >
+          <div class="admin-inventory-manager__product">
+            <img :src="item.image" :alt="item.name" />
+            <div>
+              <strong>{{ item.name }}</strong>
+              <span>{{ item.categoryName }}</span>
+            </div>
+          </div>
+          <span>{{ item.sku }}</span>
+          <strong>{{ item.stock.toLocaleString('ko-KR') }}개</strong>
+          <span>{{ item.safeStock.toLocaleString('ko-KR') }}개</span>
+          <span class="admin-inventory-manager__state" :class="`is-${resolveStockStateKey(item)}`">
+            {{ resolveStockStateLabel(item) }}
+          </span>
+        </button>
+      </div>
+
+      <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
+    </AdminPanel>
+
+    <AdminPanel title="재고 조정" description="입고 또는 차감 수량을 기록합니다.">
+      <div v-if="selectedItem" class="admin-inventory-manager__detail">
+        <div class="admin-inventory-manager__detail-meta">
+          <strong>{{ selectedItem.name }}</strong>
+          <span>{{ selectedItem.sku }}</span>
+          <p>현재 수량 {{ selectedItem.stock.toLocaleString('ko-KR') }}개 · 마지막 갱신 {{ selectedItem.updatedAt }}</p>
+        </div>
+
+        <form class="admin-inventory-manager__form" @submit.prevent="submitAdjustment">
+          <div class="admin-inventory-manager__field">
+            <label for="inventory-adjustment-type">조정 방식</label>
+            <select id="inventory-adjustment-type" v-model="adjustmentForm.type">
+              <option value="increase">입고 추가</option>
+              <option value="decrease">재고 차감</option>
+            </select>
+          </div>
+
+          <div class="admin-inventory-manager__field">
+            <label for="inventory-adjustment-quantity">수량</label>
+            <input id="inventory-adjustment-quantity" v-model.number="adjustmentForm.quantity" type="number" min="1" />
+          </div>
+
+          <div class="admin-inventory-manager__field admin-inventory-manager__field--wide">
+            <label for="inventory-adjustment-note">메모</label>
+            <input id="inventory-adjustment-note" v-model.trim="adjustmentForm.note" type="text" maxlength="80" placeholder="예: 오프라인 입고 반영" />
+          </div>
+
+          <div class="admin-inventory-manager__actions">
+            <button type="submit">재고 반영</button>
+          </div>
+        </form>
+
+        <p v-if="statusMessage" class="admin-inventory-manager__status">{{ statusMessage }}</p>
+      </div>
+    </AdminPanel>
+  </section>
+</template>
+
+<style scoped>
+.admin-inventory-manager {
+  display: grid;
+  gap: 40px;
+}
+
+.admin-inventory-manager__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-inventory-manager__summary article {
+  padding: 20px;
+  border: 1px solid #e6e6e6;
+  background: #ffffff;
+}
+
+.admin-inventory-manager__summary span,
+.admin-inventory-manager__detail-meta span,
+.admin-inventory-manager__detail-meta p,
+.admin-inventory-manager__status {
+  color: #666666;
+  font-size: 14px;
+}
+
+.admin-inventory-manager__summary strong,
+.admin-inventory-manager__detail-meta strong {
+  display: block;
+  margin-top: 10px;
+  color: #111111;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.admin-inventory-manager__search {
+  width: 280px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+}
+
+.admin-inventory-manager__table {
+  border-bottom: 1px solid #ededed;
+}
+
+.admin-inventory-manager__head,
+.admin-inventory-manager__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 120px 120px 120px 100px;
+  gap: 16px;
+  align-items: center;
+}
+
+.admin-inventory-manager__head {
+  padding: 0 0 14px;
+  color: #666666;
+  font-size: 13px;
+}
+
+.admin-inventory-manager__row {
+  width: 100%;
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid #efefef;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-inventory-manager__row.is-active {
+  background: #f7f9fb;
+}
+
+.admin-inventory-manager__product {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.admin-inventory-manager__product img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border: 1px solid #ececec;
+  background: #f7f9fb;
+}
+
+.admin-inventory-manager__product strong {
+  display: block;
+  color: #111111;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.admin-inventory-manager__product span {
+  display: block;
+  margin-top: 6px;
+  color: #7a7a7a;
+  font-size: 13px;
+}
+
+.admin-inventory-manager__state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-inventory-manager__state.is-stable {
+  color: #1c3f94;
+}
+
+.admin-inventory-manager__state.is-warning {
+  color: #c57a00;
+}
+
+.admin-inventory-manager__state.is-soldout {
+  color: #c62828;
+}
+
+.admin-inventory-manager__detail {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-inventory-manager__detail-meta {
+  padding: 18px;
+  border: 1px solid #e6e6e6;
+  background: #ffffff;
+}
+
+.admin-inventory-manager__detail-meta p {
+  margin: 10px 0 0;
+}
+
+.admin-inventory-manager__form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-inventory-manager__field {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-inventory-manager__field--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-inventory-manager__field label {
+  color: #555555;
+  font-size: 13px;
+}
+
+.admin-inventory-manager__field input,
+.admin-inventory-manager__field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+}
+
+.admin-inventory-manager__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-inventory-manager__actions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .admin-inventory-manager__summary,
+  .admin-inventory-manager__head,
+  .admin-inventory-manager__row,
+  .admin-inventory-manager__form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-inventory-manager__head {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-inventory-manager__search {
+    width: 100%;
+  }
+
+  .admin-inventory-manager__actions {
+    justify-content: stretch;
+  }
+}
+</style>

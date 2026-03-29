@@ -17,6 +17,13 @@ export const ROUTE_PATHS = {
   home: '/',
   adminBase: '/admin',
   adminDashboard: '/admin/dashboard',
+  adminProducts: '/admin/products',
+  adminInventory: '/admin/inventory',
+  adminMembers: '/admin/members',
+  adminOrders: '/admin/orders',
+  adminQna: '/admin/qna',
+  adminReviews: '/admin/reviews',
+  adminNotices: '/admin/notices',
   cart: '/cart',
   memberLogin: '/member/login',
   memberMyPage: '/member/mypage',
@@ -25,12 +32,15 @@ export const ROUTE_PATHS = {
   memberJoinComplete: '/member/join/complete',
   orderCheckout: '/order/checkout',
   orderComplete: '/order/complete',
+  guestOrderLookup: '/order/guest-lookup',
   customerServiceNotice: '/customer-service/notice',
   customerServiceFaq: '/customer-service/faq',
   customerServiceQna: '/customer-service/qna',
+  customerServiceQnaWrite: '/customer-service/qna/write',
   productCategoryBase: '/product/category',
   productCategoryLegacyBase: '/category',
   productBase: '/product',
+  search: '/search',
 };
 
 export function resolveCategoryRoute(categoryValue = DEFAULT_CATEGORY_SLUG) {
@@ -62,4 +72,14 @@ export function buildProductDetailPath(productId = DEFAULT_PRODUCT_ID) {
 
 export function buildCustomerServiceNoticeDetailPath(noticeId = DEFAULT_NOTICE_ID) {
   return `${ROUTE_PATHS.customerServiceNotice}/${noticeId}`;
+}
+
+export function buildSearchPath(keyword = '') {
+  const normalizedKeyword = String(keyword ?? '').trim();
+
+  if (!normalizedKeyword) {
+    return ROUTE_PATHS.search;
+  }
+
+  return `${ROUTE_PATHS.search}?q=${encodeURIComponent(normalizedKeyword)}`;
 }

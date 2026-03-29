@@ -176,6 +176,12 @@ export function createDefaultOpenGroups() {
 }
 
 export function getProductFilterValue(product, fieldId) {
+  const explicitAttribute = product?.attributes?.[fieldId];
+
+  if (explicitAttribute) {
+    return explicitAttribute;
+  }
+
   const typeOverrides = TYPE_VALUE_OVERRIDES[product?.typeSlug] ?? {};
 
   if (typeOverrides[fieldId]) {

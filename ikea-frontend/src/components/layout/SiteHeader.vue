@@ -1,19 +1,21 @@
 <script setup>
-import { computed, onMounted, useTemplateRef } from 'vue';
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAccountSession } from '../../composables/useAccountSession';
 import { useHeaderMenu } from '../../composables/useHeaderMenu';
-import { ROUTE_PATHS } from '../../constants/routes';
+import { buildSearchPath, ROUTE_PATHS } from '../../constants/routes';
 import { useAccountStore } from '../../stores/account';
 import { useCatalogStore } from '../../stores/catalog';
 import { useHomeStore } from '../../stores/home';
 
+const route = useRoute();
 const router = useRouter();
 const accountStore = useAccountStore();
 const catalogStore = useCatalogStore();
 const homeStore = useHomeStore();
 const headerElementRef = useTemplateRef('headerElementRef');
+const searchKeyword = ref('');
 const adminDashboardPath = ROUTE_PATHS.adminDashboard;
 const { hydrateCurrentMember, loggedIn, submitLogout } = useAccountSession();
 const { memberName, profileHydrated, profileRequested } = storeToRefs(accountStore);
@@ -63,11 +65,21 @@ function handleMyPageClick() {
   });
 }
 
+function syncSearchKeywordFromRoute() {
+  searchKeyword.value = String(route.query.q ?? '').trim();
+}
+
+function handleSearchSubmit() {
+  router.push(buildSearchPath(searchKeyword.value));
+}
+
 function getHeaderElement() {
   return headerElementRef.value;
 }
 
 onMounted(() => {
+  syncSearchKeywordFromRoute();
+
   if (!loggedIn.value || profileHydrated.value || profileRequested.value) {
     return;
   }
@@ -76,6 +88,13 @@ onMounted(() => {
     silent: true,
   });
 });
+
+watch(
+  () => route.fullPath,
+  () => {
+    syncSearchKeywordFromRoute();
+  },
+);
 
 defineExpose({
   getHeaderElement,
@@ -109,9 +128,14 @@ defineExpose({
         </button>
       </nav>
 
-      <div class="hs-header__search">
-        <input type="text" placeholder="어떤 상품을 검색해 보세요" />
-        <span class="hs-header__search-icon" aria-hidden="true">
+      <form class="hs-header__search" @submit.prevent="handleSearchSubmit">
+        <input
+          v-model.trim="searchKeyword"
+          type="text"
+          placeholder="어떤 상품을 찾고 계신가요?"
+          aria-label="상품 검색"
+        />
+        <button type="submit" class="hs-header__search-button" aria-label="상품 검색">
           <svg viewBox="0 0 24 24" fill="none">
             <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8" />
             <path
@@ -121,8 +145,8 @@ defineExpose({
               stroke-linecap="round"
             />
           </svg>
-        </span>
-      </div>
+        </button>
+      </form>
 
       <div class="hs-header__utils">
         <button class="hs-util" type="button" @click="handleAccountClick">
@@ -312,17 +336,21 @@ defineExpose({
   font: inherit;
 }
 
-.hs-header__search-icon {
+.hs-header__search-button {
   position: absolute;
   top: 50%;
   right: 16px;
   width: 20px;
   height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--hs-ink, #111827);
   transform: translateY(-50%);
+  cursor: pointer;
 }
 
-.hs-header__search-icon svg,
+.hs-header__search-button svg,
 .hs-util svg {
   width: 100%;
   height: 100%;

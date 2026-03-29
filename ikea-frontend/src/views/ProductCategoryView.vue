@@ -480,15 +480,22 @@ watch(
                 <div class="hs-product-card__copy">
                   <p class="hs-product-card__brand">{{ item.brand }}</p>
                   <h3>{{ item.name }}</h3>
+                  <div class="hs-product-price-block">
+                    <span
+                      v-if="Number(item.discountRate ?? 0) > 0 && Number(item.originalPrice ?? 0) > Number(item.price ?? 0)"
+                      class="hs-price__original hs-price__original--top"
+                    >
+                      {{ formatPrice(item.originalPrice) }}
+                    </span>
+                    <div class="hs-price">
+                      <span v-if="item.discountRate" class="hs-price__discount">{{ item.discountRate }}%</span>
+                      <strong>{{ formatPrice(item.price) }}</strong>
+                    </div>
+                  </div>
                   <div v-if="item.rating !== null || item.reviews !== null" class="hs-product-meta">
                     <span v-if="item.rating !== null">★ {{ item.rating }}</span>
                     <span v-if="item.reviews !== null">후기 {{ Number(item.reviews ?? 0).toLocaleString('ko-KR') }}</span>
                   </div>
-                  <div class="hs-price">
-                    <span v-if="item.discountRate" class="hs-price__discount">{{ item.discountRate }}%</span>
-                    <strong>{{ formatPrice(item.price) }}</strong>
-                  </div>
-                  <span v-if="item.originalPrice" class="hs-price__original">{{ formatPrice(item.originalPrice) }}</span>
                   <div v-if="item.features?.length" class="hs-product-tags">
                     <span v-for="tag in item.features" :key="tag">{{ tag }}</span>
                   </div>
@@ -952,7 +959,7 @@ watch(
   position: relative;
   z-index: 0;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hs-product-card__brand {
@@ -968,6 +975,11 @@ watch(
   color: #111827;
   font-size: 18px;
   line-height: 1.45;
+}
+
+.hs-product-price-block {
+  display: grid;
+  gap: 4px;
 }
 
 .hs-price {
@@ -996,6 +1008,11 @@ watch(
 .hs-price__original {
   font-size: 14px;
   text-decoration: line-through;
+}
+
+.hs-price__original--top {
+  display: inline-block;
+  line-height: 1.2;
 }
 
 .hs-product-tags span {

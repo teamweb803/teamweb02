@@ -1,0 +1,474 @@
+<script setup>
+import { computed, onMounted, shallowRef, watch } from 'vue';
+import AdminPagination from './AdminPagination.vue';
+import AdminPanel from './AdminPanel.vue';
+import {
+  deleteAdminMember,
+  getAdminMemberDetail,
+  getAdminMembers,
+  getFallbackAdminMembers,
+  updateAdminMemberRole,
+} from '../../services/adminService';
+import {
+  formatAdminDate,
+  formatAdminDateTime,
+  normalizeAdminMember,
+  normalizeArrayPayload,
+  normalizeObjectPayload,
+} from '../../mappers/adminManagementMapper';
+
+const members = shallowRef([]);
+const selectedMemberId = shallowRef('');
+const selectedMember = shallowRef(null);
+const roleDraft = shallowRef('USER');
+const searchKeyword = shallowRef('');
+const currentPage = shallowRef(1);
+const statusMessage = shallowRef('');
+const isLoading = shallowRef(false);
+const isDetailLoading = shallowRef(false);
+const isSaving = shallowRef(false);
+const pageSize = 5;
+let latestDetailRequestToken = 0;
+
+const filteredMembers = computed(() => {
+  const keyword = searchKeyword.value.trim().toLowerCase();
+
+  if (!keyword) {
+    return members.value;
+  }
+
+  return members.value.filter((member) => {
+    const haystacks = [
+      member.name,
+      member.loginId,
+      member.email,
+      member.phoneNumber,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
+
+    return haystacks.some((value) => value.includes(keyword));
+  });
+});
+
+const pageCount = computed(() => Math.max(Math.ceil(filteredMembers.value.length / pageSize), 1));
+const pagedMembers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return filteredMembers.value.slice(start, start + pageSize);
+});
+
+function applyMembers(items) {
+  members.value = items
+    .map((item) => normalizeAdminMember(item))
+    .filter((item) => item.memberId);
+}
+
+function setSelectedMember(member) {
+  selectedMemberId.value = member.memberId;
+  selectedMember.value = member;
+  roleDraft.value = member.memberRole;
+}
+
+async function loadMembers() {
+  isLoading.value = true;
+
+  try {
+    const payload = await getAdminMembers();
+    applyMembers(normalizeArrayPayload(payload, getFallbackAdminMembers()));
+  } catch {
+    applyMembers(getFallbackAdminMembers());
+  } finally {
+    isLoading.value = false;
+  }
+
+  if (!selectedMemberId.value && members.value[0]) {
+    setSelectedMember(members.value[0]);
+  }
+}
+
+async function loadMemberDetail(memberId) {
+  const fallbackMember = members.value.find((member) => member.memberId === memberId);
+  if (!fallbackMember) {
+    return;
+  }
+
+  const requestToken = ++latestDetailRequestToken;
+  isDetailLoading.value = true;
+
+  try {
+    const payload = await getAdminMemberDetail(memberId);
+    if (requestToken !== latestDetailRequestToken || selectedMemberId.value !== memberId) {
+      return;
+    }
+    const normalizedMember = normalizeAdminMember(normalizeObjectPayload(payload, fallbackMember));
+    selectedMember.value = normalizedMember;
+    roleDraft.value = normalizedMember.memberRole;
+  } catch {
+    if (requestToken !== latestDetailRequestToken || selectedMemberId.value !== memberId) {
+      return;
+    }
+    selectedMember.value = fallbackMember;
+    roleDraft.value = fallbackMember.memberRole;
+  } finally {
+    if (requestToken === latestDetailRequestToken) {
+      isDetailLoading.value = false;
+    }
+  }
+}
+
+async function submitRoleChange() {
+  if (!selectedMember.value) {
+    return;
+  }
+
+  isSaving.value = true;
+  statusMessage.value = '';
+
+  try {
+    await updateAdminMemberRole(selectedMember.value.memberId, roleDraft.value);
+    statusMessage.value = '회원 권한을 변경했습니다.';
+  } catch {
+    statusMessage.value = '서버 연결 전 단계라 화면에 먼저 반영했습니다.';
+  } finally {
+    selectedMember.value = {
+      ...selectedMember.value,
+      memberRole: roleDraft.value,
+    };
+    members.value = members.value.map((member) => (
+      member.memberId === selectedMember.value.memberId
+        ? { ...member, memberRole: roleDraft.value }
+        : member
+    ));
+    isSaving.value = false;
+  }
+}
+
+async function removeSelectedMember() {
+  if (!selectedMember.value || selectedMember.value.memberRole !== 'USER') {
+    return;
+  }
+
+  const confirmed = window.confirm(`"${selectedMember.value.name}" 회원을 삭제할까요?`);
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await deleteAdminMember(selectedMember.value.memberId);
+    statusMessage.value = '회원을 삭제했습니다.';
+  } catch {
+    statusMessage.value = '서버 연결 전 단계라 목록에서만 먼저 제거했습니다.';
+  }
+
+  members.value = members.value.filter((member) => member.memberId !== selectedMember.value.memberId);
+  selectedMemberId.value = '';
+  selectedMember.value = null;
+
+  if (members.value[0]) {
+    setSelectedMember(members.value[0]);
+  }
+}
+
+watch(
+  () => filteredMembers.value.length,
+  () => {
+    if (currentPage.value > pageCount.value) {
+      currentPage.value = pageCount.value;
+    }
+  },
+);
+
+watch(selectedMemberId, (memberId) => {
+  if (!memberId) {
+    return;
+  }
+
+  loadMemberDetail(memberId);
+});
+
+onMounted(loadMembers);
+</script>
+
+<template>
+  <section class="admin-members-manager">
+    <AdminPanel title="회원 목록" description="회원 검색과 기본 상태 확인">
+      <template #action>
+        <input
+          v-model="searchKeyword"
+          type="text"
+          class="admin-members-manager__search"
+          placeholder="이름, 아이디, 이메일 검색"
+        />
+      </template>
+
+      <div class="admin-members-manager__table">
+        <div class="admin-members-manager__head">
+          <span>이름</span>
+          <span>아이디</span>
+          <span>이메일</span>
+          <span>권한</span>
+          <span>가입일</span>
+        </div>
+
+        <button
+          v-for="member in pagedMembers"
+          :key="member.memberId"
+          type="button"
+          class="admin-members-manager__row"
+          :class="{ 'is-active': selectedMemberId === member.memberId }"
+          @click="setSelectedMember(member)"
+        >
+          <strong>{{ member.name }}</strong>
+          <span>{{ member.loginId }}</span>
+          <span>{{ member.email }}</span>
+          <span>{{ member.memberRole }}</span>
+          <span>{{ formatAdminDate(member.createdAt) }}</span>
+        </button>
+
+        <div v-if="!pagedMembers.length" class="admin-members-manager__empty">
+          {{ isLoading ? '회원 목록을 불러오는 중입니다.' : '표시할 회원이 없습니다.' }}
+        </div>
+      </div>
+
+      <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
+    </AdminPanel>
+
+    <AdminPanel title="회원 상세" description="기본 정보와 권한 관리">
+      <div v-if="selectedMember" class="admin-members-manager__detail">
+        <div class="admin-members-manager__info-grid">
+          <article>
+            <span>이름</span>
+            <strong>{{ selectedMember.name }}</strong>
+          </article>
+          <article>
+            <span>아이디</span>
+            <strong>{{ selectedMember.loginId }}</strong>
+          </article>
+          <article>
+            <span>이메일</span>
+            <strong>{{ selectedMember.email || '-' }}</strong>
+          </article>
+          <article>
+            <span>연락처</span>
+            <strong>{{ selectedMember.phoneNumber || '-' }}</strong>
+          </article>
+          <article>
+            <span>우편번호</span>
+            <strong>{{ selectedMember.zoneCode || '-' }}</strong>
+          </article>
+          <article>
+            <span>가입 시각</span>
+            <strong>{{ formatAdminDateTime(selectedMember.createdAt) }}</strong>
+          </article>
+        </div>
+
+        <article class="admin-members-manager__address">
+          <span>주소</span>
+          <strong>{{ selectedMember.addressMain || selectedMember.address || '-' }}</strong>
+          <p v-if="selectedMember.addressDetail">{{ selectedMember.addressDetail }}</p>
+        </article>
+
+        <div class="admin-members-manager__role-editor">
+          <label>
+            <span>권한</span>
+            <select v-model="roleDraft" :disabled="isDetailLoading || isSaving">
+              <option value="USER">USER</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+          </label>
+
+          <div class="admin-members-manager__actions">
+            <button type="button" class="admin-members-manager__primary" :disabled="isSaving" @click="submitRoleChange">
+              {{ isSaving ? '처리 중..' : '권한 저장' }}
+            </button>
+            <button
+              type="button"
+              class="admin-members-manager__secondary"
+              :disabled="selectedMember.memberRole !== 'USER'"
+              @click="removeSelectedMember"
+            >
+              회원 삭제
+            </button>
+          </div>
+        </div>
+
+        <p v-if="statusMessage" class="admin-members-manager__status">{{ statusMessage }}</p>
+      </div>
+
+      <div v-else class="admin-members-manager__empty">
+        회원을 선택하면 상세 정보가 표시됩니다.
+      </div>
+    </AdminPanel>
+  </section>
+</template>
+
+<style scoped>
+.admin-members-manager {
+  display: grid;
+  gap: 40px;
+}
+
+.admin-members-manager__search {
+  width: 280px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+}
+
+.admin-members-manager__table {
+  border-bottom: 1px solid #ededed;
+}
+
+.admin-members-manager__head,
+.admin-members-manager__row {
+  display: grid;
+  grid-template-columns: 140px 160px minmax(0, 1fr) 100px 120px;
+  gap: 16px;
+  align-items: center;
+}
+
+.admin-members-manager__head {
+  padding: 0 0 14px;
+  color: #666666;
+  font-size: 13px;
+}
+
+.admin-members-manager__row {
+  width: 100%;
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid #efefef;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-members-manager__row.is-active {
+  background: #f7f9fb;
+}
+
+.admin-members-manager__detail {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-members-manager__info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-members-manager__info-grid article,
+.admin-members-manager__address,
+.admin-members-manager__role-editor {
+  padding: 18px;
+  border: 1px solid #e6e6e6;
+  background: #ffffff;
+}
+
+.admin-members-manager__info-grid span,
+.admin-members-manager__address span,
+.admin-members-manager__role-editor span {
+  display: block;
+  color: #777777;
+  font-size: 13px;
+}
+
+.admin-members-manager__info-grid strong,
+.admin-members-manager__address strong {
+  display: block;
+  margin-top: 10px;
+  color: #111111;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.admin-members-manager__address p {
+  margin: 8px 0 0;
+  color: #444444;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-members-manager__role-editor {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.admin-members-manager__role-editor label {
+  display: grid;
+  gap: 8px;
+  width: 200px;
+}
+
+.admin-members-manager__role-editor select {
+  width: 200px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+}
+
+.admin-members-manager__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.admin-members-manager__primary,
+.admin-members-manager__secondary {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.admin-members-manager__primary {
+  border-color: #111111;
+  background: #111111;
+  color: #ffffff;
+}
+
+.admin-members-manager__status,
+.admin-members-manager__empty {
+  color: #666666;
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  .admin-members-manager__head,
+  .admin-members-manager__row,
+  .admin-members-manager__info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-members-manager__head {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-members-manager__search,
+  .admin-members-manager__role-editor select {
+    width: 100%;
+  }
+
+  .admin-members-manager__role-editor {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-members-manager__role-editor label {
+    width: 100%;
+  }
+
+  .admin-members-manager__actions {
+    flex-direction: column;
+  }
+}
+</style>

@@ -109,7 +109,7 @@ function formatValue(value) {
         <strong>{{ formatValue(latestValue) }}</strong>
       </article>
       <article>
-        <small>전일 대비</small>
+        <small>직전 대비</small>
         <strong>{{ deltaValue > 0 ? '+' : '' }}{{ formatValue(deltaValue) }}</strong>
       </article>
     </div>

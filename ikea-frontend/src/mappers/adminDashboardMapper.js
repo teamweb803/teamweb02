@@ -1,4 +1,4 @@
-import {
+﻿import {
   buildProductCategoryPath,
   buildProductDetailPath,
   ROUTE_PATHS,
@@ -18,16 +18,12 @@ const STATUS_COLORS = {
   CANCELLED: '#d95f5f',
 };
 
-const PAYMENT_LABELS = {
-  CARD: '카드결제',
-  BANK: '계좌이체',
-  KAKAO: '간편결제',
-  NAVER: '간편결제',
-  TOSS: '간편결제',
-  PAYCO: '간편결제',
+const PAYMENT_METHODS = {
+  CARD: { label: '신용카드', color: '#1c3f94' },
+  BANK: { label: '무통장입금', color: '#4f86f7' },
+  KAKAO: { label: '카카오페이', color: '#88aef2' },
+  TOSS: { label: '토스페이', color: '#c7d7f7' },
 };
-
-const PAYMENT_COLORS = ['#1c3f94', '#4f86f7', '#88aef2', '#c7d7f7'];
 
 function formatNumber(value) {
   return Number(value ?? 0).toLocaleString('ko-KR');
@@ -53,28 +49,28 @@ function formatDate(value) {
   }).format(date);
 }
 
-function formatDateTime(value) {
-  if (!value) {
-    return '-';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date);
-}
-
 function toOrderStatusLabel(status) {
   return ORDER_STATUS_LABELS[status] ?? status ?? '-';
+}
+
+function normalizePaymentCode(payment) {
+  const code = String(payment ?? '')
+    .trim()
+    .toUpperCase();
+
+  if (code === 'KAKAOPAY') {
+    return 'KAKAO';
+  }
+
+  if (code === 'TOSSPAY') {
+    return 'TOSS';
+  }
+
+  if (code in PAYMENT_METHODS) {
+    return code;
+  }
+
+  return code;
 }
 
 function buildStockSeed(sourceId) {
@@ -92,14 +88,6 @@ function buildStockSeed(sourceId) {
   return (hash % 18) + 11;
 }
 
-function buildSalesSeed(sourceId, reviews) {
-  const id = String(sourceId ?? '');
-  const hash = [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const reviewBoost = Math.max(1, Math.round(Number(reviews ?? 0) / 45));
-
-  return reviewBoost + (hash % 9) + 4;
-}
-
 function resolveStockState(stock) {
   if (stock <= 3) {
     return 'critical';
@@ -110,6 +98,43 @@ function resolveStockState(stock) {
   }
 
   return 'stable';
+}
+
+function buildChartWindowLabels() {
+  const today = new Date();
+  const labels = [];
+
+  for (let index = 6; index >= 0; index -= 1) {
+    const target = new Date(today);
+    target.setDate(today.getDate() - index);
+    labels.push(
+      new Intl.DateTimeFormat('ko-KR', {
+        month: 'numeric',
+        day: 'numeric',
+      }).format(target),
+    );
+  }
+
+  return labels;
+}
+
+function createTrendBuckets(orders, valueSelector) {
+  const labels = buildChartWindowLabels();
+  const buckets = new Map(labels.map((label) => [label, 0]));
+
+  orders.forEach((order) => {
+    const dateLabel = formatDate(order.createdAt);
+    if (!buckets.has(dateLabel)) {
+      return;
+    }
+
+    buckets.set(dateLabel, Number(buckets.get(dateLabel) ?? 0) + Number(valueSelector(order) ?? 0));
+  });
+
+  return {
+    labels,
+    points: labels.map((label) => buckets.get(label) ?? 0),
+  };
 }
 
 function buildNormalizedProductMap(products) {
@@ -128,24 +153,16 @@ function buildNormalizedProductMap(products) {
   }, new Map());
 }
 
-function findCategoryForProduct(product, categories) {
-  if (product.categorySlug) {
-    return categories.find((category) => category.slug === product.categorySlug) ?? null;
-  }
-
-  return categories.find((category) => category.label === product.categoryName) ?? null;
-}
-
 export function createFallbackReviews(orderReviewItems = []) {
   const seededReviews = orderReviewItems
     .filter((item) => item.review)
     .map((item, index) => ({
       reviewId: index + 1,
-      memberName: item.orderNo.replace('HS-', ''),
+      memberName: item.memberName ?? item.orderNo?.replace('HS-', '') ?? 'guest',
       productName: item.product,
       content: item.review.content,
       rating: item.review.rating,
-      createdAt: `2026-03-${18 - index}T10:00:00`,
+      createdAt: `2026-03-${String(18 - index).padStart(2, '0')}T10:00:00`,
     }));
 
   return seededReviews.length
@@ -155,7 +172,7 @@ export function createFallbackReviews(orderReviewItems = []) {
           reviewId: 1,
           memberName: 'roomtone',
           productName: '아일랜드 모듈 소파',
-          content: '조합성이 좋고 패브릭 촉감도 좋아서 가족용 소파로 만족하고 있습니다.',
+          content: '조합성이 좋고 패브릭 촉감도 좋아 거실용 소파로 만족하며 사용 중입니다.',
           rating: 5,
           createdAt: '2026-03-18T10:00:00',
         },
@@ -186,7 +203,7 @@ export function createFallbackQnas(qnaThreads = []) {
         parentId: thread.id * 10,
         title: `${thread.title} 답변`,
         content: thread.answer,
-        writer: '관리자',
+        writer: '운영 관리자',
         createdAt: `${thread.date}T14:00:00`,
       },
     ];
@@ -203,10 +220,7 @@ export function createCategoryRows(categories, products) {
       return product.categoryName === category.label;
     });
 
-    const reviewCount = matchedProducts.reduce(
-      (sum, product) => sum + Number(product.reviews ?? 0),
-      0,
-    );
+    const reviewCount = matchedProducts.reduce((sum, product) => sum + Number(product.reviews ?? 0), 0);
 
     return {
       id: category.slug,
@@ -227,7 +241,7 @@ export function createWatchProducts(products) {
       brand: product.brand ?? 'HOMiO',
       title: product.name,
       categoryLabel: product.categoryLabel ?? product.categoryName ?? '-',
-      reviewText: `리뷰 ${formatNumber(product.reviews ?? 0)}개 · 평점 ${Number(product.rating ?? 0).toFixed(1)}`,
+      reviewText: `리뷰 ${formatNumber(product.reviews ?? 0)}건 · 평점 ${Number(product.rating ?? 0).toFixed(1)}`,
       price: formatCurrency(product.price),
       image: product.image ?? product.imgPath,
       to: buildProductDetailPath(product.id ?? product.productId),
@@ -238,13 +252,13 @@ export function createQuestionRows(qnas) {
   const answers = new Map();
 
   qnas.forEach((item) => {
-    if (item.level === 1) {
+    if (Number(item.level ?? 0) === 1) {
       answers.set(item.parentId, item);
     }
   });
 
   return qnas
-    .filter((item) => item.level === 0)
+    .filter((item) => Number(item.level ?? 0) === 0)
     .map((item) => {
       const answer = answers.get(item.qnaId);
 
@@ -268,7 +282,7 @@ export function createReviewRows(reviews) {
       memberName: item.memberName,
       productName: item.productName,
       content: item.content,
-      rating: `${item.rating ?? '-'}점`,
+      rating: `평점 ${item.rating ?? '-'}`,
       date: formatDate(item.createdAt),
     }));
 }
@@ -309,277 +323,178 @@ export function createProductRows(products) {
 
 export function createOrderRows(orders) {
   return orders
-    .map((item) => ({
-      id: item.orderId,
-      status: toOrderStatusLabel(item.orderStatus),
-      itemSummary: item.orderItems?.[0]
-        ? `${item.orderItems[0].productName ?? item.orderItems[0].name}${item.orderItems.length > 1 ? ` 외 ${item.orderItems.length - 1}건` : ''}`
-        : '-',
-      payment: item.payment ?? '-',
-      totalPrice: formatCurrency(item.totalPrice),
-      date: formatDate(item.createdAt),
-      dateTime: formatDateTime(item.createdAt),
-      createdAt: item.createdAt,
-    }))
+    .map((item) => {
+      const rawPayment = normalizePaymentCode(item.payment);
+
+      return {
+        id: item.orderId,
+        status: toOrderStatusLabel(item.orderStatus),
+        itemSummary: item.orderItems?.[0]
+          ? `${item.orderItems[0].productName ?? item.orderItems[0].name}${item.orderItems.length > 1 ? ` 외 ${item.orderItems.length - 1}건` : ''}`
+          : '-',
+        payment: PAYMENT_METHODS[rawPayment]?.label ?? item.payment ?? '-',
+        totalPrice: formatCurrency(item.totalPrice),
+        date: formatDate(item.createdAt),
+        rawStatus: item.orderStatus,
+        rawPayment,
+      };
+    })
     .sort((left, right) => Number(right.id) - Number(left.id));
 }
 
-export function createOrderStatusCards(orders) {
-  const counts = orders.reduce((result, order) => {
-    const key = order.orderStatus;
-    result[key] = (result[key] ?? 0) + 1;
-    return result;
-  }, {});
-
-  return ['ORDERED', 'DELIVERING', 'COMPLETED', 'CANCELLED'].map((status) => ({
-    id: status,
-    label: toOrderStatusLabel(status),
-    value: `${formatNumber(counts[status] ?? 0)}건`,
-  }));
-}
-
-export function createOrderTrendChart(orders) {
-  const today = new Date('2026-03-28T00:00:00');
-  const labels = [];
-  const points = [];
-
-  for (let index = 6; index >= 0; index -= 1) {
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() - index);
-    const key = targetDate.toISOString().slice(5, 10);
-
-    labels.push(`${targetDate.getMonth() + 1}/${targetDate.getDate()}`);
-
-    const count = orders.filter((order) => {
-      if (!order.createdAt) {
-        return false;
-      }
-
-      return String(order.createdAt).slice(5, 10) === key;
-    }).length;
-
-    points.push(count);
-  }
+function createOrderTrendChart(orders) {
+  const trend = createTrendBuckets(orders, () => 1);
 
   return {
-    labels,
-    points,
+    labels: trend.labels,
+    points: trend.points,
     valueSuffix: '건',
   };
 }
 
-export function createSalesTrendChart(orders) {
-  const today = new Date('2026-03-28T00:00:00');
-  const labels = [];
-  const points = [];
-
-  for (let index = 6; index >= 0; index -= 1) {
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() - index);
-    const key = targetDate.toISOString().slice(0, 10);
-
-    labels.push(`${targetDate.getMonth() + 1}/${targetDate.getDate()}`);
-
-    const salesAmount = orders.reduce((sum, order) => {
-      if (!order.createdAt || String(order.createdAt).slice(0, 10) !== key) {
-        return sum;
-      }
-
-      if (order.orderStatus === 'CANCELLED') {
-        return sum;
-      }
-
-      return sum + Number(order.totalPrice ?? 0);
-    }, 0);
-
-    points.push(salesAmount);
-  }
+function createSalesTrendChart(orders) {
+  const trend = createTrendBuckets(orders, (order) => order.totalPrice);
 
   return {
-    labels,
-    points,
+    labels: trend.labels,
+    points: trend.points,
     valueSuffix: '원',
   };
 }
 
-export function createStatusChart(orders) {
-  const segments = ['ORDERED', 'DELIVERING', 'COMPLETED', 'CANCELLED'].map((status) => {
-    const count = orders.filter((order) => order.orderStatus === status).length;
+function createStatusChart(orderRows) {
+  const segments = [
+    { label: '결제완료', key: 'ORDERED' },
+    { label: '배송중', key: 'DELIVERING' },
+    { label: '배송완료', key: 'COMPLETED' },
+    { label: '취소', key: 'CANCELLED' },
+  ].map((item) => {
+    const count = orderRows.filter((row) => row.rawStatus === item.key).length;
 
     return {
-      label: toOrderStatusLabel(status),
+      label: item.label,
       value: count,
       formattedValue: `${count}건`,
-      color: STATUS_COLORS[status],
+      color: STATUS_COLORS[item.key],
     };
   });
 
   return {
-    valueLabel: '주문',
     segments,
-    totalSuffix: '건',
+    valueLabel: `${orderRows.length}건`,
+    totalText: '주문 기준',
   };
 }
 
-export function createSupportChart(qnaRows) {
-  const pending = qnaRows.filter((item) => item.status === '답변대기').length;
+function createSupportChart(qnaRows) {
   const answered = qnaRows.filter((item) => item.status === '답변완료').length;
+  const waiting = qnaRows.length - answered;
 
   return {
-    valueLabel: '문의',
     segments: [
-      {
-        label: '답변대기',
-        value: pending,
-        formattedValue: `${pending}건`,
-        color: '#1c3f94',
-      },
-      {
-        label: '답변완료',
-        value: answered,
-        formattedValue: `${answered}건`,
-        color: '#c7d7f7',
-      },
+      { label: '답변완료', value: answered, formattedValue: `${answered}건`, color: '#1c3f94' },
+      { label: '답변대기', value: waiting, formattedValue: `${waiting}건`, color: '#c7d7f7' },
     ],
-    totalSuffix: '건',
+    valueLabel: `${qnaRows.length}건`,
+    totalText: '문의 기준',
   };
 }
 
-export function createPaymentChart(orders) {
-  const paymentMap = orders.reduce((result, order) => {
-    const rawKey = String(order.payment ?? 'ETC').toUpperCase();
-    const resolvedLabel = PAYMENT_LABELS[rawKey] ?? '기타';
-    result.set(resolvedLabel, (result.get(resolvedLabel) ?? 0) + 1);
-    return result;
-  }, new Map());
-
-  const segments = [...paymentMap.entries()].map(([label, value], index) => ({
-    label,
-    value,
-    formattedValue: `${value}건`,
-    color: PAYMENT_COLORS[index] ?? PAYMENT_COLORS.at(-1),
-  }));
-
-  return {
-    valueLabel: '결제',
-    segments,
-    totalSuffix: '건',
-  };
-}
-
-export function createCategoryChart(categories, products, orders) {
-  const productMap = buildNormalizedProductMap(products);
-  const categorySalesMap = categories.reduce((result, category) => {
-    result.set(category.slug, {
-      slug: category.slug,
-      label: category.label,
-      units: 0,
-    });
-    return result;
-  }, new Map());
-
-  products.forEach((product) => {
-    const category = findCategoryForProduct(product, categories);
-    if (!category) {
-      return;
-    }
-
-    const categoryEntry = categorySalesMap.get(category.slug);
-    categoryEntry.units += buildSalesSeed(product.productId ?? product.id ?? product.name, product.reviews);
-  });
-
-  orders.forEach((order) => {
-    order.orderItems?.forEach((orderItem) => {
-      const key = String(orderItem.productName ?? orderItem.name ?? '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
-
-      const matchedProduct = productMap.get(key);
-      const category = matchedProduct ? findCategoryForProduct(matchedProduct, categories) : null;
-
-      if (!category) {
-        return;
-      }
-
-      const categoryEntry = categorySalesMap.get(category.slug);
-      categoryEntry.units += Number(orderItem.quantity ?? 1) * 3;
-    });
-  });
-
-  const rows = [...categorySalesMap.values()]
-    .filter((item) => item.units > 0)
-    .sort((left, right) => right.units - left.units)
-    .slice(0, 5);
-
-  const totalUnits = rows.reduce((sum, row) => sum + row.units, 0);
-  const colors = ['#1c3f94', '#4f86f7', '#88aef2', '#c7d7f7', '#e2e8f8'];
-
-  let ratioSum = 0;
-
-  return {
-    valueLabel: '매출',
-    segments: rows.map((row, index) => {
-      const ratio = totalUnits
-        ? index === rows.length - 1
-          ? Math.max(0, 100 - ratioSum)
-          : Math.round((row.units / totalUnits) * 100)
-        : 0;
-
-      ratioSum += ratio;
+function createPaymentChart(orders) {
+  const paymentEntries = Object.entries(PAYMENT_METHODS)
+    .map(([key, method]) => {
+      const count = orders.filter((order) => normalizePaymentCode(order.payment) === key).length;
 
       return {
-        label: row.label,
-        value: ratio,
-        formattedValue: `${ratio}%`,
-        color: colors[index],
+        label: method.label,
+        value: count,
+        formattedValue: `${count}건`,
+        color: method.color,
       };
-    }),
-    totalText: '총 100%',
+    })
+    .filter((item) => item.value > 0);
+
+  return {
+    segments: paymentEntries.length
+      ? paymentEntries
+      : [{ label: '결제 없음', value: 1, formattedValue: '0건', color: '#dbe6fb' }],
+    valueLabel: `${orders.length}건`,
+    totalText: '결제 기준',
   };
 }
 
-export function createStockRows(productRows) {
+function createCategoryChart(categoryRows) {
+  const palette = ['#1c3f94', '#4f86f7', '#88aef2', '#c7d7f7', '#7ca0eb', '#dbe6fb'];
+
+  const segments = categoryRows
+    .filter((item) => item.productCount > 0)
+    .map((item, index) => ({
+      label: item.label,
+      value: item.productCount,
+      formattedValue: `${item.productCount}개`,
+      color: palette[index % palette.length],
+    }));
+
+  const totalCount = categoryRows.reduce((sum, row) => sum + row.productCount, 0);
+
+  return {
+    segments,
+    valueLabel: `${totalCount}개`,
+    totalText: '상품 기준',
+  };
+}
+
+function createStockRows(productRows) {
   return [...productRows]
-    .filter((row) => row.stock <= 10)
     .sort((left, right) => left.stock - right.stock)
     .slice(0, 5);
 }
 
 export function buildAdminDashboard({
-  categories,
-  products,
-  orders,
-  members,
-  reviews,
-  qnas,
-  productCount,
-  orderCount,
-}) {
+  categories = [],
+  products = [],
+  orders = [],
+  members = [],
+  reviews = [],
+  qnas = [],
+  productCount = products.length,
+  orderCount = orders.length,
+} = {}) {
+  const normalizedProductMap = buildNormalizedProductMap(products);
+  const categoryRows = createCategoryRows(categories, products);
   const productRows = createProductRows(products);
+  const orderRows = createOrderRows(orders);
+  const memberRows = createMemberRows(members);
   const qnaRows = createQuestionRows(qnas);
+  const reviewRows = createReviewRows(reviews).map((row) => {
+    const matchedProduct = normalizedProductMap.get(String(row.productName ?? '').trim().toLowerCase());
+
+    return {
+      ...row,
+      image: matchedProduct?.image ?? matchedProduct?.imgPath ?? '',
+    };
+  });
 
   return {
     summaryCards: [
-      { id: 'products', label: '상품 수', value: `${formatNumber(productCount ?? productRows.length)}개` },
-      { id: 'orders', label: '주문 수', value: `${formatNumber(orderCount ?? orders.length)}건` },
-      { id: 'members', label: '회원 수', value: `${formatNumber(members.length)}명` },
-      { id: 'reviews', label: '리뷰 수', value: `${formatNumber(reviews.length)}건` },
+      { id: 'products', label: '상품 수', value: `${productCount}개` },
+      { id: 'orders', label: '주문 수', value: `${orderCount}건` },
+      { id: 'members', label: '회원 수', value: `${memberRows.length}명` },
+      { id: 'reviews', label: '리뷰 수', value: `${reviewRows.length}건` },
     ],
-    orderStatusCards: createOrderStatusCards(orders),
     trendChart: createOrderTrendChart(orders),
     salesChart: createSalesTrendChart(orders),
-    statusChart: createStatusChart(orders),
+    categoryChart: createCategoryChart(categoryRows),
+    statusChart: createStatusChart(orderRows),
     paymentChart: createPaymentChart(orders),
-    categoryChart: createCategoryChart(categories, products, orders),
-    categoryRows: createCategoryRows(categories, products),
-    stockRows: createStockRows(productRows),
-    memberRows: createMemberRows(members),
-    orderRows: createOrderRows(orders),
-    productRows,
-    qnaRows,
-    reviewRows: createReviewRows(reviews),
     supportChart: createSupportChart(qnaRows),
+    stockRows: createStockRows(productRows),
     watchProducts: createWatchProducts(products),
+    qnaRows,
+    reviewRows,
+    categoryRows,
+    memberRows,
+    orderRows,
+    productRows,
   };
 }
