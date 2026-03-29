@@ -1,10 +1,9 @@
 package com.example.ikea.controller;
 
-import com.example.ikea.dto.MemberJoinRequestDto;
-import com.example.ikea.dto.MemberLoginRequestDto;
-import com.example.ikea.dto.MemberResponseDto;
-import com.example.ikea.dto.MemberUpdateDto;
+import com.example.ikea.dto.*;
+import com.example.ikea.security.JwtTokenProvider;
 import com.example.ikea.service.MemberService;
+import com.example.ikea.service.RefreshTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     //회원가입
     @PostMapping("/join")
@@ -26,22 +27,32 @@ public class MemberController {
 
     //로그인
     @PostMapping("/login")
-    public ResponseEntity<MemberResponseDto> login(@RequestBody MemberLoginRequestDto request) {
-        MemberResponseDto response = memberService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<TokenResponseDto> login(@RequestBody MemberLoginRequestDto request) {
+        MemberResponseDto member = memberService.login(request);
+
+        String accessToken = jwtTokenProvider.createAccessToken(
+                member.getLoginId(), member.getMemberRole().name());
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getLoginId());
+
+        refreshTokenService.saveRefreshToken(
+                member.getLoginId(),
+                refreshToken,
+                member.getMemberRole().name());
+
+        return ResponseEntity.ok(new TokenResponseDto(accessToken, refreshToken));
     }
 
     //마이페이지
     @GetMapping("/{memberId}")
     public ResponseEntity<MemberResponseDto> detail(@PathVariable Long memberId) {
-        return ResponseEntity.ok(memberService.detailMember(memberId));
+        return ResponseEntity.ok(memberService.getMember(memberId));
     }
 
     //회원 정보 수정
     @PutMapping("/{memberId}")
-    public ResponseEntity<MemberResponseDto> update(@PathVariable Long memerId,
+    public ResponseEntity<MemberResponseDto> update(@PathVariable Long memberId,
                                                     @Valid @RequestBody MemberUpdateDto dto) {
-        return ResponseEntity.ok(memberService.update(dto, memerId));
+        return ResponseEntity.ok(memberService.update(dto, memberId));
     }
 
     // 회원탈퇴
@@ -51,4 +62,10 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
+
+    // 내 정보 조회 (로그인한 회원 본인)
+    @GetMapping("/me")
+    public ResponseEntity<MemberResponseDto> getMe(@RequestParam Long memberId) {
+        return ResponseEntity.ok(memberService.getMember(memberId));
+    }
 }

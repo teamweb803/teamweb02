@@ -22,24 +22,8 @@ public class AuthController {
 
     private final MemberService memberService;
     private final JwtTokenProvider jwtTokenProvider;
-    private RefreshTokenService refreshTokenService;
-    
-    // 로그인
-    @PostMapping("/login")
-    public ResponseEntity<TokenResponseDto> login(@RequestBody MemberLoginRequestDto request) {
-        MemberResponseDto member = memberService.login(request);
+    private final RefreshTokenService refreshTokenService;
 
-        // Access Token + Refresh Token 발급
-        String accessToken = jwtTokenProvider.createAccessToken(
-                member.getLoginId(), member.getMemberRole().name());
-        String refreshToken = jwtTokenProvider.createRefreshToken(
-                member.getLoginId());
-
-        // Refresh Token DB 저장
-        refreshTokenService.saveRefreshToken(member.getLoginId(), refreshToken);
-
-        return ResponseEntity.ok(new TokenResponseDto(accessToken, refreshToken));
-    }
     
     // Access Token 재발급
     @PostMapping("/refresh")

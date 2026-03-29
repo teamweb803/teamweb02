@@ -35,8 +35,14 @@ public class Member {
     @Column(nullable = false, unique = true)
     private String phoneNumber;
 
-    @Column(nullable = false)
-    private String address;
+    @Column(length = 10)
+    private String zoneCode;        // 우편 번호
+
+    @Column(length = 255)
+    private String addressMain;     // 기본주소
+
+    @Column(length = 255)
+    private String addressDetail;   // 상세주소
 
     @CreationTimestamp
     private LocalDateTime createdAt;

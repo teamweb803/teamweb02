@@ -8,6 +8,8 @@ import com.example.ikea.dto.ProductResponseDto;
 import com.example.ikea.repository.CategoryRepository;
 import com.example.ikea.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,6 +59,34 @@ public class ProductService {
                 .map(ProductResponseDto::new)
                 .collect(Collectors.toList());
     }
+
+    // 신상품 4건
+    public List<ProductResponseDto> getNewProducts() {
+        return productRepository.findTop4ByOrderByCreatedAtDesc()
+                .stream()
+                .map(ProductResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    // 베스트 4건
+    public List<ProductResponseDto> getBestProducts() {
+        Pageable pageable = PageRequest.of(0, 4);
+        return productRepository.findTop4ByBestProducts(pageable)
+                .stream()
+                .map(ProductResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    // 추천3건 - 특정 카테고리 기준
+    public List<ProductResponseDto> getRecommendProducts(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new IllegalStateException("존재하지 않는 카테고리입니다."));
+        return productRepository.findTop3ByCategoryOrderByCreatedAtDesc(category)
+                .stream()
+                .map(ProductResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
 
 
     // ===================관리자 권한 ====================

@@ -42,22 +42,28 @@ public class MemberService {
     //회원가입
     @Transactional
     public Long join(MemberJoinRequestDto request) {
-        if(memberRepository.existByLoginId(request.getLoginId())) {
-            throw new IllegalArgumentException("이미 사용중인 아이디 입니다.");
+        if (memberRepository.existByLoginId(request.getLoginId())) {
+            throw new IllegalArgumentException("이미 사용 중인 아이디 입니다.");
         }
-        if(!request.isPasswordMatch()) {
+        if (!request.isPasswordMatch()) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
+
         Member member = request.toEntity();
         member.setPassword(passwordEncoder.encode(request.getPassword()));
         memberRepository.save(member);
 
-        Cart cart = Cart.builder()
-                .member(member)
-                .build();
+        Cart cart = Cart.builder().member(member).build();
         cartRepository.save(cart);
 
         return member.getMemberId();
+    }
+
+    // 내 정보 조회 (/api/member/me 용)
+    public MemberResponseDto getMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+        return new MemberResponseDto(member);
     }
 
     //마이페이지
@@ -73,15 +79,13 @@ public class MemberService {
     public MemberResponseDto update(MemberUpdateDto dto, Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-        if (!dto.isPasswordMatch()) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
-        }
 
         member.setName(dto.getName());
-        member.setPassword(passwordEncoder.encode(dto.getPassword()));
         member.setEmail(dto.getEmail());
         member.setPhoneNumber(dto.getPhoneNumber());
-        member.setAddress(dto.getAddress());
+        member.setZoneCode(dto.getZoneCode());
+        member.setAddressMain(dto.getAddressMain());
+        member.setAddressDetail(dto.getAddressDetail());
 
         return new MemberResponseDto(member);
     }
@@ -89,7 +93,7 @@ public class MemberService {
     //회원 탈퇴
     @Transactional
     public void deleteMember(Long memberId) {
-        Member member = memberRepository.findById(memberId)
+        memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         memberRepository.deleteById(memberId);
     }

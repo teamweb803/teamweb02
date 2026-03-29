@@ -41,4 +41,24 @@ public class ProductController {
         return ResponseEntity.ok(productService.getDetailProduct(productId));
     }
 
+
+    //============메인 페이지용==========
+    // 신상품
+    @GetMapping("/new")
+    public ResponseEntity<List<ProductResponseDto>> getNewProducts() {
+        return ResponseEntity.ok(productService.getNewProducts());
+    }
+
+    // 베스트 상품
+    @GetMapping("/best")
+    public ResponseEntity<List<ProductResponseDto>> getBestProducts() {
+        return ResponseEntity.ok(productService.getBestProducts());
+    }
+
+    // 추천 상품
+    @GetMapping("/recommend")
+    public ResponseEntity<List<ProductResponseDto>> getRecommendProducts(
+            @RequestParam Long categoryId) {
+        return ResponseEntity.ok(productService.getRecommendProducts(categoryId));
+    }
 }

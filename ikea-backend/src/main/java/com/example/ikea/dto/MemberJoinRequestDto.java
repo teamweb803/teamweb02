@@ -36,8 +36,11 @@ public class MemberJoinRequestDto {
              message = "전화번호 형식이 올바르지 않습니다.")
     private String phoneNumber;
 
-    @NotBlank(message = "주소 필수 입력")
-    private String address;
+    private String zoneCode;
+
+    private String addressMain;
+
+    private String addressDetail;
 
 
     //비밀번호 확인
@@ -53,6 +56,9 @@ public class MemberJoinRequestDto {
                 .email(this.email)
                 .phoneNumber(this.phoneNumber)
                 .email(this.email)
+                .zoneCode(this.zoneCode)
+                .addressMain(this.addressMain)
+                .addressDetail(this.addressDetail)
                 .memberRole(MemberRole.USER)
                 .build();
     }

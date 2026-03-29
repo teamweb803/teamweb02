@@ -14,12 +14,13 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     // Refresh Token 저장
-    public void saveRefreshToken(String loginId, String refreshToken) {
+    public void saveRefreshToken(String loginId, String refreshToken, String memberRole) {
         // 기존 토큰 있으면 삭제 후 새로 저장
         refreshTokenRepository.deleteByLoginId(loginId);
         refreshTokenRepository.save(RefreshToken.builder()
                         .loginId(loginId)
                         .refreshToken(refreshToken)
+                        .memberRole(memberRole)
                         .build());
     }
 

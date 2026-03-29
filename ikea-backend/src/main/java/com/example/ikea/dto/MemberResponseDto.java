@@ -17,15 +17,17 @@ public class MemberResponseDto {
 
     private String loginId;
 
-    private String password;
-
     private String name;
 
     private String email;
 
     private String phoneNumber;
 
-    private String address;
+    private String zoneCode;
+
+    private String addressMain;
+
+    private String addressDetail;
 
     private LocalDateTime createdAt;
 
@@ -35,11 +37,12 @@ public class MemberResponseDto {
     public MemberResponseDto(Member member) {
         this.memberId = member.getMemberId();
         this.loginId = member.getLoginId();
-        this.password = member.getPassword();
         this.name = member.getName();
         this.email = member.getEmail();
         this.phoneNumber = member.getPhoneNumber();
-        this.address = member.getAddress();
+        this.zoneCode = member.getZoneCode();
+        this.addressMain = member.getAddressMain();
+        this.addressDetail = member.getAddressDetail();
         this.createdAt = member.getCreatedAt();
         this.memberRole = member.getMemberRole();
     }

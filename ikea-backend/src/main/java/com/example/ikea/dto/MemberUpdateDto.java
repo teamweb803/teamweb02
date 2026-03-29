@@ -35,10 +35,13 @@ public class MemberUpdateDto {
             message = "전화번호 형식이 올바르지 않습니다.")
     private String phoneNumber;
 
-    @NotBlank(message = "주소 필수 입력")
-    private String address;
+    private String zoneCode;
+
+    private String addressMain;
+
+    private String addressDetail;
 
     public boolean isPasswordMatch() {
-        return password.equals(confirmPassword);
+        return password != null && password.equals(confirmPassword); // null 체크 추가
     }
 }
