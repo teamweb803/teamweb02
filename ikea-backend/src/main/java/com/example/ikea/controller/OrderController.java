@@ -34,7 +34,7 @@ public class OrderController {
     //주문 생성 (장바구니 -> 주문)
     @PostMapping("/{memberId}")
     public ResponseEntity<Long> createOrder(@PathVariable Long memberId,
-                                            @RequestParam @Valid OrderRequestDto dto) {
+                                            @RequestBody @Valid OrderRequestDto dto) {
         return ResponseEntity.ok(orderService.createOrder(memberId, dto));
     }
 

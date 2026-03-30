@@ -1,6 +1,5 @@
 package com.example.ikea.service;
 
-import com.example.ikea.config.PasswordConfig;
 import com.example.ikea.domain.Cart;
 import com.example.ikea.domain.Member;
 import com.example.ikea.domain.MemberRole;
@@ -42,7 +41,7 @@ public class MemberService {
     //회원가입
     @Transactional
     public Long join(MemberJoinRequestDto request) {
-        if (memberRepository.existByLoginId(request.getLoginId())) {
+        if (memberRepository.existsByLoginId(request.getLoginId())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디 입니다.");
         }
         if (!request.isPasswordMatch()) {
@@ -59,9 +58,9 @@ public class MemberService {
         return member.getMemberId();
     }
 
-    // 내 정보 조회 (/api/member/me 용)
-    public MemberResponseDto getMember(Long memberId) {
-        Member member = memberRepository.findById(memberId)
+    // getMe 전용 회원조회
+    public MemberResponseDto getMemberByLoginId(String loginId) {
+        Member member = memberRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         return new MemberResponseDto(member);
     }

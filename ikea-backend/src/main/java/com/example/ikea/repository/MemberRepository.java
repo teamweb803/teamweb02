@@ -14,10 +14,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByLoginId(String loginId);
 
     //로그인 아이디 중복 체크
-    boolean existByLoginId(String loginId);
+    boolean existsByLoginId(String loginId);
     //이메일 중복 체크
-    boolean existByEmail(String email);
+    boolean existsByEmail(String email);
     //전화번호 중복 체크
-    boolean existByPhoneNumber(String phoneNumber);
+    boolean existsByPhoneNumber(String phoneNumber);
 
 }

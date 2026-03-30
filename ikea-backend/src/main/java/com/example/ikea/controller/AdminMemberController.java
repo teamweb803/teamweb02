@@ -43,7 +43,7 @@ public class AdminMemberController {
 
     //회원 등급 변경
     @PatchMapping("/{memberId}/role")
-    public ResponseEntity<MemberResponseDto> changeRole(@PathVariable Long memberId, @RequestParam MemberRole memberRole) {
+    public ResponseEntity<Void> changeRole(@PathVariable Long memberId, @RequestParam MemberRole memberRole) {
         memberService.changeRole(memberId, memberRole);
         return  ResponseEntity.ok().build();
     }

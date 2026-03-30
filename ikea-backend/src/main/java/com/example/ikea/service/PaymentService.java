@@ -42,7 +42,7 @@ public class PaymentService {
     @Value("${payment.kakao.admin-key}")
     private String kakaoAdminKey;
 
-    @Value("${payment.toss.base-url}")
+    @Value("${payment.kakao.base-url}")
     private String kakaoBaseUrl;
 
 
@@ -76,7 +76,7 @@ public class PaymentService {
             //시크릿 키 Base64 인코딩
             String encoded = Base64.getEncoder()
                     .encodeToString((tossSecretKey + ":").getBytes(StandardCharsets.UTF_8));
-            headers.set("Authorization", "Basic" + encoded);
+            headers.set("Authorization", "Basic " + encoded);
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             Map<String, Object> body = new HashMap<>();
@@ -109,22 +109,7 @@ public class PaymentService {
             }
         } catch (Exception e) {
             log.error("토스 결제 확인 실패: {}", e.getMessage());
-
-            // 테스트 환경 mock 처리
-            Payment payment = Payment.builder()
-                    .order(order)
-                    .member(member)
-                    .paymentMethod(PaymentMethod.TOSS)
-                    .transactionId(dto.getPaymentKey())
-                    .amount(dto.getAmount())
-                    .paymentStatus(PaymentStatus.OK)
-                    .paidAt(LocalDateTime.now())
-                    .build();
-
-            paymentRepository.save(payment);
-            order.setOrderStatus(OrderStatus.PAID);
-
-            return new PaymentResponseDto(payment);
+            throw new IllegalArgumentException("결제 확인에 실패했습니다.");
         }
         throw new IllegalArgumentException("결제 확인에 실패했습니다.");
     }
@@ -201,7 +186,7 @@ public class PaymentService {
             body.add("partner_user_id", String.valueOf(memberId));
             body.add("pg_token", dto.getPgToken());
 
-            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body);
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     kakaoBaseUrl + "/approve", entity, Map.class);
 
@@ -214,6 +199,7 @@ public class PaymentService {
                         .paymentMethod(PaymentMethod.KAKAO)
                         .transactionId(dto.getTid())
                         .amount(order.getFinalPrice())
+                        .paymentStatus(PaymentStatus.OK)
                         .responseData(data != null ? data.toString() : null)
                         .paidAt(LocalDateTime.now())
                         .build();
@@ -227,7 +213,6 @@ public class PaymentService {
             log.error("카카오 결제 확인 실패: {}", e.getMessage());
             throw new IllegalArgumentException("카카오 결제 확인에 실패했습니다.");
         }
-
         throw new IllegalArgumentException("카카오 결제 확인에 실패했습니다.");
     }
     
@@ -235,7 +220,7 @@ public class PaymentService {
     
     // 결제 취소
     @Transactional
-    public void cancelPayment(Long memberId, Long orderId, String reason) {
+    public void cancelPayment(Long orderId, Long memberId, String reason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
         if (!order.getMember().getMemberId().equals(memberId)) {

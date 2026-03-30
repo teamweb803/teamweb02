@@ -35,8 +35,7 @@ public class ReviewController {
     @PostMapping("/{memberId}")
     public ResponseEntity<Long> createReview(@PathVariable Long memberId,
                                              @RequestBody @Valid ReviewRequestDto dto) {
-        reviewService.createReview(memberId, dto);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(reviewService.createReview(memberId, dto));
     }
     
     //리뷰 수정
@@ -48,7 +47,7 @@ public class ReviewController {
     }
     
     //리뷰 삭제
-    @DeleteMapping("/reviewId}")
+    @DeleteMapping("/{reviewId}")
     public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.ok().build();

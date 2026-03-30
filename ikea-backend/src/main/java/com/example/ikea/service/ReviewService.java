@@ -54,13 +54,27 @@ public class ReviewService {
         Order order = orderRepository.findById(dto.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
 
+        // 주문 소유자인지 검증
+        if(!order.getMember().getMemberId().equals(memberId)) {
+            throw new IllegalArgumentException("본인의 주문에만 리뷰를 작성할 수 있습니다.");
+        }
+
+        // 해당 주문에 상품이 포함되있는지 확인
+        boolean hasProduct = order.getOrderItemList().stream()
+                .anyMatch(item -> item.getProduct().getProductId().equals(dto.getProductId()));
+        if (!hasProduct) {
+            throw new IllegalArgumentException("해당 주문에 포함된 상품이 아닙니다.");
+        }
+
+
+
         //구매 완료된 주문인지 확인
         if (order.getOrderStatus() != OrderStatus.COMPLETED) {
             throw new IllegalArgumentException("구매 완료된 상품이 아닙니다.");
         }
 
         // 리뷰 중복 확인(상품당 한개만 가능)
-        if (reviewRepository.existsByOrder_OrderIdAndProduct_Productid(
+        if (reviewRepository.existsByOrder_OrderIdAndProduct_ProductId(
                 dto.getOrderId(), dto.getProductId())) {
             throw new IllegalArgumentException("이미 리뷰를 작성한 상품입니다.");
         }

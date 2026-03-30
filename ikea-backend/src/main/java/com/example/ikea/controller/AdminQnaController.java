@@ -2,6 +2,7 @@ package com.example.ikea.controller;
 
 import com.example.ikea.domain.Qna;
 import com.example.ikea.dto.QnaRequestDto;
+import com.example.ikea.dto.QnaResponseDto;
 import com.example.ikea.service.QnaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class AdminQnaController {
 
     // 전체 목록
     @GetMapping
-    public ResponseEntity<List<Qna>> getQnaList() {
+    public ResponseEntity<List<QnaResponseDto>> getQnaList() {
         return ResponseEntity.ok(qnaService.getQnaList());
     }
 

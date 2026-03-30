@@ -14,9 +14,8 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     List<CartItem> findByCart_CartId(Long cartId);
 
     // 장바구니에 특정 상품 존재 확인 (중복 체크)
-    Optional<CartItem> findByCart_CartIdAndProduct_productId(Long cartId, Long productId);
+    Optional<CartItem> findByCart_CartIdAndProduct_ProductId(Long cartId, Long productId);
 
     //주문 후 장바구니 비우기
     void deleteByCart_CartId(Long CartId);
-
 }

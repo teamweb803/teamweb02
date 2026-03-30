@@ -7,6 +7,8 @@ import com.example.ikea.service.RefreshTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -45,7 +47,7 @@ public class MemberController {
     //마이페이지
     @GetMapping("/{memberId}")
     public ResponseEntity<MemberResponseDto> detail(@PathVariable Long memberId) {
-        return ResponseEntity.ok(memberService.getMember(memberId));
+        return ResponseEntity.ok(memberService.detailMember(memberId));
     }
 
     //회원 정보 수정
@@ -65,7 +67,8 @@ public class MemberController {
 
     // 내 정보 조회 (로그인한 회원 본인)
     @GetMapping("/me")
-    public ResponseEntity<MemberResponseDto> getMe(@RequestParam Long memberId) {
-        return ResponseEntity.ok(memberService.getMember(memberId));
+    public ResponseEntity<MemberResponseDto> getMe(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(memberService.getMemberByLoginId(userDetails.getUsername()));
     }
 }

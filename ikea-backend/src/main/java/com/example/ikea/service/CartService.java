@@ -26,7 +26,7 @@ public class CartService {
 
     //장바구니 조회
     public List<CartItemResponseDto> getCartList(Long memberId) {
-        Cart cart = cartRepository.findByMemberCart(memberId)
+        Cart cart = cartRepository.findByMember_MemberId(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
         return cart.getCartItemList()
                 .stream()
@@ -37,13 +37,13 @@ public class CartService {
     //장바구니 담기
     @Transactional
     public void addCart(Long memberId, CartRequestDto dto) {
-        Cart cart = cartRepository.findByMemberCart(memberId)
+        Cart cart = cartRepository.findByMember_MemberId(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 상품입니다."));
 
         //이미 담긴 상품이면 수량만 추가
-        cartItemRepository.findByCart_CartIdAndProduct_productId(cart.getCartId(), dto.getProductId())
+        cartItemRepository.findByCart_CartIdAndProduct_ProductId(cart.getCartId(), dto.getProductId())
                 .ifPresentOrElse(
                         cp -> cp.setQuantity(cp.getQuantity() + dto.getQuantity()),
                         () -> cartItemRepository.save(CartItem.builder()
@@ -76,7 +76,7 @@ public class CartService {
     //장바구니 전체 비우기
     @Transactional
     public void clearCart(Long memberId) {
-        Cart cart = cartRepository.findByMemberCart(memberId).
+        Cart cart = cartRepository.findByMember_MemberId(memberId).
                 orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
         cartItemRepository.deleteByCart_CartId(cart.getCartId());
     }

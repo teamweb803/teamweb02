@@ -105,7 +105,7 @@ public class NoticeService {
     public void deleteNotice(Long noticeId) {
         Notice notice = noticeRepository.findById(noticeId)
                 .orElseThrow(() -> new IllegalStateException("존재하는 공지사항이 아닙니다."));
-        noticeRepository.deleteById(noticeId);
+        noticeRepository.delete(notice);
     }
 
     //대시보드용 공지사항 수
@@ -117,15 +117,15 @@ public class NoticeService {
     // =============== 파일 처리 ==================
 
     private String saveFile(MultipartFile file) throws IOException {
-        String uplodadDir = "src/main/resources/static/uploads/notices/";
-        File dir = new File(uplodadDir);
+        String uploadDir = "src/main/resources/static/uploads/notices/";
+        File dir = new File(uploadDir);
 
         if(!dir.exists() && !dir.mkdirs()) {
             throw new IOException("업로드 폴더 생성에 실패했습니다.");
         }
 
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        file.transferTo(new File(uplodadDir + fileName));
+        file.transferTo(new File(uploadDir + fileName));
 
         return "/uploads/notices/" + fileName;
     }

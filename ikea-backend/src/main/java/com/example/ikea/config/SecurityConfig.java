@@ -41,11 +41,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                     // 누구나 접근 가능
                                 .requestMatchers(
+                                        "/api/auth/**",
                                         "/api/member/join",
-                                        "/api.member/login",
+                                        "/api/member/login",
                                         "/api/auth/refresh",
                                         "/api/product/**",
-                                        "/api/auth/**",
                                         "/api/category/**",
                                         "/api/qna/**",
                                         "/api/review/**",

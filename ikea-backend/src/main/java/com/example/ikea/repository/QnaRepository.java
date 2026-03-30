@@ -3,6 +3,7 @@ package com.example.ikea.repository;
 import com.example.ikea.domain.Qna;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -14,10 +15,10 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
 
     //제목 검색
     @Query("""
-            SELECT q FROM Qna q WHERE q.title LIKE %title%
+            SELECT q FROM Qna q WHERE q.title LIKE %:title%
             ORDER BY q.parentId DESC, q.level ASC, q.createdAt ASC
             """)
-    List<Qna> findByTitle(String title);
+    List<Qna> findByTitle(@Param("title") String title);
 
     // 특정 질문의 답변 목록
     List<Qna> findByParentIdOrderByLevelAscCreatedAtAsc(Long parentId);

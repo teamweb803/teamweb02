@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/notices")
+@RequestMapping("/api/admin/notice")
 @RequiredArgsConstructor
 public class AdminNoticeController {
 
@@ -35,7 +35,7 @@ public class AdminNoticeController {
     }
 
     //공지사항 삭제
-    @DeleteMapping("/noticeId")
+    @DeleteMapping("/{noticeId}")
     public ResponseEntity<Void> deleteNotice(@PathVariable long noticeId) {
         noticeService.deleteNotice(noticeId);
         return ResponseEntity.ok().build();

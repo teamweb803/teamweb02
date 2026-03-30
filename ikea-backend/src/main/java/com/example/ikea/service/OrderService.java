@@ -45,7 +45,7 @@ public class OrderService {
     public Long createOrder(Long memberId, OrderRequestDto dto) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 회원입니다."));
-        Cart cart = cartRepository.findByMemberCart(memberId)
+        Cart cart = cartRepository.findByMember_MemberId(memberId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 장바구니입니다."));
         List<CartItem> cartItems = cartItemRepository.findByCart_CartId(cart.getCartId());
         if (cartItems.isEmpty()) {
@@ -71,6 +71,7 @@ public class OrderService {
                 .finalPrice(totalPrice)
                 .address(dto.getAddress())
                 .build();
+            orderRepository.save(order);
 
         //장바구니 상품 -> 주문상품으로 전환
         cartItems.forEach(cp -> {

@@ -2,6 +2,7 @@ package com.example.ikea.controller;
 
 import com.example.ikea.domain.Qna;
 import com.example.ikea.dto.QnaRequestDto;
+import com.example.ikea.dto.QnaResponseDto;
 import com.example.ikea.service.QnaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,29 +14,29 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/qna")
+@RequiredArgsConstructor
 public class QnaController {
 
     private final QnaService qnaService;
 
-    //qna 목록
+    // 전체 목록
     @GetMapping
-    public ResponseEntity<List<Qna>> getQnaList() {
+    public ResponseEntity<List<QnaResponseDto>> getQnaList() {
         return ResponseEntity.ok(qnaService.getQnaList());
     }
 
-    //qna 검색
+    // 제목 검색
     @GetMapping("/search")
-    public ResponseEntity<List<Qna>> searchQna(@RequestParam String title) {
-        return ResponseEntity.ok(qnaService.searchByTitle(title));
+    public ResponseEntity<List<QnaResponseDto>> searchQna(@RequestParam String title) {
+        return ResponseEntity.ok(qnaService.searchQna(title));
     }
 
-    //질문 상세보기 + 답변 보기
+    // 질문 상세 + 답변 목록
     @GetMapping("/{qnaId}")
     public ResponseEntity<Map<String, Object>> getQna(@PathVariable Long qnaId) {
-        Qna question = qnaService.getQna(qnaId);
-        List<Qna> answers = qnaService.getAnswerList(question.getParentId());
+        QnaResponseDto question = qnaService.getQna(qnaId);
+        List<QnaResponseDto> answers = qnaService.getAnswerList(question.getQnaId());
 
         Map<String, Object> response = new HashMap<>();
         response.put("question", question);
@@ -44,26 +45,24 @@ public class QnaController {
         return ResponseEntity.ok(response);
     }
 
-    //질문 등록
+    // 질문 등록
     @PostMapping
-    public ResponseEntity<Long> createQuestion(@RequestBody @Valid QnaRequestDto dto) {
-        return ResponseEntity.ok(qnaService.createQuestion(dto));
+    public ResponseEntity<Long> createQna(@RequestBody @Valid QnaRequestDto dto) {
+        return ResponseEntity.ok(qnaService.createQna(dto));
     }
 
-    //질문 수정
+    // 질문 수정
     @PutMapping("/{qnaId}")
-    public ResponseEntity<Void> updateQuestion(@PathVariable Long qnaId,
-                                               @RequestBody @Valid QnaRequestDto dto) {
+    public ResponseEntity<Void> updateQna(@PathVariable Long qnaId,
+                                          @RequestBody @Valid QnaRequestDto dto) {
         qnaService.updateQna(qnaId, dto);
         return ResponseEntity.ok().build();
     }
 
-    //질문 삭제
+    // 질문 삭제
     @DeleteMapping("/{qnaId}")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long qnaId) {
         qnaService.deleteQuestion(qnaId);
         return ResponseEntity.ok().build();
     }
-
-
 }
