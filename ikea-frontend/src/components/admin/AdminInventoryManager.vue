@@ -1,6 +1,7 @@
 <script setup>
 import { computed, shallowRef, watch } from 'vue';
 import { useAdminInventory } from '../../composables/useAdminInventory';
+import CommonStatePanel from '../common/CommonStatePanel.vue';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
 
@@ -119,9 +120,11 @@ watch(
           </span>
         </button>
 
-        <div v-if="!filteredItems.length" class="admin-inventory-manager__empty">
-          선택한 조건에 맞는 재고 상품이 없습니다.
-        </div>
+        <CommonStatePanel
+          v-if="!filteredItems.length"
+          title="선택한 조건에 맞는 재고 상품이 없습니다."
+          compact
+        />
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
@@ -187,9 +190,12 @@ watch(
         </div>
       </div>
 
-      <div v-else class="admin-inventory-manager__detail-empty">
-        조정할 재고 상품을 먼저 선택해 주세요.
-      </div>
+      <CommonStatePanel
+        v-else
+        title="조정할 재고 상품을 먼저 선택해 주세요."
+        align="left"
+        compact
+      />
     </AdminPanel>
   </section>
 </template>

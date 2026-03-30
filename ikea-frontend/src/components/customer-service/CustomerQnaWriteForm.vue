@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, reactive, shallowRef } from 'vue';
+import { computed, onMounted, reactive, shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { ROUTE_PATHS } from '../../constants/routes';
 import { createCustomerSupportQna } from '../../services/customerSupportService';
 import { useAccountStore } from '../../stores/account';
+import { detectSensitiveQnaContent } from '../../utils/qnaPrivacy';
 
 const router = useRouter();
 const accountStore = useAccountStore();
@@ -17,6 +18,8 @@ const form = reactive({
   title: '',
   content: '',
 });
+
+const privacyMessage = computed(() => detectSensitiveQnaContent([form.title, form.content]));
 
 function resetForm() {
   form.type = questionTypes[0];
@@ -40,6 +43,11 @@ function buildSubmitTitle() {
 async function submitQna() {
   if (!form.writer.trim() || !form.title.trim() || !form.content.trim()) {
     statusMessage.value = '작성자, 제목, 문의 내용을 모두 입력해 주세요.';
+    return;
+  }
+
+  if (privacyMessage.value) {
+    statusMessage.value = privacyMessage.value;
     return;
   }
 
@@ -73,7 +81,10 @@ onMounted(() => {
 <template>
   <section class="cs-write">
     <div class="cs-write__intro">
-      <p>회원과 비회원 모두 문의를 작성할 수 있습니다. 공개 목록에 노출될 수 있으니 이메일, 휴대폰 번호, 상세 주소 같은 개인정보는 작성하지 마세요.</p>
+      <p>
+        회원과 비회원 모두 문의를 작성할 수 있습니다. 공개 목록에 노출될 수 있으므로 이메일, 전화번호,
+        상세 주소 같은 개인정보는 작성하지 마세요.
+      </p>
     </div>
 
     <form class="cs-write__form" @submit.prevent="submitQna">
@@ -104,7 +115,7 @@ onMounted(() => {
           v-model.trim="form.title"
           type="text"
           maxlength="80"
-          placeholder="문의 제목을 입력해 주세요"
+          placeholder="문의 제목을 입력해 주세요."
         />
       </div>
 
@@ -114,16 +125,17 @@ onMounted(() => {
           id="cs-qna-content"
           v-model.trim="form.content"
           rows="8"
-          placeholder="주문 정보나 상황을 설명해 주세요"
+          placeholder="주문 정보와 상황을 설명해 주세요."
         />
       </div>
 
-      <p v-if="statusMessage" class="cs-write__status">{{ statusMessage }}</p>
+      <p v-if="privacyMessage" class="cs-write__status cs-write__status--error">{{ privacyMessage }}</p>
+      <p v-else-if="statusMessage" class="cs-write__status">{{ statusMessage }}</p>
 
       <div class="cs-write__actions">
         <button type="button" class="cs-write__secondary" @click="resetForm">입력 초기화</button>
-        <button type="submit" class="cs-write__primary" :disabled="isSubmitting">
-          {{ isSubmitting ? '등록 중...' : '문의 등록' }}
+        <button type="submit" class="cs-write__primary" :disabled="isSubmitting || Boolean(privacyMessage)">
+          {{ isSubmitting ? '등록 중..' : '문의 등록' }}
         </button>
       </div>
     </form>
@@ -148,6 +160,10 @@ onMounted(() => {
   color: #666666;
   font-size: 14px;
   line-height: 1.7;
+}
+
+.cs-write__status--error {
+  color: #c62828;
 }
 
 .cs-write__form {
@@ -209,6 +225,11 @@ onMounted(() => {
   border-color: #111111;
   background: #111111;
   color: #ffffff;
+}
+
+.cs-write__primary:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 @media (max-width: 720px) {

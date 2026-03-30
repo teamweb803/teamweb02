@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, shallowRef, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
+import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
   createAdminNotice,
   deleteAdminNotice,
@@ -237,9 +238,12 @@ onMounted(async () => {
           </div>
         </article>
 
-        <div v-if="!notices.length" class="admin-notices-manager__empty">
-          {{ isLoading ? '공지 목록을 불러오는 중입니다.' : '등록된 공지가 없습니다.' }}
-        </div>
+        <CommonStatePanel
+          v-if="!notices.length"
+          :tone="isLoading ? 'loading' : 'neutral'"
+          :title="isLoading ? '공지 목록을 불러오는 중입니다.' : '등록된 공지가 없습니다.'"
+          compact
+        />
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />

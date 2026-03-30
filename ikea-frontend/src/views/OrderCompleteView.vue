@@ -1,19 +1,64 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { getLatestCompletedOrder } from '../composables/useCommerceCart';
 import { buildProductDetailPath, ROUTE_PATHS } from '../constants/routes';
+import { useAccountStore } from '../stores/account';
+import { buildGuestOrderLookupQuery } from '../utils/guestOrderLookup';
 
-const order = ref(getLatestCompletedOrder());
+const route = useRoute();
+const accountStore = useAccountStore();
+const storedOrder = ref(getLatestCompletedOrder());
 
 onMounted(() => {
-  order.value = getLatestCompletedOrder();
+  accountStore.hydrate();
+  storedOrder.value = getLatestCompletedOrder();
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 });
 
+const requestedOrderNumber = computed(() => String(route.query.orderNumber ?? '').trim());
+const requestedOrderType = computed(() => String(route.query.orderType ?? '').trim().toLowerCase());
+const hasMatchingStoredOrder = computed(() => {
+  const storedOrderNumber = String(storedOrder.value?.orderNumber ?? '').trim();
+
+  if (!storedOrderNumber) {
+    return false;
+  }
+
+  if (!requestedOrderNumber.value) {
+    return true;
+  }
+
+  return storedOrderNumber === requestedOrderNumber.value;
+});
+const order = computed(() => (
+  hasMatchingStoredOrder.value
+    ? storedOrder.value
+    : null
+));
 const hasOrder = computed(() => Boolean(order.value?.orderNumber));
 const isBankTransfer = computed(() => order.value?.paymentMethod === 'bank');
 const isGuestOrder = computed(() => Boolean(order.value?.isGuestOrder));
+const recoveryOrderNumber = computed(() => (
+  requestedOrderNumber.value || String(storedOrder.value?.orderNumber ?? '').trim()
+));
+const recoveryOrderType = computed(() => {
+  if (hasOrder.value) {
+    return isGuestOrder.value ? 'guest' : 'member';
+  }
+
+  if (requestedOrderType.value === 'guest' || requestedOrderType.value === 'member') {
+    return requestedOrderType.value;
+  }
+
+  if (accountStore.accessToken) {
+    return 'member';
+  }
+
+  return 'unknown';
+});
+const hasRecoveryOrderNumber = computed(() => Boolean(recoveryOrderNumber.value));
 const pageTitle = computed(() => (
   isBankTransfer.value
     ? '주문이 접수되었습니다.'
@@ -25,7 +70,7 @@ const pageDescription = computed(() => {
   }
 
   if (isGuestOrder.value) {
-    return '비회원 주문이 정상적으로 접수되었습니다. 배송 확인이 필요할 때를 대비해 주문번호를 저장해 주세요.';
+    return '';
   }
 
   return '주문과 결제가 정상적으로 완료되었습니다. 배송 일정과 주문 내역은 아래에서 다시 확인할 수 있습니다.';
@@ -48,6 +93,126 @@ const deliveryAddress = computed(() => {
     .filter(Boolean)
     .join(' ')
     .trim();
+});
+const recoveryTitle = computed(() => (
+  hasRecoveryOrderNumber.value
+    ? '주문은 접수되었지만 상세 화면을 다시 불러오지 못했습니다.'
+    : '확인할 주문 정보가 없습니다.'
+));
+const recoveryDescription = computed(() => {
+  if (!hasRecoveryOrderNumber.value) {
+    return '주문 완료 후 이 페이지로 다시 이동하면 결제 정보와 배송 내용을 확인할 수 있습니다.';
+  }
+
+  if (recoveryOrderType.value === 'guest') {
+    return '현재 브라우저 세션에서 주문 상세 정보가 만료되었습니다. 아래 주문번호로 비회원 주문조회에서 다시 확인해 주세요.';
+  }
+
+  if (recoveryOrderType.value === 'member') {
+    return accountStore.accessToken
+      ? '현재 브라우저 세션에서 주문 상세 정보가 만료되었습니다. 마이페이지 주문내역에서 같은 주문번호를 다시 확인해 주세요.'
+      : '현재 브라우저 세션에서 주문 상세 정보가 만료되었습니다. 로그인 후 마이페이지 주문내역에서 다시 확인해 주세요.';
+  }
+
+  return '현재 브라우저 세션에서 주문 상세 정보가 만료되었습니다. 주문번호를 기준으로 주문내역을 다시 확인해 주세요.';
+});
+const recoveryNotes = computed(() => {
+  if (!hasRecoveryOrderNumber.value) {
+    return [
+      '주문 완료 화면은 결제 직후 또는 동일한 브라우저 세션에서 가장 정확하게 확인할 수 있습니다.',
+      '새 주문을 진행하기 전에는 장바구니와 배송 정보를 다시 확인해 주세요.',
+    ];
+  }
+
+  if (recoveryOrderType.value === 'guest') {
+    return [
+      '비회원 주문조회에서는 주문번호와 주문자명을 함께 입력하면 배송 상태를 다시 확인할 수 있습니다.',
+      '주문번호는 배송 문의나 취소 확인 시에도 필요할 수 있으니 별도로 보관해 주세요.',
+    ];
+  }
+
+  if (recoveryOrderType.value === 'member') {
+    return [
+      '회원 주문은 마이페이지 주문내역에서 배송 상태와 결제 내역을 다시 확인할 수 있습니다.',
+      '로그인이 풀린 경우에는 다시 로그인한 뒤 주문내역 화면으로 이동합니다.',
+    ];
+  }
+
+  return [
+    '주문 유형을 정확히 알 수 없으면 비회원 주문조회와 회원 주문내역을 순서대로 확인해 주세요.',
+    '문제가 계속되면 주문번호를 준비한 뒤 고객센터로 문의해 주세요.',
+  ];
+});
+const recoveryActions = computed(() => {
+  if (!hasRecoveryOrderNumber.value) {
+    return [
+      {
+        label: '장바구니 가기',
+        to: ROUTE_PATHS.cart,
+        variant: 'secondary',
+      },
+      {
+        label: '홈으로 이동',
+        to: ROUTE_PATHS.home,
+        variant: 'primary',
+      },
+    ];
+  }
+
+  if (recoveryOrderType.value === 'guest') {
+    return [
+      {
+        label: '비회원 주문 조회',
+        to: {
+          path: ROUTE_PATHS.guestOrderLookup,
+          query: buildGuestOrderLookupQuery({
+            inquiryType: 'order',
+            orderNumber: recoveryOrderNumber.value,
+          }),
+        },
+        variant: 'primary',
+      },
+      {
+        label: '홈으로 이동',
+        to: ROUTE_PATHS.home,
+        variant: 'secondary',
+      },
+    ];
+  }
+
+  if (recoveryOrderType.value === 'member') {
+    return [
+      {
+        label: accountStore.accessToken ? '주문내역 확인' : '로그인하고 주문내역 보기',
+        to: ROUTE_PATHS.memberMyPage,
+        variant: 'primary',
+      },
+      {
+        label: '홈으로 이동',
+        to: ROUTE_PATHS.home,
+        variant: 'secondary',
+      },
+    ];
+  }
+
+  return [
+    {
+      label: '비회원 주문 조회',
+      to: {
+        path: ROUTE_PATHS.guestOrderLookup,
+        query: buildGuestOrderLookupQuery({
+          inquiryType: 'order',
+          orderNumber: recoveryOrderNumber.value,
+        }),
+      },
+      variant: 'primary',
+    },
+    {
+      label: accountStore.accessToken ? '마이페이지로 이동' : '로그인하고 주문내역 보기',
+      to: ROUTE_PATHS.memberMyPage,
+      variant: 'secondary',
+    },
+  ];
 });
 
 function formatPrice(value) {
@@ -81,9 +246,9 @@ function resolveDetailPath(item) {
             <div class="order-complete-hero__copy">
               <span class="order-complete-hero__eyebrow">ORDER COMPLETE</span>
               <h1>{{ pageTitle }}</h1>
-              <p>{{ pageDescription }}</p>
+              <p v-if="pageDescription">{{ pageDescription }}</p>
               <p v-if="isGuestOrder" class="order-complete-hero__guest-note">
-                비회원 주문은 회원 마이페이지에 저장되지 않습니다. 화면에 표시된 주문번호를 따로 보관해 주세요.
+                비회원 주문은 마이페이지에서 조회되지 않으니 주문번호를 저장해 주세요.
               </p>
             </div>
 
@@ -271,14 +436,24 @@ function resolveDetailPath(item) {
         </template>
 
         <section v-else class="order-complete-empty">
-          <h1>확인할 주문 정보가 없습니다.</h1>
-          <p>주문 완료 후 이 페이지로 다시 이동하면 결제 정보와 배송 내용을 확인할 수 있습니다.</p>
+          <h1>{{ recoveryTitle }}</h1>
+          <p>{{ recoveryDescription }}</p>
+          <article v-if="hasRecoveryOrderNumber" class="order-complete-empty__order-box">
+            <span>확인할 주문번호</span>
+            <strong>{{ recoveryOrderNumber }}</strong>
+          </article>
+          <ul class="order-complete-note-list order-complete-empty__notes">
+            <li v-for="note in recoveryNotes" :key="note">{{ note }}</li>
+          </ul>
           <div class="order-complete-empty__actions">
-            <RouterLink :to="ROUTE_PATHS.cart" class="order-complete-action order-complete-action--secondary">
-              장바구니 가기
-            </RouterLink>
-            <RouterLink :to="ROUTE_PATHS.home" class="order-complete-action order-complete-action--primary">
-              홈으로 이동
+            <RouterLink
+              v-for="action in recoveryActions"
+              :key="action.label"
+              :to="action.to"
+              class="order-complete-action"
+              :class="action.variant === 'primary' ? 'order-complete-action--primary' : 'order-complete-action--secondary'"
+            >
+              {{ action.label }}
             </RouterLink>
           </div>
         </section>
@@ -635,6 +810,32 @@ function resolveDetailPath(item) {
   text-align: center;
   padding-top: 34px;
   padding-bottom: 34px;
+}
+
+.order-complete-empty__order-box {
+  width: min(100%, 420px);
+  padding: 18px 20px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  display: grid;
+  gap: 8px;
+}
+
+.order-complete-empty__order-box span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.order-complete-empty__order-box strong {
+  color: #111111;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.order-complete-empty__notes {
+  width: min(100%, 560px);
+  text-align: left;
 }
 
 @media (max-width: 1120px) {

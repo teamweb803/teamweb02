@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import {
   completeCheckout,
@@ -358,6 +359,7 @@ async function submitOrder() {
       path: ROUTE_PATHS.orderComplete,
       query: {
         orderNumber: completedOrder.orderNumber,
+        orderType: completedOrder.isGuestOrder ? 'guest' : 'member',
       },
     });
   } catch (error) {
@@ -384,16 +386,6 @@ async function submitOrder() {
         </nav>
 
         <section class="checkout-section">
-          <div class="checkout-entry-note" :class="{ 'is-guest': isGuestCheckout }">
-            <strong>{{ isGuestCheckout ? '비회원 결제' : '회원 결제' }}</strong>
-            <p>
-              {{
-                isGuestCheckout
-                  ? '비회원 주문은 배송 정보를 직접 입력해야 하며, 완료 화면에 표시되는 주문번호를 따로 저장해 주세요.'
-                  : '회원 주문은 저장된 회원 정보를 기준으로 주문자와 배송지 정보가 자동 입력됩니다.'
-              }}
-            </p>
-          </div>
           <div class="checkout-section__title-row">
             <h1>주문서작성</h1>
             <button class="checkout-outline-button" type="button" @click="router.push(ROUTE_PATHS.cart)">장바구니가기</button>
@@ -471,9 +463,16 @@ async function submitOrder() {
           </div>
 
           <div v-else class="checkout-empty">
-            <p>주문 가능한 상품이 없습니다.</p>
-            <p class="checkout-empty__sub">품절 상품은 체크아웃 대상에서 제외됩니다. 장바구니에서 재고 상태를 다시 확인해 주세요.</p>
-            <button class="checkout-outline-button" type="button" @click="router.push(ROUTE_PATHS.cart)">장바구니로 돌아가기</button>
+            <CommonStatePanel
+              title="주문 가능한 상품이 없습니다."
+              description="품절 상품은 체크아웃 대상에서 제외됩니다. 장바구니에서 재고 상태를 다시 확인해 주세요."
+              layout="boxed"
+              compact
+            >
+              <template #actions>
+                <button class="checkout-outline-button" type="button" @click="router.push(ROUTE_PATHS.cart)">장바구니로 돌아가기</button>
+              </template>
+            </CommonStatePanel>
           </div>
         </section>
 
@@ -781,33 +780,6 @@ async function submitOrder() {
 .checkout-section__title-row {
   padding-bottom: 18px;
   border-bottom: 2px solid #111111;
-}
-
-.checkout-entry-note {
-  display: grid;
-  gap: 6px;
-  margin-top: 18px;
-  padding: 16px 18px;
-  border: 1px solid #e5e7eb;
-  background: #f8fafc;
-}
-
-.checkout-entry-note.is-guest {
-  border-color: #dbe5f0;
-  background: #f5f9ff;
-}
-
-.checkout-entry-note strong {
-  color: #111111;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.checkout-entry-note p {
-  margin: 0;
-  color: #5b6470;
-  font-size: 14px;
-  line-height: 1.6;
 }
 
 .checkout-section__title-row h1,

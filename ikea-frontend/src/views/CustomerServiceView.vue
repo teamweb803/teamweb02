@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import CustomerServiceShell from '../components/customer-service/CustomerServiceShell.vue';
 import { useCustomerServiceBoard } from '../composables/useCustomerServiceBoard';
 import {
@@ -75,7 +76,12 @@ function openQnaWrite() {
             <span>{{ row.date }}</span>
           </RouterLink>
         </div>
-        <div v-else class="cs-board__empty">검색 결과가 없습니다.</div>
+        <CommonStatePanel
+          v-else
+          title="검색 결과가 없습니다."
+          description="다른 검색어로 다시 확인해 주세요."
+          compact
+        />
       </div>
 
       <div class="cs-pagination">
@@ -155,9 +161,25 @@ function openQnaWrite() {
             <span>{{ row.date }}</span>
           </div>
         </div>
-        <div v-else-if="isQnaLoading" class="cs-board__empty">문의 목록을 불러오는 중입니다.</div>
-        <div v-else-if="qnaLoadError" class="cs-board__empty">{{ qnaLoadError }}</div>
-        <div v-else class="cs-board__empty">등록된 문의가 없습니다.</div>
+        <CommonStatePanel
+          v-else-if="isQnaLoading"
+          tone="loading"
+          title="문의 목록을 불러오는 중입니다."
+          compact
+        />
+        <CommonStatePanel
+          v-else-if="qnaLoadError"
+          tone="error"
+          title="문의 목록을 확인할 수 없습니다."
+          :description="qnaLoadError"
+          compact
+        />
+        <CommonStatePanel
+          v-else
+          title="등록된 문의가 없습니다."
+          description="새 문의를 등록하면 공개 목록에 바로 표시됩니다."
+          compact
+        />
       </div>
 
       <div v-if="pagedQnaRows.length" class="cs-pagination">

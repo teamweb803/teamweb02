@@ -1,24 +1,24 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { ROUTE_PATHS } from '../constants/routes';
 
-const agreeAge = ref(false);
-const agreeService = ref(false);
-const agreeLocation = ref(false);
-const agreeEventPrivacy = ref(false);
-const agreeEventReceive = ref(false);
+const agreeAge = shallowRef(false);
+const agreeService = shallowRef(false);
+const agreeLocation = shallowRef(false);
+const agreeEventPrivacy = shallowRef(false);
+const agreeEventReceive = shallowRef(false);
 const router = useRouter();
 
 const allChecked = computed({
   get() {
     return (
-      agreeAge.value &&
-      agreeService.value &&
-      agreeLocation.value &&
-      agreeEventPrivacy.value &&
-      agreeEventReceive.value
+      agreeAge.value
+      && agreeService.value
+      && agreeLocation.value
+      && agreeEventPrivacy.value
+      && agreeEventReceive.value
     );
   },
   set(value) {
@@ -33,7 +33,9 @@ const allChecked = computed({
 const canSubmit = computed(() => agreeAge.value && agreeService.value);
 
 watch(agreeEventPrivacy, (value) => {
-  if (!value) agreeEventReceive.value = false;
+  if (!value) {
+    agreeEventReceive.value = false;
+  }
 });
 </script>
 
@@ -48,28 +50,29 @@ watch(agreeEventPrivacy, (value) => {
               <path d="M7 9.8V19H17V9.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </RouterLink>
-          <span>〉</span>
+          <span>></span>
           <span>회원가입</span>
-          <span>〉</span>
-          <span>약관안내</span>
+          <span>></span>
+          <span>약관 안내</span>
         </div>
 
         <div class="signup-stepbar" aria-label="회원가입 단계">
-          <div class="signup-stepbar__item signup-stepbar__item--active">STEP 1. 약관안내</div>
+          <div class="signup-stepbar__item signup-stepbar__item--active">STEP 1. 약관 안내</div>
           <div class="signup-stepbar__item">STEP 2. 정보입력</div>
           <div class="signup-stepbar__item">STEP 3. 가입완료</div>
         </div>
 
         <section class="signup-consent">
-          <h1>HOMiO 서비스 이용약관에 동의해주세요.</h1>
+          <h1>HOMiO 서비스 이용약관에 동의해 주세요.</h1>
 
           <label class="signup-check signup-check--all">
             <input v-model="allChecked" type="checkbox" />
             <span>전체동의</span>
           </label>
           <p class="signup-intro">
-            HOMiO 서비스 이용약관, 개인정보 수집 및 이용, 위치정보 이용약관(선택), 마케팅 수신(선택)에 모두 동의합니다.<br />
-            선택항목 동의를 거부하셔도 서비스 이용이 가능합니다.
+            HOMiO 서비스 이용약관, 개인정보 수집 및 이용, 위치정보 이용약관(선택), 마케팅 정보 수신(선택)에
+            모두 동의합니다.<br />
+            선택 항목 동의를 거부하셔도 서비스 이용은 가능합니다.
           </p>
 
           <div class="signup-divider"></div>
@@ -87,7 +90,7 @@ watch(agreeEventPrivacy, (value) => {
                 <input v-model="agreeService" type="checkbox" />
                 <span>HOMiO 서비스 이용약관 동의 <em>(필수)</em></span>
               </label>
-              <span class="signup-view-note">전문 준비 중</span>
+              <RouterLink class="signup-view-link" :to="ROUTE_PATHS.policyTerms">전문 보기</RouterLink>
             </div>
 
             <div class="signup-row">
@@ -95,38 +98,44 @@ watch(agreeEventPrivacy, (value) => {
                 <input v-model="agreeLocation" type="checkbox" />
                 <span>위치정보 수집 및 이용 동의 <i>(선택)</i></span>
               </label>
-              <span class="signup-view-note">전문 준비 중</span>
+              <RouterLink class="signup-view-link" :to="ROUTE_PATHS.policyPrivacy">전문 보기</RouterLink>
             </div>
           </div>
 
           <p class="signup-inline-note">
-            약관 전문 연결은 아직 준비 중이며, 필수 동의 항목은 다음 단계에서도 다시 확인할 수 있습니다.
+            약관 전문은 정책 문서 페이지에서 확인할 수 있습니다. 필수 동의 항목은 다음 단계에서도 다시 확인할 수
+            있습니다.
           </p>
 
           <div class="signup-divider signup-divider--section"></div>
 
-          <p class="signup-section-title">이벤트 · 혜택 정보 개인정보 수집 이용 및 수신 동의</p>
+          <p class="signup-section-title">이벤트 혜택 정보 개인정보 수집 이용 및 수신 동의</p>
 
           <div class="signup-row">
             <label class="signup-check">
               <input v-model="agreeEventPrivacy" type="checkbox" />
-              <span>이벤트 · 혜택정보 개인정보 수집 및 이용 동의 <i>(선택)</i></span>
+              <span>이벤트 혜택 정보 개인정보 수집 및 이용 동의 <i>(선택)</i></span>
             </label>
-            <span class="signup-view-note">전문 준비 중</span>
+            <RouterLink class="signup-view-link" :to="ROUTE_PATHS.policyPrivacy">전문 보기</RouterLink>
           </div>
 
           <div class="signup-row signup-row--disabled">
             <label class="signup-check">
               <input v-model="agreeEventReceive" type="checkbox" :disabled="!agreeEventPrivacy" />
-              <span>이벤트 · 혜택 정보 수신 동의 <i>(선택)</i></span>
+              <span>이벤트 혜택 정보 수신 동의 <i>(선택)</i></span>
             </label>
           </div>
           <p class="signup-subnote">
-            이벤트·혜택 정보 수신에 동의하셔야 혜택 정보를 받을 수 있습니다. 단, 상품 구매정보는 수신동의 여부에 관계없이<br />
-            발송됩니다.
+            이벤트 혜택 정보 수신에 동의하셔야 이벤트 정보를 받을 수 있습니다. 단, 상품 구매정보 안내는 수신동의
+            여부와 관계없이 발송됩니다.
           </p>
 
-          <button class="signup-submit" :class="{ 'is-enabled': canSubmit }" type="button" @click="canSubmit && router.push(ROUTE_PATHS.memberJoinForm)">
+          <button
+            class="signup-submit"
+            :class="{ 'is-enabled': canSubmit }"
+            type="button"
+            @click="canSubmit && router.push(ROUTE_PATHS.memberJoinForm)"
+          >
             동의하고 가입하기
           </button>
         </section>
@@ -290,7 +299,7 @@ watch(agreeEventPrivacy, (value) => {
   opacity: 0.42;
 }
 
-.signup-view-note {
+.signup-view-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -301,6 +310,7 @@ watch(agreeEventPrivacy, (value) => {
   background: #fafafa;
   color: #666666;
   font-size: 13px;
+  text-decoration: none;
 }
 
 .signup-inline-note {

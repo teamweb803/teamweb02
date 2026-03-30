@@ -2,6 +2,7 @@
 import { computed, onMounted, shallowRef, watch } from 'vue';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
+import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
   deleteAdminMember,
   getAdminMemberDetail,
@@ -225,9 +226,12 @@ onMounted(loadMembers);
           <span>{{ formatAdminDate(member.createdAt) }}</span>
         </button>
 
-        <div v-if="!pagedMembers.length" class="admin-members-manager__empty">
-          {{ isLoading ? '회원 목록을 불러오는 중입니다.' : '표시할 회원이 없습니다.' }}
-        </div>
+        <CommonStatePanel
+          v-if="!pagedMembers.length"
+          :tone="isLoading ? 'loading' : 'neutral'"
+          :title="isLoading ? '회원 목록을 불러오는 중입니다.' : '표시할 회원이 없습니다.'"
+          compact
+        />
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
@@ -295,9 +299,12 @@ onMounted(loadMembers);
         <p v-if="statusMessage" class="admin-members-manager__status">{{ statusMessage }}</p>
       </div>
 
-      <div v-else class="admin-members-manager__empty">
-        회원을 선택하면 상세 정보가 표시됩니다.
-      </div>
+      <CommonStatePanel
+        v-else
+        title="회원을 선택하면 상세 정보가 표시됩니다."
+        align="left"
+        compact
+      />
     </AdminPanel>
   </section>
 </template>

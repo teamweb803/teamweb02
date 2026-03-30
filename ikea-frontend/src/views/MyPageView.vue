@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { ROUTE_PATHS } from '../constants/routes';
 import { useMyPage } from '../composables/useMyPage';
@@ -48,6 +49,17 @@ const statusMessage = computed(() => {
 
   return profileError.value;
 });
+const profileStateTone = computed(() => (isProfileLoading.value ? 'loading' : 'error'));
+const profileStateTitle = computed(() => (
+  isProfileLoading.value
+    ? '회원 정보를 불러오는 중입니다.'
+    : '회원 정보를 확인할 수 없습니다.'
+));
+const profileStateDescription = computed(() => (
+  isProfileLoading.value
+    ? '저장된 회원 정보와 최근 주문 상태를 확인하고 있습니다.'
+    : statusMessage.value
+));
 
 function moveToSection(sectionId) {
   activeSectionId.value = sectionId;
@@ -132,7 +144,16 @@ function moveToSection(sectionId) {
                   </div>
                 </article>
               </div>
-              <p v-if="statusMessage" class="my-overview__status">{{ statusMessage }}</p>
+              <CommonStatePanel
+                v-if="statusMessage"
+                class="my-overview__status"
+                :tone="profileStateTone"
+                :title="profileStateTitle"
+                :description="profileStateDescription"
+                layout="boxed"
+                align="left"
+                compact
+              />
 
               <div class="my-summary-grid" aria-label="마이페이지 요약">
                 <article v-for="card in summaryCards" :key="card.id" class="my-summary-card">
@@ -188,7 +209,13 @@ function moveToSection(sectionId) {
                     </div>
                   </article>
                 </template>
-                <p v-else class="my-empty-state">표시할 주문 내역이 없습니다.</p>
+                <CommonStatePanel
+                  v-else
+                  title="표시할 주문 내역이 없습니다."
+                  description="주문이 완료되면 최근 주문 목록이 이 영역에 표시됩니다."
+                  align="left"
+                  compact
+                />
               </div>
             </section>
 
@@ -218,7 +245,13 @@ function moveToSection(sectionId) {
                       <b>{{ item.price }}</b>
                     </RouterLink>
                   </div>
-                  <p v-else class="my-empty-state">찜한 상품이 없습니다.</p>
+                  <CommonStatePanel
+                    v-else
+                    title="찜한 상품이 없습니다."
+                    description="관심 상품을 저장하면 이 영역에서 다시 확인할 수 있습니다."
+                    align="left"
+                    compact
+                  />
                 </section>
 
                 <section class="my-panel">
@@ -241,7 +274,13 @@ function moveToSection(sectionId) {
                       <b>{{ item.price }}</b>
                     </RouterLink>
                   </div>
-                  <p v-else class="my-empty-state">최근 본 상품이 없습니다.</p>
+                  <CommonStatePanel
+                    v-else
+                    title="최근 본 상품이 없습니다."
+                    description="둘러본 상품이 생기면 최근 본 상품 목록에 자동으로 표시됩니다."
+                    align="left"
+                    compact
+                  />
                 </section>
               </div>
             </section>

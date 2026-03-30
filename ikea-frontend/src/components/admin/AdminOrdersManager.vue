@@ -2,6 +2,7 @@
 import { computed, onMounted, shallowRef, watch } from 'vue';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
+import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
   getAdminOrders,
   getFallbackAdminOrders,
@@ -187,9 +188,12 @@ onMounted(loadOrders);
           <span>{{ formatAdminDateTime(order.createdAt) }}</span>
         </button>
 
-        <div v-if="!filteredOrders.length" class="admin-orders-manager__empty">
-          {{ isLoading ? '주문 목록을 불러오는 중입니다.' : '선택한 상태의 주문이 없습니다.' }}
-        </div>
+        <CommonStatePanel
+          v-if="!filteredOrders.length"
+          :tone="isLoading ? 'loading' : 'neutral'"
+          :title="isLoading ? '주문 목록을 불러오는 중입니다.' : '선택한 상태의 주문이 없습니다.'"
+          compact
+        />
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
@@ -258,9 +262,12 @@ onMounted(loadOrders);
         <p v-if="statusMessage" class="admin-orders-manager__status">{{ statusMessage }}</p>
       </div>
 
-      <div v-else class="admin-orders-manager__empty">
-        주문을 선택하면 상세 정보가 표시됩니다.
-      </div>
+      <CommonStatePanel
+        v-else
+        title="주문을 선택하면 상세 정보가 표시됩니다."
+        align="left"
+        compact
+      />
     </AdminPanel>
   </section>
 </template>

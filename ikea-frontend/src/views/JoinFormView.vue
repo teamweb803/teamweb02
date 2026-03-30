@@ -35,7 +35,14 @@ function validateJoinForm() {
   const normalizedEmail = joinForm.email.trim();
   const normalizedPhoneNumber = normalizePhoneNumber(joinForm.phoneNumber);
 
-  if (!normalizedLoginId || !normalizedName || !normalizedEmail || !normalizedPhoneNumber || !joinForm.password || !joinForm.confirmPassword) {
+  if (
+    !normalizedLoginId
+    || !normalizedName
+    || !normalizedEmail
+    || !normalizedPhoneNumber
+    || !joinForm.password
+    || !joinForm.confirmPassword
+  ) {
     return '필수 항목을 모두 입력해 주세요.';
   }
 
@@ -52,11 +59,11 @@ function validateJoinForm() {
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-    return '올바른 이메일 형식을 입력해 주세요.';
+    return '올바른 이메일 형식으로 입력해 주세요.';
   }
 
   if (!/^01[016789]\d{7,8}$/.test(normalizedPhoneNumber)) {
-    return '휴대폰 번호는 01012341234 형식으로 입력해 주세요.';
+    return '휴대전화번호는 01012341234 형식으로 입력해 주세요.';
   }
 
   return '';
@@ -64,7 +71,7 @@ function validateJoinForm() {
 
 function openZoneCodeGuide() {
   joinStatusTone.value = 'neutral';
-  joinStatus.value = '우편번호 찾기는 아직 준비 중입니다. 주소를 직접 입력해 주세요.';
+  joinStatus.value = '우편번호 찾기는 아직 준비 중입니다. 우편번호와 기본 주소를 직접 입력하거나, 가입 후 마이페이지에서 배송지를 수정해 주세요.';
 }
 
 async function submitJoin() {
@@ -127,14 +134,14 @@ async function submitJoin() {
         </div>
 
         <div class="signup-info-stepbar" aria-label="회원가입 단계">
-          <div class="signup-info-stepbar__item">STEP 1. 약관안내</div>
+          <div class="signup-info-stepbar__item">STEP 1. 약관 안내</div>
           <div class="signup-info-stepbar__item signup-info-stepbar__item--active">STEP 2. 정보입력</div>
           <div class="signup-info-stepbar__item">STEP 3. 가입완료</div>
         </div>
 
         <section class="signup-info-formwrap">
           <h1>회원정보 입력</h1>
-          <p class="signup-info-subtitle">참고 백엔드 DTO 기준으로 회원가입에 필요한 정보를 입력해 주세요.</p>
+          <p class="signup-info-subtitle">백엔드 DTO 기준으로 회원가입에 필요한 정보를 입력해 주세요.</p>
 
           <form class="signup-info-form" @submit.prevent="submitJoin">
             <label class="signup-info-field">
@@ -168,7 +175,7 @@ async function submitJoin() {
             </label>
 
             <label class="signup-info-field">
-              <span>휴대폰 번호<em>*</em></span>
+              <span>휴대전화번호<em>*</em></span>
               <input
                 v-model="joinForm.phoneNumber"
                 type="text"
@@ -221,13 +228,16 @@ async function submitJoin() {
                 placeholder="상세 주소 입력"
                 autocomplete="address-line2"
               />
+              <p class="signup-info-helper">
+                우편번호 찾기는 준비 중입니다. 직접 입력해도 가입할 수 있으며, 배송지는 가입 후에도 수정할 수 있습니다.
+              </p>
             </div>
 
             <div class="signup-info-note">입력한 정보는 회원가입과 주문 조회에 필요한 기본 항목으로만 사용됩니다.</div>
             <p v-if="joinStatus" class="signup-info-status" :class="joinStatusClass">{{ joinStatus }}</p>
 
             <button class="signup-info-submit" type="submit" :disabled="joinSubmitting">
-              {{ joinSubmitting ? '가입 처리 중...' : '가입완료하기' }}
+              {{ joinSubmitting ? '가입 처리 중..' : '가입완료하기' }}
             </button>
           </form>
         </section>
@@ -387,6 +397,13 @@ async function submitJoin() {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.signup-info-helper {
+  margin: 4px 0 0;
+  color: #777777;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .signup-info-note {

@@ -13,8 +13,5 @@ export function hasAdminAccess(accountStore) {
     return false;
   }
 
-  return normalizedRole === 'ADMIN'
-    || normalizedRole === 'ROLE_ADMIN'
-    || normalizedRole.endsWith('_ADMIN')
-    || normalizedRole.includes('ADMIN');
+  return normalizedRole === 'ADMIN';
 }

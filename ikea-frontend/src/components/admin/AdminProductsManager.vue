@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, shallowRef, watch } from 'vue';
 import { useCatalogStore } from '../../stores/catalog';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
+import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
   createAdminProduct,
   deleteAdminProduct,
@@ -662,9 +663,12 @@ onMounted(async () => {
           </div>
         </article>
 
-        <div v-if="!pagedProducts.length" class="admin-products-manager__empty">
-          {{ isLoading ? '상품 목록을 불러오는 중입니다.' : '표시할 상품이 없습니다.' }}
-        </div>
+        <CommonStatePanel
+          v-if="!pagedProducts.length"
+          :tone="isLoading ? 'loading' : 'neutral'"
+          :title="isLoading ? '상품 목록을 불러오는 중입니다.' : '표시할 상품이 없습니다.'"
+          compact
+        />
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />

@@ -2,6 +2,7 @@
 import { computed, onMounted, shallowRef, watch } from 'vue';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
+import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
   getAdminReviews,
   getFallbackAdminReviewItems,
@@ -133,9 +134,12 @@ onMounted(loadReviews);
           <button type="button" @click="removeReviewItem(review)">삭제</button>
         </article>
 
-        <div v-if="!filteredReviews.length" class="admin-reviews-manager__empty">
-          {{ isLoading ? '리뷰 목록을 불러오는 중입니다.' : '표시할 리뷰가 없습니다.' }}
-        </div>
+        <CommonStatePanel
+          v-if="!filteredReviews.length"
+          :tone="isLoading ? 'loading' : 'neutral'"
+          :title="isLoading ? '리뷰 목록을 불러오는 중입니다.' : '표시할 리뷰가 없습니다.'"
+          compact
+        />
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />

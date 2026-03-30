@@ -12,6 +12,7 @@ import { useAccountStore } from '../stores/account';
 import { hasAdminAccess, hasAuthenticatedSession } from '../utils/accessControl';
 
 const HomeView = () => import('../views/HomeView.vue');
+const AccessDeniedView = () => import('../views/AccessDeniedView.vue');
 const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
 const AdminProductsView = () => import('../views/AdminProductsView.vue');
 const AdminInventoryView = () => import('../views/AdminInventoryView.vue');
@@ -54,6 +55,11 @@ const router = createRouter({
       path: ROUTE_PATHS.home,
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: ROUTE_PATHS.accessDenied,
+      name: 'access-denied',
+      component: AccessDeniedView,
     },
     {
       path: ROUTE_PATHS.adminDashboard,
@@ -305,6 +311,7 @@ router.beforeEach((to) => {
     return {
       path: ROUTE_PATHS.memberLogin,
       query: {
+        reason: 'auth-required',
         redirect: to.fullPath,
       },
     };
@@ -312,7 +319,11 @@ router.beforeEach((to) => {
 
   if (requiresAdmin && !hasAdminAccess(accountStore)) {
     return {
-      path: ROUTE_PATHS.home,
+      path: ROUTE_PATHS.accessDenied,
+      query: {
+        reason: 'admin-required',
+        from: to.fullPath,
+      },
     };
   }
 

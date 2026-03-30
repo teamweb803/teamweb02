@@ -15,6 +15,7 @@ export { CATEGORY_ROUTE_MAP };
 
 export const ROUTE_PATHS = {
   home: '/',
+  accessDenied: '/access-denied',
   adminBase: '/admin',
   adminDashboard: '/admin/dashboard',
   adminProducts: '/admin/products',

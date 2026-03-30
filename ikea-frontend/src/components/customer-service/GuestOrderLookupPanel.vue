@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import { useGuestOrderLookup } from '../../composables/useGuestOrderLookup';
 
 const {
@@ -7,14 +8,20 @@ const {
   isSubmitting,
   searchedOrders,
   statusMessage,
+  statusTone,
   submitLookup,
 } = useGuestOrderLookup();
+
+const statusClass = computed(() => ({
+  'guest-order__status--error': statusTone.value === 'error',
+  'guest-order__status--success': statusTone.value === 'success',
+}));
 </script>
 
 <template>
   <section class="guest-order">
     <div class="guest-order__intro">
-      <p>이름과 주문번호 또는 연락처를 입력하면 최근 주문 상태를 확인할 수 있습니다.</p>
+      <p>이름과 주문번호 또는 휴대전화번호를 입력하면 최근 주문 상태를 확인할 수 있습니다.</p>
     </div>
 
     <form class="guest-order__form" @submit.prevent="submitLookup">
@@ -32,28 +39,40 @@ const {
           </label>
           <label>
             <input v-model="form.inquiryType" type="radio" value="phone" />
-            <span>연락처</span>
+            <span>휴대전화번호</span>
           </label>
         </div>
       </div>
 
       <div v-if="form.inquiryType === 'order'" class="guest-order__row">
         <label for="guest-order-number">주문번호</label>
-        <input id="guest-order-number" v-model.trim="form.orderNumber" type="text" maxlength="24" />
+        <input
+          id="guest-order-number"
+          v-model.trim="form.orderNumber"
+          type="text"
+          maxlength="30"
+          placeholder="예: HS-240320-1089"
+        />
       </div>
 
       <div v-else class="guest-order__row guest-order__row--phone">
-        <label for="guest-order-phone">연락처</label>
+        <label for="guest-order-phone">휴대전화번호</label>
         <div class="guest-order__phone">
-          <input id="guest-order-phone" v-model.trim="form.phoneNumber" type="text" maxlength="20" placeholder="010-0000-0000" />
+          <input
+            id="guest-order-phone"
+            v-model.trim="form.phoneNumber"
+            type="text"
+            maxlength="20"
+            placeholder="010-0000-0000"
+          />
         </div>
       </div>
 
-      <p v-if="statusMessage" class="guest-order__status">{{ statusMessage }}</p>
+      <p v-if="statusMessage" class="guest-order__status" :class="statusClass">{{ statusMessage }}</p>
 
       <div class="guest-order__actions">
         <button type="submit" class="guest-order__primary" :disabled="!canSubmit || isSubmitting">
-          {{ isSubmitting ? '조회 중...' : '조회' }}
+          {{ isSubmitting ? '조회 중..' : '조회' }}
         </button>
       </div>
     </form>
@@ -76,13 +95,13 @@ const {
           </div>
           <ul>
             <li v-for="item in order.orderItems" :key="`${order.orderNumber}-${item.name}`">
-              {{ item.name }} × {{ item.quantity }}개
+              {{ item.name }} x {{ item.quantity }}개
             </li>
           </ul>
         </article>
       </div>
       <div v-else class="guest-order__empty">
-        조회된 주문이 없으면 이름과 주문번호, 또는 이름과 연락처를 다시 확인해 주세요.
+        조회된 주문이 없으면 이름과 주문번호, 또는 이름과 휴대전화번호를 다시 확인해 주세요.
       </div>
     </section>
   </section>
@@ -176,6 +195,14 @@ const {
   flex: 1;
 }
 
+.guest-order__status--error {
+  color: #c62828;
+}
+
+.guest-order__status--success {
+  color: #0f6b3b;
+}
+
 .guest-order__primary {
   height: 48px;
   min-height: 48px;
@@ -187,6 +214,11 @@ const {
   box-sizing: border-box;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.guest-order__primary:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .guest-order__actions {
