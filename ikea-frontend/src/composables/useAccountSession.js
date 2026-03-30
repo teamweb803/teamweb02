@@ -2,8 +2,8 @@ import { computed, reactive, shallowRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
 import { ROUTE_PATHS } from '../constants/routes';
-import { loginAuth, logoutAuth } from '../services/authService';
-import { getCurrentMember } from '../services/memberService';
+import { logoutAuth } from '../services/authService';
+import { getCurrentMember, loginMember } from '../services/memberService';
 import { useAccountStore } from '../stores/account';
 
 function unwrapPayload(payload) {
@@ -29,6 +29,42 @@ function extractMemberSession(payload) {
   }
 
   return null;
+}
+
+function decodeJwtPayload(token = '') {
+  const payloadSegment = String(token ?? '').split('.')[1];
+
+  if (!payloadSegment) {
+    return null;
+  }
+
+  try {
+    const normalizedPayload = payloadSegment
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(payloadSegment.length / 4) * 4, '=');
+    const decodedPayload = atob(normalizedPayload);
+    return JSON.parse(decodedPayload);
+  } catch {
+    return null;
+  }
+}
+
+function buildFallbackMemberSession(tokens, loginIdValue) {
+  const claims = decodeJwtPayload(tokens.accessToken);
+  const resolvedLoginId = String(claims?.sub ?? loginIdValue ?? '').trim();
+  const resolvedRole = String(claims?.role ?? '').trim();
+
+  if (!resolvedLoginId && !resolvedRole) {
+    return null;
+  }
+
+  return {
+    loginId: resolvedLoginId,
+    memberName: resolvedLoginId,
+    role: resolvedRole,
+    memberRole: resolvedRole,
+  };
 }
 
 function resolveRedirectPath(redirectPath) {
@@ -73,19 +109,27 @@ export function useAccountSession() {
       return null;
     }
 
+    if (!accountStore.memberId) {
+      accountStore.setProfileRequested(false);
+      return null;
+    }
+
     accountStore.setProfileRequested(true);
 
     try {
-      const response = await getCurrentMember();
+      const response = await getCurrentMember(accountStore.memberId);
       const session = extractMemberSession(response);
 
       if (session) {
         accountStore.setMemberSession(session);
       }
 
+      accountStore.setProfileRequested(false);
       accountStore.setProfileHydrated(true);
       return response;
     } catch (error) {
+      accountStore.setProfileRequested(false);
+
       if (!silent) {
         throw error;
       }
@@ -100,7 +144,7 @@ export function useAccountSession() {
     loginSubmitting.value = true;
 
     try {
-      const response = await loginAuth({
+      const response = await loginMember({
         loginId: loginForm.loginId.trim(),
         password: loginForm.password,
       });
@@ -114,12 +158,14 @@ export function useAccountSession() {
       accountStore.setProfileRequested(false);
       accountStore.setProfileHydrated(false);
 
-      const memberSession = extractMemberSession(response);
+      const memberSession = extractMemberSession(response)
+        ?? buildFallbackMemberSession(tokens, loginForm.loginId);
 
       if (memberSession) {
         accountStore.setMemberSession(memberSession);
-        accountStore.setProfileHydrated(true);
-      } else {
+      }
+
+      if (accountStore.memberId) {
         await hydrateCurrentMember({ force: true, silent: true });
       }
 

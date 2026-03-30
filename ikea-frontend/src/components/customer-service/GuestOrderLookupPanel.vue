@@ -147,6 +147,7 @@ watch(
 
 .guest-order__row input {
   width: 100%;
+  height: 48px;
   min-height: 48px;
   padding: 12px 14px;
   border: 1px solid #d9d9d9;
@@ -166,7 +167,21 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
   color: #444444;
+  white-space: nowrap;
+}
+
+.guest-order__radios input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.guest-order__radios span {
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .guest-order__phone input {
@@ -175,13 +190,16 @@ watch(
 
 .guest-order__verify,
 .guest-order__primary {
-  min-height: 44px;
+  height: 48px;
+  min-height: 48px;
   padding: 0 18px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
   color: #111111;
   font-size: 14px;
+  box-sizing: border-box;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .guest-order__primary {

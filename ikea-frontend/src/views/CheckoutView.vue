@@ -4,9 +4,12 @@ import { useRoute, useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { completeCheckout, getCheckoutSeedItems } from '../composables/useCommerceCart';
 import { ROUTE_PATHS } from '../constants/routes';
+import { useAccountStore } from '../stores/account';
 
 const route = useRoute();
 const router = useRouter();
+const accountStore = useAccountStore();
+const scheduleTimeOptions = ['오전', '오후'];
 
 const orderItems = ref([]);
 const ordererName = ref('김민진');
@@ -21,14 +24,15 @@ const deliveryRequest = ref('');
 const elevatorOption = ref('1-7인승');
 const carAccess = ref('진입가능');
 const freeCarryService = ref(false);
-const scheduleYear = ref('2026');
-const scheduleMonth = ref('3월');
-const scheduleDay = ref('25일');
-const scheduleTime = ref('오후');
+const scheduleYear = ref('');
+const scheduleMonth = ref('');
+const scheduleDay = ref('');
+const scheduleTime = ref('');
 const pointAmount = ref('0');
 const paymentMethod = ref('kakaopay');
 const finalAgreement = ref(false);
 const isSubmitting = ref(false);
+const checkoutAddressGuide = ref('');
 
 const paymentMethods = [
   { id: 'kakaopay', label: '카카오페이' },
@@ -46,6 +50,7 @@ function syncOrderItems() {
 
 onMounted(() => {
   syncOrderItems();
+  prefillCheckoutFormFromAccount();
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 });
 
@@ -80,8 +85,15 @@ const catalogDiscountTotal = computed(() => orderItems.value.reduce(
 ));
 const couponDiscount = computed(() => 0);
 const shippingTotal = computed(() => 0);
-const pointApplied = computed(() => Math.min(Number(pointAmount.value || '0'), Math.max(0, productTotal.value - catalogDiscountTotal.value)));
-const finalTotal = computed(() => Math.max(0, productTotal.value - catalogDiscountTotal.value - couponDiscount.value - pointApplied.value + shippingTotal.value));
+const maxPointUsage = computed(() => Math.max(
+  0,
+  productTotal.value - catalogDiscountTotal.value - couponDiscount.value,
+));
+const pointApplied = computed(() => Math.min(Number(pointAmount.value || '0'), maxPointUsage.value));
+const finalTotal = computed(() => Math.max(
+  0,
+  maxPointUsage.value - pointApplied.value + shippingTotal.value,
+));
 const selectedPaymentMethod = computed(
   () => paymentMethods.find((method) => method.id === paymentMethod.value) ?? paymentMethods[0],
 );
@@ -90,6 +102,68 @@ const paymentMethodNotice = computed(() => (
     ? '무통장입금 선택 시 주문완료 페이지에서 가상계좌와 입금기한을 확인할 수 있습니다.'
     : '선택한 결제수단으로 주문이 완료되면 결제 완료 화면으로 이동합니다.'
 ));
+const availableScheduleDates = computed(() => {
+  const dates = [];
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const end = new Date(start);
+
+  end.setMonth(end.getMonth() + 3);
+
+  for (const cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+    dates.push({
+      key: `${cursor.getFullYear()}-${cursor.getMonth() + 1}-${cursor.getDate()}`,
+      year: String(cursor.getFullYear()),
+      month: String(cursor.getMonth() + 1),
+      day: String(cursor.getDate()),
+    });
+  }
+
+  return dates;
+});
+const scheduleYearOptions = computed(() => (
+  [...new Set(availableScheduleDates.value.map((item) => item.year))]
+));
+const scheduleMonthOptions = computed(() => (
+  [...new Set(
+    availableScheduleDates.value
+      .filter((item) => item.year === scheduleYear.value)
+      .map((item) => item.month),
+  )]
+));
+const scheduleDayOptions = computed(() => (
+  availableScheduleDates.value
+    .filter((item) => item.year === scheduleYear.value && item.month === scheduleMonth.value)
+    .map((item) => item.day)
+));
+
+watch(
+  [availableScheduleDates, scheduleYear, scheduleMonth],
+  () => {
+    const [firstDate] = availableScheduleDates.value;
+
+    if (!firstDate) {
+      return;
+    }
+
+    if (!scheduleYearOptions.value.includes(scheduleYear.value)) {
+      scheduleYear.value = firstDate.year;
+    }
+
+    if (!scheduleMonthOptions.value.includes(scheduleMonth.value)) {
+      scheduleMonth.value = scheduleMonthOptions.value[0] ?? firstDate.month;
+    }
+
+    if (!scheduleDayOptions.value.includes(scheduleDay.value)) {
+      scheduleDay.value = scheduleDayOptions.value[0] ?? firstDate.day;
+    }
+
+    if (!scheduleTimeOptions.includes(scheduleTime.value)) {
+      scheduleTime.value = scheduleTimeOptions[0];
+    }
+  },
+  { immediate: true },
+);
 const installationCategoryCounts = computed(() => {
   const grouped = new Map();
 
@@ -104,6 +178,37 @@ const installationCategoryCounts = computed(() => {
 function formatPrice(value) {
   return `${Number(value ?? 0).toLocaleString('ko-KR')}원`;
 }
+
+function prefillCheckoutFormFromAccount() {
+  accountStore.hydrate();
+
+  const memberName = String(accountStore.memberName ?? '').trim();
+  const phoneNumber = String(accountStore.phoneNumber ?? '').trim();
+  const memberZoneCode = String(accountStore.zoneCode ?? '').trim();
+  const memberAddressMain = String(accountStore.addressMain ?? '').trim();
+  const memberAddressDetail = String(accountStore.addressDetail ?? '').trim();
+
+  if (memberName) {
+    ordererName.value = memberName;
+  }
+
+  if (phoneNumber) {
+    ordererPhone.value = phoneNumber;
+  }
+
+  if (memberZoneCode && !String(zoneCode.value ?? '').trim()) {
+    zoneCode.value = memberZoneCode;
+  }
+
+  if (memberAddressMain && !String(addressMain.value ?? '').trim()) {
+    addressMain.value = memberAddressMain;
+  }
+
+  if (memberAddressDetail && !String(addressDetail.value ?? '').trim()) {
+    addressDetail.value = memberAddressDetail;
+  }
+}
+
 const installNoticeChecked = ref(false);
 const showInstallNoticeModal = ref(false);
 const showShippingGuideModal = ref(false);
@@ -142,16 +247,16 @@ function closeShippingGuideModal() {
   showShippingGuideModal.value = false;
 }
 
+function openZoneCodeGuide() {
+  checkoutAddressGuide.value = '우편번호 찾기는 아직 준비 중입니다. 우편번호와 주소를 직접 입력해 주세요.';
+}
+
+function applyMaxPointAmount() {
+  pointAmount.value = String(maxPointUsage.value);
+}
+
 function buildScheduleText() {
-  return [
-    scheduleYear.value,
-    scheduleMonth.value,
-    scheduleDay.value,
-    scheduleTime.value,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
+  return `${scheduleYear.value}년 ${scheduleMonth.value}월 ${scheduleDay.value}일 ${scheduleTime.value}`;
 }
 
 function validateCheckout() {
@@ -333,7 +438,8 @@ async function submitOrder() {
           </div>
 
           <div v-else class="checkout-empty">
-            <p>주문할 상품이 없습니다.</p>
+            <p>주문 가능한 상품이 없습니다.</p>
+            <p class="checkout-empty__sub">품절 상품은 체크아웃 대상에서 제외됩니다. 장바구니에서 재고 상태를 다시 확인해 주세요.</p>
             <button class="checkout-outline-button" type="button" @click="router.push(ROUTE_PATHS.cart)">장바구니로 돌아가기</button>
           </div>
         </section>
@@ -351,7 +457,7 @@ async function submitOrder() {
                   <div class="checkout-form-row__content checkout-form-row__content--inline">
                     <input v-model="ordererName" type="text" placeholder="주문자 이름" />
                     <input v-model="ordererPhone" type="text" placeholder="휴대폰 번호" />
-                    <button class="checkout-outline-button is-small" type="button">주문자 정보 변경</button>
+                    <p class="checkout-inline-note">주문자 정보는 이 화면에서 직접 수정할 수 있습니다.</p>
                   </div>
                 </div>
 
@@ -373,10 +479,11 @@ async function submitOrder() {
                   <div class="checkout-form-row__content">
                     <div class="checkout-inline checkout-inline--zip">
                       <input v-model="zoneCode" type="text" placeholder="우편번호" />
-                      <button class="checkout-outline-button is-small" type="button">우편번호 찾기</button>
+                      <button class="checkout-outline-button is-small" type="button" @click="openZoneCodeGuide">우편번호 찾기</button>
                     </div>
                     <input v-model="addressMain" type="text" placeholder="기본 주소" />
                     <input v-model="addressDetail" type="text" placeholder="상세 주소" />
+                    <p v-if="checkoutAddressGuide" class="checkout-field-note">{{ checkoutAddressGuide }}</p>
                   </div>
                 </div>
 
@@ -443,10 +550,18 @@ async function submitOrder() {
                 <div class="checkout-form-row">
                   <div class="checkout-form-row__label">배송 일정 선택</div>
                   <div class="checkout-form-row__content checkout-inline">
-                    <select v-model="scheduleYear"><option>2026</option></select>
-                    <select v-model="scheduleMonth"><option>3월</option></select>
-                    <select v-model="scheduleDay"><option>25일</option></select>
-                    <select v-model="scheduleTime"><option>오후</option></select>
+                    <select v-model="scheduleYear">
+                      <option v-for="year in scheduleYearOptions" :key="year" :value="year">{{ year }}년</option>
+                    </select>
+                    <select v-model="scheduleMonth">
+                      <option v-for="month in scheduleMonthOptions" :key="month" :value="month">{{ month }}월</option>
+                    </select>
+                    <select v-model="scheduleDay">
+                      <option v-for="day in scheduleDayOptions" :key="day" :value="day">{{ day }}일</option>
+                    </select>
+                    <select v-model="scheduleTime">
+                      <option v-for="time in scheduleTimeOptions" :key="time" :value="time">{{ time }}</option>
+                    </select>
                   </div>
                 </div>
 
@@ -470,14 +585,17 @@ async function submitOrder() {
                   <span>상품쿠폰할인</span>
                   <div>
                     <input type="text" :value="couponDiscount" readonly />
-                    <button class="checkout-outline-button is-small" type="button">적용가능쿠폰 (0)</button>
+                    <button class="checkout-outline-button is-small" type="button" disabled>적용가능쿠폰 (0)</button>
                   </div>
+                </div>
+                <div class="checkout-kv-list__note">
+                  쿠폰 기능은 아직 연결 전이며, 현재 적용 가능한 쿠폰은 없습니다.
                 </div>
                 <div class="checkout-kv-list__inline">
                   <span>포인트</span>
                   <div>
                     <input v-model="pointAmount" type="text" />
-                    <button class="checkout-outline-button is-small" type="button">전액사용</button>
+                    <button class="checkout-outline-button is-small" type="button" @click="applyMaxPointAmount">전액사용</button>
                   </div>
                 </div>
               </div>
@@ -656,6 +774,11 @@ async function submitOrder() {
   cursor: pointer;
 }
 
+.checkout-outline-button:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
 .checkout-outline-button.is-small {
   min-height: 34px;
   padding: 0 10px;
@@ -827,6 +950,12 @@ async function submitOrder() {
   color: #6b7280;
 }
 
+.checkout-empty__sub {
+  max-width: 420px;
+  text-align: center;
+  line-height: 1.6;
+}
+
 .checkout-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -908,6 +1037,15 @@ async function submitOrder() {
 
 .checkout-form-row__content--inline {
   grid-template-columns: minmax(0, 180px) minmax(0, 180px) auto;
+}
+
+.checkout-inline-note,
+.checkout-field-note,
+.checkout-kv-list__note {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .checkout-form-row__content input:not([type='checkbox']):not([type='radio']),
@@ -1108,6 +1246,12 @@ async function submitOrder() {
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid #ededed;
+}
+
+.checkout-kv-list__note {
+  display: block;
+  min-height: auto;
+  padding: 14px 20px 16px;
 }
 
 .checkout-kv-list span {

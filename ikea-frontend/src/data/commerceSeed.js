@@ -61,7 +61,7 @@ function getOriginalPrice(product) {
   return product.originalPrice ?? product.price;
 }
 
-function buildCartItem(productId, overrides = {}) {
+export function createCommerceCartItem(productId, overrides = {}) {
   const product = resolveProduct(productId);
 
   return {
@@ -109,8 +109,8 @@ function buildRecommendation(productId) {
 
 export function createCommerceCartSeed() {
   return [
-    buildCartItem(DEFAULT_CART_PRODUCT_IDS[0]),
-    buildCartItem(DEFAULT_CART_PRODUCT_IDS[1], { quantity: 2 }),
+    createCommerceCartItem(DEFAULT_CART_PRODUCT_IDS[0]),
+    createCommerceCartItem(DEFAULT_CART_PRODUCT_IDS[1], { quantity: 2 }),
   ];
 }
 

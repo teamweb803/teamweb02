@@ -1,13 +1,112 @@
 <script setup>
+import { computed, reactive, shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { ROUTE_PATHS } from '../constants/routes';
+import { joinMember } from '../services/memberService';
 
 const router = useRouter();
+const joinForm = reactive({
+  loginId: '',
+  name: '',
+  email: '',
+  phoneNumber: '',
+  password: '',
+  confirmPassword: '',
+  zoneCode: '',
+  addressMain: '',
+  addressDetail: '',
+});
+const joinStatus = shallowRef('');
+const joinStatusTone = shallowRef('neutral');
+const joinSubmitting = shallowRef(false);
+const joinStatusClass = computed(() => ({
+  'signup-info-status--error': joinStatusTone.value === 'error',
+  'signup-info-status--neutral': joinStatusTone.value !== 'error',
+}));
 
-const goSignupComplete = () => {
-  router.push(ROUTE_PATHS.memberJoinComplete);
-};
+function normalizePhoneNumber(value = '') {
+  return String(value ?? '').replace(/[^\d]/g, '').slice(0, 11);
+}
+
+function validateJoinForm() {
+  const normalizedLoginId = joinForm.loginId.trim();
+  const normalizedName = joinForm.name.trim();
+  const normalizedEmail = joinForm.email.trim();
+  const normalizedPhoneNumber = normalizePhoneNumber(joinForm.phoneNumber);
+
+  if (!normalizedLoginId || !normalizedName || !normalizedEmail || !normalizedPhoneNumber || !joinForm.password || !joinForm.confirmPassword) {
+    return '필수 항목을 모두 입력해 주세요.';
+  }
+
+  if (normalizedLoginId.length < 4 || normalizedLoginId.length > 20) {
+    return '아이디는 4자 이상 20자 이하로 입력해 주세요.';
+  }
+
+  if (joinForm.password.length < 4 || joinForm.password.length > 20) {
+    return '비밀번호는 4자 이상 20자 이하로 입력해 주세요.';
+  }
+
+  if (joinForm.password !== joinForm.confirmPassword) {
+    return '비밀번호와 비밀번호 확인이 일치하지 않습니다.';
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return '올바른 이메일 형식을 입력해 주세요.';
+  }
+
+  if (!/^01[016789]\d{7,8}$/.test(normalizedPhoneNumber)) {
+    return '휴대폰 번호는 01012341234 형식으로 입력해 주세요.';
+  }
+
+  return '';
+}
+
+function openZoneCodeGuide() {
+  joinStatusTone.value = 'neutral';
+  joinStatus.value = '우편번호 찾기는 아직 준비 중입니다. 주소를 직접 입력해 주세요.';
+}
+
+async function submitJoin() {
+  const validationMessage = validateJoinForm();
+
+  if (validationMessage) {
+    joinStatusTone.value = 'error';
+    joinStatus.value = validationMessage;
+    return;
+  }
+
+  joinSubmitting.value = true;
+  joinStatus.value = '';
+  joinStatusTone.value = 'neutral';
+
+  try {
+    await joinMember({
+      loginId: joinForm.loginId.trim(),
+      password: joinForm.password,
+      confirmPassword: joinForm.confirmPassword,
+      name: joinForm.name.trim(),
+      email: joinForm.email.trim(),
+      phoneNumber: normalizePhoneNumber(joinForm.phoneNumber),
+      zoneCode: joinForm.zoneCode.trim(),
+      addressMain: joinForm.addressMain.trim(),
+      addressDetail: joinForm.addressDetail.trim(),
+    });
+
+    router.push({
+      path: ROUTE_PATHS.memberJoinComplete,
+      query: {
+        name: joinForm.name.trim(),
+        loginId: joinForm.loginId.trim(),
+      },
+    });
+  } catch (error) {
+    joinStatusTone.value = 'error';
+    joinStatus.value = error?.message ?? '회원가입에 실패했습니다.';
+  } finally {
+    joinSubmitting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -21,9 +120,9 @@ const goSignupComplete = () => {
               <path d="M7 9.8V19H17V9.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </RouterLink>
-          <span>〉</span>
+          <span>></span>
           <span>회원가입</span>
-          <span>〉</span>
+          <span>></span>
           <span>정보입력</span>
         </div>
 
@@ -35,37 +134,101 @@ const goSignupComplete = () => {
 
         <section class="signup-info-formwrap">
           <h1>회원정보 입력</h1>
-          <p class="signup-info-subtitle">로그인에 사용할 기본 정보를 입력해 주세요.</p>
+          <p class="signup-info-subtitle">참고 백엔드 DTO 기준으로 회원가입에 필요한 정보를 입력해 주세요.</p>
 
-          <form class="signup-info-form" @submit.prevent>
+          <form class="signup-info-form" @submit.prevent="submitJoin">
             <label class="signup-info-field">
-              <span>아이디(이메일)<em>*</em></span>
-              <input type="text" placeholder="아이디(이메일) 입력" />
+              <span>로그인 아이디<em>*</em></span>
+              <input
+                v-model.trim="joinForm.loginId"
+                type="text"
+                placeholder="4~20자 아이디 입력"
+                autocomplete="username"
+              />
+            </label>
+
+            <label class="signup-info-field">
+              <span>이름<em>*</em></span>
+              <input
+                v-model.trim="joinForm.name"
+                type="text"
+                placeholder="이름 입력"
+                autocomplete="name"
+              />
+            </label>
+
+            <label class="signup-info-field">
+              <span>이메일<em>*</em></span>
+              <input
+                v-model.trim="joinForm.email"
+                type="email"
+                placeholder="example@homio.com"
+                autocomplete="email"
+              />
+            </label>
+
+            <label class="signup-info-field">
+              <span>휴대폰 번호<em>*</em></span>
+              <input
+                v-model="joinForm.phoneNumber"
+                type="text"
+                inputmode="numeric"
+                placeholder="'-' 없이 숫자만 입력"
+                autocomplete="tel"
+              />
             </label>
 
             <label class="signup-info-field">
               <span>비밀번호<em>*</em></span>
-              <input type="password" placeholder="8-15자 이내의 영문, 숫자, 특수문자의 조합으로 입력" />
+              <input
+                v-model="joinForm.password"
+                type="password"
+                placeholder="4~20자 비밀번호 입력"
+                autocomplete="new-password"
+              />
             </label>
 
             <label class="signup-info-field">
               <span>비밀번호 확인<em>*</em></span>
-              <input type="password" placeholder="비밀번호 확인" />
+              <input
+                v-model="joinForm.confirmPassword"
+                type="password"
+                placeholder="비밀번호를 다시 입력"
+                autocomplete="new-password"
+              />
             </label>
 
             <div class="signup-info-field signup-info-field--group">
               <span>기본주소 <i>(선택)</i></span>
               <div class="signup-info-address-row">
-                <input type="text" placeholder="우편번호" />
-                <button type="button">우편번호 찾기</button>
+                <input
+                  v-model.trim="joinForm.zoneCode"
+                  type="text"
+                  placeholder="우편번호"
+                  autocomplete="postal-code"
+                />
+                <button type="button" @click="openZoneCodeGuide">우편번호 찾기</button>
               </div>
-              <input type="text" placeholder="주소 입력" />
-              <input type="text" placeholder="상세 주소" />
+              <input
+                v-model.trim="joinForm.addressMain"
+                type="text"
+                placeholder="기본 주소 입력"
+                autocomplete="street-address"
+              />
+              <input
+                v-model.trim="joinForm.addressDetail"
+                type="text"
+                placeholder="상세 주소 입력"
+                autocomplete="address-line2"
+              />
             </div>
 
             <div class="signup-info-note">입력한 정보는 회원가입과 주문 조회에 필요한 기본 항목으로만 사용됩니다.</div>
+            <p v-if="joinStatus" class="signup-info-status" :class="joinStatusClass">{{ joinStatus }}</p>
 
-            <button class="signup-info-submit" type="button" @click="goSignupComplete">가입완료하기</button>
+            <button class="signup-info-submit" type="submit" :disabled="joinSubmitting">
+              {{ joinSubmitting ? '가입 처리 중...' : '가입완료하기' }}
+            </button>
           </form>
         </section>
       </div>
@@ -165,7 +328,7 @@ const goSignupComplete = () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 36px;
+  margin-bottom: 30px;
 }
 
 .signup-info-field > span {
@@ -202,6 +365,10 @@ const goSignupComplete = () => {
   color: #bdbdbd;
 }
 
+.signup-info-field input:focus {
+  border-color: #111111;
+}
+
 .signup-info-field--group {
   margin-bottom: 38px;
 }
@@ -232,6 +399,21 @@ const goSignupComplete = () => {
   line-height: 1.7;
 }
 
+.signup-info-status {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.signup-info-status--neutral {
+  color: #555555;
+}
+
+.signup-info-status--error {
+  color: #c62828;
+}
+
 .signup-info-submit {
   width: 100%;
   height: 54px;
@@ -243,6 +425,11 @@ const goSignupComplete = () => {
   font-size: 20px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.signup-info-submit:disabled {
+  background: #b5b5b5;
+  cursor: default;
 }
 
 @media (max-width: 900px) {

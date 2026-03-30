@@ -1,6 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { buildProductDetailPath } from '../../constants/routes';
+import { resolveStorefrontAvailability } from '../../services/storefrontStockService';
 import HomeProductCard from '../home/HomeProductCard.vue';
 
 const props = defineProps({
@@ -17,15 +18,19 @@ const props = defineProps({
 const router = useRouter();
 
 function mapSearchCard(product) {
+  const availability = resolveStorefrontAvailability(product);
+
   const discountRate = product.originalPrice && product.originalPrice > product.price
     ? `${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%`
     : '';
 
   return {
+    productId: product.id,
     image: product.image,
     title: product.name,
     brand: product.brand || product.categoryLabel,
     badge: product.badge,
+    isSoldOut: availability.isSoldOut,
     metaText: [product.categoryLabel, product.label].filter(Boolean).join(' · '),
     price: `${Number(product.price ?? 0).toLocaleString('ko-KR')}원`,
     originalPrice: product.originalPrice

@@ -1,19 +1,19 @@
 <script setup>
-const props = defineProps({
+defineProps({
   slides: {
     type: Array,
     required: true,
   },
-  activeSlide: {
-    type: Object,
+  displaySlides: {
+    type: Array,
     required: true,
   },
   currentSlide: {
     type: Number,
     required: true,
   },
-  slideTransitionName: {
-    type: String,
+  trackStyle: {
+    type: Object,
     required: true,
   },
   heroCurrentLabel: {
@@ -33,16 +33,17 @@ const emit = defineEmits([
   'previous',
   'resume',
   'select-slide',
+  'track-transition-end',
 ]);
 
-function handleActivate() {
-  emit('activate', props.activeSlide);
+function handleActivate(slide) {
+  emit('activate', slide);
 }
 
-function handleKeydown(event) {
+function handleKeydown(event, slide) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
-    handleActivate();
+    handleActivate(slide);
   }
 }
 </script>
@@ -54,31 +55,38 @@ function handleKeydown(event) {
     @mouseenter="emit('pause')"
     @mouseleave="emit('resume')"
   >
-    <Transition :name="slideTransitionName">
-      <article
-        :key="activeSlide.id"
-        class="hs-hero__slide hs-hero__slide--interactive"
-        role="button"
-        tabindex="0"
-        @click="handleActivate"
-        @keydown="handleKeydown"
+    <div class="hs-hero__viewport">
+      <div
+        class="hs-hero__track"
+        :style="trackStyle"
+        @transitionend="emit('track-transition-end')"
       >
-        <img
-          class="hs-hero__image"
-          :src="activeSlide.image"
-          :alt="activeSlide.title"
-          :style="{ objectPosition: activeSlide.imagePosition || 'center center' }"
-          loading="eager"
-          decoding="async"
-          fetchpriority="high"
-        />
-        <div class="hs-hero__overlay">
-          <p class="hs-hero__eyebrow">{{ activeSlide.eyebrow }}</p>
-          <h1>{{ activeSlide.title }}</h1>
-          <p class="hs-hero__description">{{ activeSlide.description }}</p>
-        </div>
-      </article>
-    </Transition>
+        <article
+          v-for="(slide, index) in displaySlides"
+          :key="`${slide.id}-${index}`"
+          class="hs-hero__slide hs-hero__slide--interactive"
+          role="button"
+          tabindex="0"
+          @click="handleActivate(slide)"
+          @keydown="handleKeydown($event, slide)"
+        >
+          <img
+            class="hs-hero__image"
+            :src="slide.image"
+            :alt="slide.title"
+            :style="{ objectPosition: slide.imagePosition || 'center center' }"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+          />
+          <div class="hs-hero__overlay">
+            <p class="hs-hero__eyebrow">{{ slide.eyebrow }}</p>
+            <h1>{{ slide.title }}</h1>
+            <p class="hs-hero__description">{{ slide.description }}</p>
+          </div>
+        </article>
+      </div>
+    </div>
 
     <button
       class="hs-hero__nav hs-hero__nav--prev"
@@ -128,9 +136,22 @@ function handleKeydown(event) {
   overflow: hidden;
 }
 
-.hs-hero__slide {
+.hs-hero__viewport {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+}
+
+.hs-hero__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.hs-hero__slide {
+  position: relative;
+  flex: 0 0 100%;
   height: 100%;
   overflow: hidden;
   background: #d9d0c3;

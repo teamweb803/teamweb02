@@ -1,5 +1,7 @@
 <script setup>
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import { ROUTE_PATHS } from '../../constants/routes';
 import { useHomeStore } from '../../stores/home';
 
 const homeStore = useHomeStore();
@@ -9,6 +11,16 @@ const {
   footerNotice,
   footerSupportCards,
 } = storeToRefs(homeStore);
+
+const footerLinkTargets = computed(() => ({
+  이용약관: ROUTE_PATHS.policyTerms,
+  개인정보처리방침: ROUTE_PATHS.policyPrivacy,
+  고객센터: ROUTE_PATHS.customerServiceNotice,
+}));
+
+function resolveFooterLink(linkLabel) {
+  return footerLinkTargets.value[linkLabel] ?? '';
+}
 </script>
 
 <template>
@@ -16,7 +28,10 @@ const {
     <div class="hs-footer__inner">
       <div class="hs-footer__top">
         <nav class="hs-footer__links">
-          <a v-for="link in footerLinks" :key="link" href="/" @click.prevent>{{ link }}</a>
+          <template v-for="link in footerLinks" :key="link">
+            <RouterLink v-if="resolveFooterLink(link)" :to="resolveFooterLink(link)">{{ link }}</RouterLink>
+            <a v-else href="/" @click.prevent>{{ link }}</a>
+          </template>
         </nav>
         <button class="hs-footer__family" type="button">
           <span>FAMILY SITE</span>

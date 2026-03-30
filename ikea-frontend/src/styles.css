@@ -1302,6 +1302,17 @@ a.reference-card:hover,
   line-height: 1;
 }
 
+.detail-summary__soldout {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #f3d1d1;
+  background: #fff5f5;
+  color: #b42318;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
 .detail-summary__hook {
   margin: 0;
   color: #4b5563;
@@ -1481,6 +1492,12 @@ a.reference-card:hover,
   cursor: pointer;
 }
 
+.detail-purchase-panel__qty button:disabled {
+  cursor: default;
+  color: #b0b7c3;
+  background: #f6f7f9;
+}
+
 .detail-page button:hover,
 .detail-summary__benefits span:hover {
   transform: none !important;
@@ -1522,6 +1539,13 @@ a.reference-card:hover,
   border: 1px solid #111827;
   background: #111827;
   color: #ffffff;
+}
+
+.detail-purchase-panel__actions button:disabled {
+  border-color: #d5d8dd;
+  background: #eef1f4;
+  color: #8a93a0;
+  cursor: default;
 }
 
 .detail-section-nav {
@@ -1736,6 +1760,11 @@ a.reference-card:hover,
   position: relative;
 }
 
+.detail-related-card.is-soldout {
+  border-color: #ead3d3;
+  background: #fff9f9;
+}
+
 .detail-related-card__link {
   position: absolute;
   inset: 0;
@@ -1773,6 +1802,11 @@ a.reference-card:hover,
   font-weight: 700;
 }
 
+.detail-related-card__badge--soldout {
+  background: #111111;
+  color: #ffffff;
+}
+
 .detail-related-card__copy {
   padding: 18px;
 }
@@ -1797,6 +1831,14 @@ a.reference-card:hover,
 .detail-related-card__copy strong {
   color: #111827;
   font-size: 22px;
+}
+
+.detail-related-card__stock {
+  margin-top: 8px;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 @media (max-width: 1260px) {

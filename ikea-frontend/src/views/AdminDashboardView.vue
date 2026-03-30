@@ -11,15 +11,11 @@ const { dashboard } = useAdminDashboard();
     <AdminOverviewSection
       :category-chart="dashboard.categoryChart"
       :payment-chart="dashboard.paymentChart"
-      :qna-rows="dashboard.qnaRows"
-      :review-rows="dashboard.reviewRows"
       :sales-chart="dashboard.salesChart"
       :status-chart="dashboard.statusChart"
-      :stock-rows="dashboard.stockRows"
       :summary-cards="dashboard.summaryCards"
       :support-chart="dashboard.supportChart"
       :trend-chart="dashboard.trendChart"
-      :watch-products="dashboard.watchProducts"
     />
   </AdminShell>
 </template>

@@ -87,7 +87,7 @@ watch(agreeEventPrivacy, (value) => {
                 <input v-model="agreeService" type="checkbox" />
                 <span>HOMiO 서비스 이용약관 동의 <em>(필수)</em></span>
               </label>
-              <button class="signup-view" type="button">보기</button>
+              <span class="signup-view-note">전문 준비 중</span>
             </div>
 
             <div class="signup-row">
@@ -95,9 +95,13 @@ watch(agreeEventPrivacy, (value) => {
                 <input v-model="agreeLocation" type="checkbox" />
                 <span>위치정보 수집 및 이용 동의 <i>(선택)</i></span>
               </label>
-              <button class="signup-view" type="button">보기</button>
+              <span class="signup-view-note">전문 준비 중</span>
             </div>
           </div>
+
+          <p class="signup-inline-note">
+            약관 전문 연결은 아직 준비 중이며, 필수 동의 항목은 다음 단계에서도 다시 확인할 수 있습니다.
+          </p>
 
           <div class="signup-divider signup-divider--section"></div>
 
@@ -108,7 +112,7 @@ watch(agreeEventPrivacy, (value) => {
               <input v-model="agreeEventPrivacy" type="checkbox" />
               <span>이벤트 · 혜택정보 개인정보 수집 및 이용 동의 <i>(선택)</i></span>
             </label>
-            <button class="signup-view" type="button">보기</button>
+            <span class="signup-view-note">전문 준비 중</span>
           </div>
 
           <div class="signup-row signup-row--disabled">
@@ -286,14 +290,24 @@ watch(agreeEventPrivacy, (value) => {
   opacity: 0.42;
 }
 
-.signup-view {
-  width: 58px;
-  height: 28px;
+.signup-view-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 1px solid #d9d9d9;
-  background: #ffffff;
-  color: #111111;
+  background: #fafafa;
+  color: #666666;
   font-size: 13px;
-  cursor: pointer;
+}
+
+.signup-inline-note {
+  margin: 14px 0 0 28px;
+  color: #7b7b7b;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .signup-section-title {

@@ -31,6 +31,7 @@ function handleKeydown(event) {
 <template>
   <article
     class="hs-product-card"
+    :class="{ 'is-soldout': item.isSoldOut }"
     role="button"
     tabindex="0"
     @click="handleActivate"
@@ -39,7 +40,13 @@ function handleKeydown(event) {
     <div class="hs-product-card__image-wrap">
       <img :src="item.image" :alt="item.title" :loading="imageLoading" decoding="async" />
       <span
-        v-if="item.badge"
+        v-if="item.isSoldOut"
+        class="hs-product-card__badge hs-product-card__badge--soldout"
+      >
+        품절
+      </span>
+      <span
+        v-else-if="item.badge"
         class="hs-product-card__badge"
         :class="{ 'hs-product-card__badge--yellow': badgeVariant === 'yellow' }"
       >
@@ -56,6 +63,7 @@ function handleKeydown(event) {
           <strong>{{ item.price }}</strong>
         </div>
       </div>
+      <p v-if="item.isSoldOut" class="hs-product-card__stock">품절 · 상세 페이지에서 재입고 여부를 확인해 주세요.</p>
       <p class="hs-product-card__meta">{{ item.metaText }}</p>
     </div>
   </article>
@@ -69,6 +77,10 @@ function handleKeydown(event) {
   background: #ffffff;
   padding: 16px;
   cursor: pointer;
+}
+
+.hs-product-card.is-soldout {
+  background: #fbfbfc;
 }
 
 .hs-product-card:focus-visible {
@@ -111,6 +123,11 @@ function handleKeydown(event) {
   color: #111827;
 }
 
+.hs-product-card__badge--soldout {
+  background: #b42318;
+  color: #ffffff;
+}
+
 .hs-product-card__copy {
   display: grid;
   gap: 8px;
@@ -125,6 +142,12 @@ function handleKeydown(event) {
   margin: 0;
   color: var(--hs-muted);
   font-size: 13px;
+}
+
+.hs-product-card__stock {
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .hs-product-card__copy h3 {

@@ -12,16 +12,26 @@ export function getMember(memberId) {
   return httpRequester.get(`/member/${memberId}`);
 }
 
-export async function getCurrentMember() {
+export async function getCurrentMember(memberId) {
+  const normalizedMemberId = Number.parseInt(memberId, 10);
+
+  if (!Number.isFinite(normalizedMemberId)) {
+    return null;
+  }
+
   try {
-    return await httpRequester.get('/member/me');
+    return await httpRequester.get('/member/me', {
+      query: {
+        memberId: normalizedMemberId,
+      },
+    });
   } catch (error) {
-    if (error?.status !== 404 && error?.status !== 405) {
+    if (error?.status !== 400 && error?.status !== 404 && error?.status !== 405) {
       throw error;
     }
   }
 
-  return httpRequester.get('/auth/me');
+  return httpRequester.get(`/member/${normalizedMemberId}`);
 }
 
 export function updateMember(memberId, memberUpdateRequest) {

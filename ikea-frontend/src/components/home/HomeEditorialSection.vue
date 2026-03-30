@@ -46,6 +46,7 @@ function handleKeydown(event, payload, eventName) {
           v-for="item in spotlight.items"
           :key="item.id"
           class="hs-mini-product"
+          :class="{ 'is-soldout': item.isSoldOut }"
           role="button"
           tabindex="0"
           @click="emit('product-activate', item)"
@@ -53,17 +54,22 @@ function handleKeydown(event, payload, eventName) {
         >
           <img :src="item.image" :alt="item.title" loading="lazy" decoding="async" />
           <div class="hs-mini-product__copy">
-            <span class="hs-mini-product__badge">{{ item.badge }}</span>
+            <span
+              class="hs-mini-product__badge"
+              :class="{ 'is-soldout': item.isSoldOut }"
+            >
+              {{ item.isSoldOut ? '품절' : item.badge }}
+            </span>
             <h3>{{ item.title }}</h3>
             <p class="hs-product-card__meta">{{ item.metaText }}</p>
             <strong>{{ item.price }}</strong>
+            <p v-if="item.isSoldOut" class="hs-mini-product__stock">
+              품절 · 재입고 후 구매할 수 있습니다.
+            </p>
             <div class="hs-mini-product__tags">
               <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
             </div>
           </div>
-          <button class="hs-mini-product__wish" type="button" aria-label="찜하기" @click.stop>
-            &#9825;
-          </button>
         </article>
       </div>
     </div>
@@ -169,11 +175,16 @@ function handleKeydown(event, payload, eventName) {
 
 .hs-mini-product {
   display: grid;
-  grid-template-columns: 118px minmax(0, 1fr) 46px;
+  grid-template-columns: 118px minmax(0, 1fr);
   align-items: stretch;
   gap: 14px;
   padding: 14px;
   cursor: pointer;
+}
+
+.hs-mini-product.is-soldout {
+  border-color: #ead3d3;
+  background: #fff9f9;
 }
 
 .hs-mini-product img {
@@ -204,6 +215,11 @@ function handleKeydown(event, payload, eventName) {
   white-space: nowrap;
 }
 
+.hs-mini-product__badge.is-soldout {
+  background: #111111;
+  color: #ffffff;
+}
+
 .hs-mini-product__copy h3 {
   margin: 0;
   color: var(--hs-ink);
@@ -215,6 +231,14 @@ function handleKeydown(event, payload, eventName) {
 .hs-mini-product__copy strong {
   color: var(--hs-ink);
   font-size: 20px;
+}
+
+.hs-mini-product__stock {
+  margin: -2px 0 0;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .hs-product-card__meta {
@@ -240,20 +264,6 @@ function handleKeydown(event, payload, eventName) {
   color: var(--hs-muted);
   font-size: 12px;
   font-weight: 600;
-}
-
-.hs-mini-product__wish {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border: 1px solid #d8dde5;
-  border-radius: 50%;
-  background: #ffffff;
-  color: var(--hs-ink);
-  cursor: pointer;
-  font-size: 14px;
 }
 
 @media (max-width: 1180px) {

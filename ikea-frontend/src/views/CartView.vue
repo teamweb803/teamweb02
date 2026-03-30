@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { useCommerceCart } from '../composables/useCommerceCart';
@@ -35,6 +35,11 @@ const {
   recommendProducts,
   shippingTotal,
 } = useCartViewState(router, ROUTE_PATHS.orderCheckout, selectedItems, recommendations);
+
+const hasSelectableItems = computed(() => cartItems.value.some((item) => !item.isSoldOut));
+const canCheckoutSelected = computed(() => selectedItems.value.length > 0);
+const canCheckoutAll = computed(() => hasSelectableItems.value);
+const soldOutItemCount = computed(() => cartItems.value.filter((item) => item.isSoldOut).length);
 
 function _formatPriceLegacy(value) {
   return `${Number(value ?? 0).toLocaleString('ko-KR')}원`;
@@ -89,10 +94,14 @@ function closeShippingGuide() {
             <button type="button" aria-label="안내 닫기" @click="noticeVisible = false">×</button>
           </div>
 
+          <div v-if="soldOutItemCount" class="cart-stock-notice">
+            품절 상품 {{ soldOutItemCount }}개는 주문 대상에서 제외됩니다.
+          </div>
+
           <div class="cart-table">
             <div class="cart-table__head">
               <label class="cart-check cart-table__check">
-                <input v-model="allSelected" type="checkbox" />
+                <input v-model="allSelected" type="checkbox" :disabled="!hasSelectableItems" />
               </label>
               <span class="cart-table__thumb-placeholder" aria-hidden="true"></span>
               <span class="cart-table__info-col">상품정보</span>
@@ -105,7 +114,7 @@ function closeShippingGuide() {
             <template v-if="cartItems.length">
               <div class="cart-delivery-row">
                 <label class="cart-check cart-table__check">
-                  <input v-model="allSelected" type="checkbox" />
+                  <input v-model="allSelected" type="checkbox" :disabled="!hasSelectableItems" />
                 </label>
                 <div class="cart-table__thumb-placeholder" aria-hidden="true"></div>
                 <div class="cart-delivery-row__copy">
@@ -114,10 +123,10 @@ function closeShippingGuide() {
                 </div>
               </div>
 
-              <article v-for="item in cartItems" :key="item.id" class="cart-item">
+              <article v-for="item in cartItems" :key="item.id" class="cart-item" :class="{ 'is-soldout': item.isSoldOut }">
                 <div class="cart-item__select">
                   <label class="cart-check">
-                    <input v-model="item.selected" type="checkbox" />
+                    <input v-model="item.selected" type="checkbox" :disabled="item.isSoldOut" />
                   </label>
                 </div>
 
@@ -137,13 +146,14 @@ function closeShippingGuide() {
                     </RouterLink>
                   </h2>
                   <p>{{ item.option }}</p>
+                  <p v-if="item.isSoldOut" class="cart-item__soldout">품절 상품입니다. 재입고 전까지 주문할 수 없습니다.</p>
                 </div>
 
                 <div class="cart-item__qty">
                   <div class="qty-stepper">
-                    <button type="button" aria-label="수량 감소" @click="updateQuantity(item.id, -1)">−</button>
+                    <button type="button" aria-label="수량 감소" :disabled="item.isSoldOut" @click="updateQuantity(item.id, -1)">−</button>
                     <span>{{ item.quantity }}</span>
-                    <button type="button" aria-label="수량 증가" @click="updateQuantity(item.id, 1)">+</button>
+                    <button type="button" aria-label="수량 증가" :disabled="item.isSoldOut" @click="updateQuantity(item.id, 1)">+</button>
                   </div>
                 </div>
 
@@ -166,8 +176,9 @@ function closeShippingGuide() {
                 </div>
 
                 <div class="cart-item__actions">
-                  <button class="cart-item__order-btn" type="button" @click="goToCheckout('single', item.productId)">바로주문</button>
-                  <button class="cart-item__wish-btn" type="button">찜</button>
+                  <button class="cart-item__order-btn" type="button" :disabled="item.isSoldOut" @click="goToCheckout('single', item.productId)">
+                    {{ item.isSoldOut ? '품절' : '바로주문' }}
+                  </button>
                   <button class="cart-item__remove-btn" type="button" @click="removeItem(item.id)">삭제</button>
                 </div>
               </article>
@@ -230,8 +241,8 @@ function closeShippingGuide() {
             </div>
 
             <div class="cart-summary__buttons">
-              <button type="button" @click="goToCheckout('selected')">선택 상품 주문</button>
-              <button class="is-dark" type="button" @click="goToCheckout('all')">전체 상품 주문</button>
+              <button type="button" :disabled="!canCheckoutSelected" @click="goToCheckout('selected')">선택 상품 주문</button>
+              <button class="is-dark" type="button" :disabled="!canCheckoutAll" @click="goToCheckout('all')">전체 상품 주문</button>
             </div>
           </section>
         </section>
@@ -441,10 +452,25 @@ function closeShippingGuide() {
   accent-color: #111111;
 }
 
+.cart-stock-notice {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid #f3d1d1;
+  background: #fff5f5;
+  color: #b42318;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
 .cart-item {
   min-height: 176px;
   padding: 24px 0;
   border-bottom: 1px solid #eceff3;
+}
+
+.cart-item.is-soldout {
+  background: linear-gradient(90deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0));
 }
 
 .cart-item__thumb-link {
@@ -493,6 +519,11 @@ function closeShippingGuide() {
   font-size: 14px;
 }
 
+.cart-item__soldout {
+  color: #b42318;
+  font-weight: 700;
+}
+
 .cart-item__qty,
 .cart-item__price,
 .cart-item__shipping,
@@ -519,6 +550,12 @@ function closeShippingGuide() {
   color: #111111;
   font-size: 18px;
   cursor: pointer;
+}
+
+.qty-stepper button:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: default;
 }
 
 .qty-stepper span {
@@ -597,7 +634,14 @@ function closeShippingGuide() {
   color: #ffffff;
 }
 
-.cart-item__wish-btn,
+.cart-item__order-btn:disabled,
+.cart-summary__buttons button:disabled {
+  border-color: #d8dde5;
+  background: #eef1f4;
+  color: #8a93a0;
+  cursor: default;
+}
+
 .cart-delete-btn {
   min-width: 92px;
   min-height: 38px;
@@ -608,7 +652,6 @@ function closeShippingGuide() {
   cursor: pointer;
 }
 
-.cart-item__wish-btn,
 .cart-summary__buttons button:not(.is-dark) {
   border-radius: 999px;
 }
@@ -733,6 +776,12 @@ function closeShippingGuide() {
   border: 1px solid #d8dde5;
   background: #ffffff;
   color: #374151;
+}
+
+.cart-summary__buttons button:disabled {
+  border-color: #d8dde5;
+  background: #eef1f4;
+  color: #8a93a0;
 }
 
 .cart-summary__buttons .is-dark {

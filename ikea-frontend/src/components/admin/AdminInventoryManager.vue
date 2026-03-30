@@ -5,16 +5,21 @@ import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
 
 const {
+  adjustmentStatusMessage,
   adjustmentForm,
   filteredItems,
   resolveStockStateKey,
   resolveStockStateLabel,
+  safeStockForm,
+  safeStockStatusMessage,
   searchKeyword,
   selectedItem,
   selectedProductId,
   selectItem,
-  statusMessage,
+  stockStatusCounts,
+  stockStatusFilter,
   submitAdjustment,
+  submitSafeStockUpdate,
   summary,
 } = useAdminInventory();
 
@@ -27,7 +32,7 @@ const pagedItems = computed(() => {
   return filteredItems.value.slice(start, start + pageSize);
 });
 
-watch(searchKeyword, () => {
+watch([searchKeyword, stockStatusFilter], () => {
   currentPage.value = 1;
 });
 
@@ -68,6 +73,20 @@ watch(
         />
       </template>
 
+      <div class="admin-inventory-manager__chips">
+        <button
+          v-for="option in stockStatusCounts"
+          :key="option.value"
+          type="button"
+          class="admin-inventory-manager__chip"
+          :class="{ 'is-active': stockStatusFilter === option.value }"
+          @click="stockStatusFilter = option.value"
+        >
+          <span>{{ option.label }}</span>
+          <strong>{{ option.count }}</strong>
+        </button>
+      </div>
+
       <div class="admin-inventory-manager__table">
         <div class="admin-inventory-manager__head">
           <span>상품</span>
@@ -99,44 +118,77 @@ watch(
             {{ resolveStockStateLabel(item) }}
           </span>
         </button>
+
+        <div v-if="!filteredItems.length" class="admin-inventory-manager__empty">
+          선택한 조건에 맞는 재고 상품이 없습니다.
+        </div>
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
     </AdminPanel>
 
-    <AdminPanel title="재고 조정" description="입고 또는 차감 수량을 기록합니다.">
+    <AdminPanel title="재고 조정" description="입고·차감 수량과 안전재고 기준을 분리해 관리합니다.">
       <div v-if="selectedItem" class="admin-inventory-manager__detail">
         <div class="admin-inventory-manager__detail-meta">
           <strong>{{ selectedItem.name }}</strong>
           <span>{{ selectedItem.sku }}</span>
           <p>현재 수량 {{ selectedItem.stock.toLocaleString('ko-KR') }}개 · 마지막 갱신 {{ selectedItem.updatedAt }}</p>
+          <p>안전재고 기준 {{ selectedItem.safeStock.toLocaleString('ko-KR') }}개</p>
         </div>
 
-        <form class="admin-inventory-manager__form" @submit.prevent="submitAdjustment">
-          <div class="admin-inventory-manager__field">
-            <label for="inventory-adjustment-type">조정 방식</label>
-            <select id="inventory-adjustment-type" v-model="adjustmentForm.type">
-              <option value="increase">입고 추가</option>
-              <option value="decrease">재고 차감</option>
-            </select>
-          </div>
+        <div class="admin-inventory-manager__detail-grid">
+          <form class="admin-inventory-manager__form-card" @submit.prevent="submitAdjustment">
+            <div class="admin-inventory-manager__form-heading">
+              <strong>재고 조정</strong>
+              <p>현재 재고를 직접 증가하거나 차감합니다.</p>
+            </div>
 
-          <div class="admin-inventory-manager__field">
-            <label for="inventory-adjustment-quantity">수량</label>
-            <input id="inventory-adjustment-quantity" v-model.number="adjustmentForm.quantity" type="number" min="1" />
-          </div>
+            <div class="admin-inventory-manager__form">
+              <div class="admin-inventory-manager__field">
+                <label for="inventory-adjustment-type">조정 방식</label>
+                <select id="inventory-adjustment-type" v-model="adjustmentForm.type">
+                  <option value="increase">재고 추가</option>
+                  <option value="decrease">재고 차감</option>
+                </select>
+              </div>
 
-          <div class="admin-inventory-manager__field admin-inventory-manager__field--wide">
-            <label for="inventory-adjustment-note">메모</label>
-            <input id="inventory-adjustment-note" v-model.trim="adjustmentForm.note" type="text" maxlength="80" placeholder="예: 오프라인 입고 반영" />
-          </div>
+              <div class="admin-inventory-manager__field">
+                <label for="inventory-adjustment-quantity">수량</label>
+                <input id="inventory-adjustment-quantity" v-model.number="adjustmentForm.quantity" type="number" min="1" />
+              </div>
 
-          <div class="admin-inventory-manager__actions">
-            <button type="submit">재고 반영</button>
-          </div>
-        </form>
+              <div class="admin-inventory-manager__actions">
+                <button type="submit">재고 반영</button>
+              </div>
+            </div>
 
-        <p v-if="statusMessage" class="admin-inventory-manager__status">{{ statusMessage }}</p>
+            <p v-if="adjustmentStatusMessage" class="admin-inventory-manager__status">{{ adjustmentStatusMessage }}</p>
+          </form>
+
+          <form class="admin-inventory-manager__form-card" @submit.prevent="submitSafeStockUpdate">
+            <div class="admin-inventory-manager__form-heading">
+              <strong>안전재고 기준</strong>
+              <p>주의 상품 판정 기준 수량을 별도로 저장합니다.</p>
+            </div>
+
+            <div class="admin-inventory-manager__form admin-inventory-manager__form--single">
+              <div class="admin-inventory-manager__field">
+                <label for="inventory-safe-stock">안전재고 수량</label>
+                <input id="inventory-safe-stock" v-model.number="safeStockForm.safeStock" type="number" min="0" step="1" />
+              </div>
+
+              <div class="admin-inventory-manager__actions">
+                <button type="submit">안전재고 저장</button>
+              </div>
+            </div>
+
+            <p v-if="safeStockStatusMessage" class="admin-inventory-manager__status">{{ safeStockStatusMessage }}</p>
+          </form>
+        </div>
+      </div>
+
+      <div v-else class="admin-inventory-manager__detail-empty">
+        조정할 재고 상품을 먼저 선택해 주세요.
       </div>
     </AdminPanel>
   </section>
@@ -186,6 +238,44 @@ watch(
   background: #ffffff;
 }
 
+.admin-inventory-manager__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.admin-inventory-manager__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+  color: #444444;
+  cursor: pointer;
+}
+
+.admin-inventory-manager__chip span,
+.admin-inventory-manager__chip strong {
+  font-size: 13px;
+}
+
+.admin-inventory-manager__chip strong {
+  color: #111111;
+}
+
+.admin-inventory-manager__chip.is-active {
+  border-color: #111111;
+  background: #111111;
+  color: #ffffff;
+}
+
+.admin-inventory-manager__chip.is-active strong {
+  color: #ffffff;
+}
+
 .admin-inventory-manager__table {
   border-bottom: 1px solid #ededed;
 }
@@ -216,6 +306,13 @@ watch(
 
 .admin-inventory-manager__row.is-active {
   background: #f7f9fb;
+}
+
+.admin-inventory-manager__empty,
+.admin-inventory-manager__detail-empty {
+  padding: 32px 0;
+  color: #666666;
+  font-size: 14px;
 }
 
 .admin-inventory-manager__product {
@@ -276,6 +373,12 @@ watch(
   gap: 18px;
 }
 
+.admin-inventory-manager__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .admin-inventory-manager__detail-meta {
   padding: 18px;
   border: 1px solid #e6e6e6;
@@ -286,19 +389,44 @@ watch(
   margin: 10px 0 0;
 }
 
+.admin-inventory-manager__form-card {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #e6e6e6;
+  background: #ffffff;
+}
+
+.admin-inventory-manager__form-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-inventory-manager__form-heading strong {
+  color: #111111;
+  font-size: 18px;
+}
+
+.admin-inventory-manager__form-heading p {
+  margin: 0;
+  color: #666666;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .admin-inventory-manager__form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
+.admin-inventory-manager__form--single {
+  grid-template-columns: 1fr;
+}
+
 .admin-inventory-manager__field {
   display: grid;
   gap: 8px;
-}
-
-.admin-inventory-manager__field--wide {
-  grid-column: 1 / -1;
 }
 
 .admin-inventory-manager__field label {
@@ -332,6 +460,7 @@ watch(
 
 @media (max-width: 1024px) {
   .admin-inventory-manager__summary,
+  .admin-inventory-manager__detail-grid,
   .admin-inventory-manager__head,
   .admin-inventory-manager__row,
   .admin-inventory-manager__form {

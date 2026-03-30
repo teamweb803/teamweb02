@@ -33,6 +33,7 @@ const JoinFormView = () => import('../views/JoinFormView.vue');
 const JoinCompleteView = () => import('../views/JoinCompleteView.vue');
 const ProductDetailView = () => import('../views/ProductDetailView.vue');
 const SearchResultsView = () => import('../views/SearchResultsView.vue');
+const LegalDocumentView = () => import('../views/LegalDocumentView.vue');
 
 const router = createRouter({
   history: createWebHistory(),
@@ -149,6 +150,18 @@ const router = createRouter({
       path: ROUTE_PATHS.guestOrderLookup,
       name: 'guest-order-lookup',
       component: GuestOrderLookupView,
+    },
+    {
+      path: ROUTE_PATHS.policyTerms,
+      name: 'policy-terms',
+      component: LegalDocumentView,
+      props: { documentId: 'terms' },
+    },
+    {
+      path: ROUTE_PATHS.policyPrivacy,
+      name: 'policy-privacy',
+      component: LegalDocumentView,
+      props: { documentId: 'privacy' },
     },
     {
       path: ROUTE_PATHS.memberLogin,

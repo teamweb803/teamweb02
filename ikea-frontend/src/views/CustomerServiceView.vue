@@ -55,8 +55,8 @@ function openGuestOrderLookup() {
       <div class="cs-toolbar">
         <div class="cs-search">
           <input v-model="noticeKeyword" type="text" placeholder="공지사항 검색" />
-          <button type="button">검색</button>
         </div>
+        <p class="cs-toolbar__hint">입력하면 바로 결과가 반영됩니다.</p>
       </div>
 
       <div class="cs-board">
@@ -135,8 +135,8 @@ function openGuestOrderLookup() {
       <div class="cs-toolbar cs-toolbar--qna">
         <div class="cs-search">
           <input v-model="qnaKeyword" type="text" placeholder="문의 검색" />
-          <button type="button">검색</button>
         </div>
+        <p class="cs-toolbar__hint">입력하면 바로 결과가 반영됩니다.</p>
       </div>
 
       <div class="cs-board">
@@ -175,7 +175,10 @@ function openGuestOrderLookup() {
 <style scoped>
 .cs-toolbar {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   justify-content: flex-end;
+  gap: 8px;
   padding: 0 0 16px;
 }
 
@@ -188,14 +191,19 @@ function openGuestOrderLookup() {
   flex: 1;
   height: 44px;
   border: 1px solid #d9d9d9;
-  border-right: 0;
   padding: 0 14px;
   font-size: 14px;
   color: #111111;
   box-sizing: border-box;
 }
 
-.cs-search button,
+.cs-toolbar__hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .cs-qna-actions__buttons button {
   height: 44px;
   padding: 0 18px;

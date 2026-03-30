@@ -1,10 +1,11 @@
 <script setup>
-import { computed, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAccountSession } from '../composables/useAccountSession';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { ROUTE_PATHS } from '../constants/routes';
 
+const route = useRoute();
 const router = useRouter();
 const inquiryType = ref('phone');
 const rememberId = ref(false);
@@ -34,6 +35,10 @@ async function handleSubmitLogin() {
   }
 }
 
+function openAccountRecoverySupport() {
+  router.push(ROUTE_PATHS.customerServiceQna);
+}
+
 function openGuestLookup() {
   const query = {
     name: guestLookupForm.buyerName.trim(),
@@ -51,6 +56,14 @@ function openGuestLookup() {
     query,
   });
 }
+
+onMounted(() => {
+  const prefetchedLoginId = String(route.query.loginId ?? '').trim();
+
+  if (prefetchedLoginId && !loginForm.loginId) {
+    loginForm.loginId = prefetchedLoginId;
+  }
+});
 </script>
 
 <template>
@@ -108,9 +121,12 @@ function openGuestLookup() {
               </button>
 
               <div class="login-actions">
-                <button type="button">아이디·비밀번호 찾기</button>
+                <button type="button" @click="openAccountRecoverySupport">아이디·비밀번호 찾기</button>
                 <button type="button" @click="router.push(ROUTE_PATHS.memberJoin)">회원가입</button>
               </div>
+              <p class="login-help login-help--member">
+                계정 찾기 기능은 아직 준비 중이며, 현재는 고객센터 QnA로 연결됩니다.
+              </p>
             </section>
 
             <section class="login-box login-box--guest">
@@ -396,6 +412,10 @@ function openGuestLookup() {
   font-size: 12px;
   line-height: 1.55;
   color: #8b8b8b;
+}
+
+.login-help--member {
+  margin-bottom: 0;
 }
 
 @media (max-width: 980px) {

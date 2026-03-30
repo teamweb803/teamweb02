@@ -33,6 +33,8 @@ export const ROUTE_PATHS = {
   orderCheckout: '/order/checkout',
   orderComplete: '/order/complete',
   guestOrderLookup: '/order/guest-lookup',
+  policyTerms: '/policy/terms',
+  policyPrivacy: '/policy/privacy',
   customerServiceNotice: '/customer-service/notice',
   customerServiceFaq: '/customer-service/faq',
   customerServiceQna: '/customer-service/qna',

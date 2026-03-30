@@ -74,6 +74,7 @@ apiClient.interceptors.response.use(
       && authStore.refreshToken
       && !originalRequest._retry
       && !requestUrl.includes('/auth/login')
+      && !requestUrl.includes('/member/login')
       && !requestUrl.includes('/auth/refresh')
     );
 

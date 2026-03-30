@@ -14,10 +14,16 @@ import {
   buildProductDetailPath,
 } from '../constants/routes';
 import { storeToRefs } from 'pinia';
+import { useCartStore } from '../stores/cart';
 import { useCatalogStore } from '../stores/catalog';
+import {
+  decorateStorefrontItems,
+  resolveStorefrontAvailability,
+} from '../services/storefrontStockService';
 
 const route = useRoute();
 const router = useRouter();
+const cartStore = useCartStore();
 const catalogStore = useCatalogStore();
 const { products: catalogProducts } = storeToRefs(catalogStore);
 
@@ -67,6 +73,9 @@ const shouldUseDimensionImage = computed(() => Boolean(detailContent.value.useDi
 
 const deliveryMessage = computed(() => buildProductDeliveryMessage(currentProduct.value));
 const purchaseOptionCopy = computed(() => buildProductOptionSummary(currentProduct.value));
+const availability = computed(() => resolveStorefrontAvailability(currentProduct.value));
+const isSoldOut = computed(() => availability.value.isSoldOut);
+const soldOutMessage = computed(() => availability.value.stockMessage);
 
 const relatedProducts = computed(() => {
   const currentId = currentProduct.value.id;
@@ -84,7 +93,7 @@ const relatedProducts = computed(() => {
     product.id !== currentId && product.categorySlug !== currentProduct.value.categorySlug
   ));
 
-  return [...sameType, ...sameCategory, ...others].slice(0, 4);
+  return decorateStorefrontItems([...sameType, ...sameCategory, ...others].slice(0, 4));
 });
 
 const sectionTabs = [
@@ -113,15 +122,47 @@ function decreaseQuantity() {
 }
 
 function increaseQuantity() {
+  if (isSoldOut.value) {
+    return;
+  }
+
   quantity.value += 1;
 }
 
+function syncCurrentProductToCart() {
+  if (isSoldOut.value) {
+    return null;
+  }
+
+  return cartStore.addCartItem(currentProduct.value?.id, {
+    quantity: quantity.value,
+  });
+}
+
 function goToCart() {
+  const cartItem = syncCurrentProductToCart();
+
+  if (!cartItem) {
+    return;
+  }
+
   router.push(ROUTE_PATHS.cart);
 }
 
 function goToCheckout() {
-  router.push(ROUTE_PATHS.orderCheckout);
+  if (isSoldOut.value) {
+    return;
+  }
+
+  const cartItem = syncCurrentProductToCart();
+
+  router.push({
+    path: ROUTE_PATHS.orderCheckout,
+    query: {
+      mode: 'single',
+      itemId: cartItem?.productId ?? String(currentProduct.value?.id ?? ''),
+    },
+  });
 }
 
 function scrollToSection(sectionId) {
@@ -188,7 +229,7 @@ function goToProduct(productId) {
             </div>
           </div>
 
-          <section class="detail-summary">
+        <section class="detail-summary">
             <p class="detail-summary__brand">{{ currentProduct.brand }}</p>
             <h1>{{ currentProduct.name }}</h1>
 
@@ -200,6 +241,10 @@ function goToProduct(productId) {
             <div class="detail-summary__price">
               <strong>{{ formatPrice(currentProduct.price) }}</strong>
             </div>
+
+            <p v-if="isSoldOut" class="detail-summary__soldout">
+              {{ soldOutMessage }}
+            </p>
 
             <p class="detail-summary__hook">{{ detailContent.heroHook }}</p>
 
@@ -222,15 +267,15 @@ function goToProduct(productId) {
           </section>
 
           <aside class="detail-purchase-panel">
-            <button class="detail-purchase-panel__option" type="button">
-              <span>기본 옵션 선택</span>
-              <strong>〉</strong>
-            </button>
+            <div class="detail-purchase-panel__option">
+              <span>선택 옵션</span>
+              <strong>{{ purchaseOptionCopy }}</strong>
+            </div>
 
-            <button class="detail-purchase-panel__option" type="button">
-              <span>배송희망일 별도 안내</span>
-              <strong>〉</strong>
-            </button>
+            <div class="detail-purchase-panel__option">
+              <span>배송 일정</span>
+              <strong>주문서작성 단계에서 확인</strong>
+            </div>
 
             <div class="detail-purchase-panel__meta">
               <strong>예상 배송비 0원</strong>
@@ -243,9 +288,9 @@ function goToProduct(productId) {
 
               <div class="detail-purchase-panel__line">
                 <div class="detail-purchase-panel__qty">
-                  <button type="button" @click="decreaseQuantity">-</button>
+                  <button type="button" :disabled="isSoldOut" @click="decreaseQuantity">-</button>
                   <span>{{ quantity }}</span>
-                  <button type="button" @click="increaseQuantity">+</button>
+                  <button type="button" :disabled="isSoldOut" @click="increaseQuantity">+</button>
                 </div>
                 <strong>{{ formatPrice(totalPrice) }}</strong>
               </div>
@@ -257,8 +302,12 @@ function goToProduct(productId) {
             </div>
 
             <div class="detail-purchase-panel__actions">
-              <button class="detail-purchase-panel__cart" type="button" @click="goToCart">장바구니</button>
-              <button class="detail-purchase-panel__buy" type="button" @click="goToCheckout">바로구매</button>
+              <button class="detail-purchase-panel__cart" type="button" :disabled="isSoldOut" @click="goToCart">
+                {{ isSoldOut ? '품절' : '장바구니' }}
+              </button>
+              <button class="detail-purchase-panel__buy" type="button" :disabled="isSoldOut" @click="goToCheckout">
+                {{ isSoldOut ? '품절' : '바로구매' }}
+              </button>
             </div>
           </aside>
         </section>
@@ -375,6 +424,7 @@ function goToProduct(productId) {
               v-for="item in relatedProducts"
               :key="item.id"
               class="detail-related-card"
+              :class="{ 'is-soldout': item.isSoldOut }"
             >
               <button
                 class="detail-related-card__link"
@@ -384,12 +434,20 @@ function goToProduct(productId) {
               />
               <div class="detail-related-card__image">
                 <img :src="item.image" :alt="item.imageAlt ?? item.name" />
-                <span class="detail-related-card__badge">{{ item.badge }}</span>
+                <span
+                  class="detail-related-card__badge"
+                  :class="{ 'detail-related-card__badge--soldout': item.isSoldOut }"
+                >
+                  {{ item.isSoldOut ? '품절' : item.badge }}
+                </span>
               </div>
               <div class="detail-related-card__copy">
                 <p>{{ item.brand }}</p>
                 <h3>{{ item.name }}</h3>
                 <strong>{{ formatPrice(item.price) }}</strong>
+                <p v-if="item.isSoldOut" class="detail-related-card__stock">
+                  품절 · 상세 페이지에서 재입고 여부를 확인해 주세요.
+                </p>
               </div>
             </article>
           </div>

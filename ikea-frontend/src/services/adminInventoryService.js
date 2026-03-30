@@ -52,8 +52,8 @@ export function getAdminInventoryItems() {
   return readStoredInventoryItems();
 }
 
-export function adjustAdminInventoryItem(productId, { type, quantity, note }) {
-  const timestamp = new Intl.DateTimeFormat('ko-KR', {
+function createInventoryTimestamp() {
+  return new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -61,13 +61,17 @@ export function adjustAdminInventoryItem(productId, { type, quantity, note }) {
     minute: '2-digit',
     hour12: false,
   }).format(new Date());
+}
+
+export function adjustAdminInventoryItem(productId, { type, quantity }) {
+  const timestamp = createInventoryTimestamp();
 
   const nextItems = readStoredInventoryItems().map((item) => {
     if (String(item.productId) !== String(productId)) {
       return item;
     }
 
-    const delta = Number(quantity ?? 0);
+    const delta = Math.max(0, Math.trunc(Number(quantity ?? 0)));
     const nextStock = type === 'decrease'
       ? Math.max(0, Number(item.stock ?? 0) - delta)
       : Number(item.stock ?? 0) + delta;
@@ -75,7 +79,26 @@ export function adjustAdminInventoryItem(productId, { type, quantity, note }) {
     return {
       ...item,
       stock: nextStock,
-      lastNote: note?.trim() || '',
+      updatedAt: timestamp,
+    };
+  });
+
+  writeStoredInventoryItems(nextItems);
+  return nextItems;
+}
+
+export function updateAdminInventorySafeStock(productId, { safeStock }) {
+  const timestamp = createInventoryTimestamp();
+  const normalizedSafeStock = Math.max(0, Math.trunc(Number(safeStock ?? 0)));
+
+  const nextItems = readStoredInventoryItems().map((item) => {
+    if (String(item.productId) !== String(productId)) {
+      return item;
+    }
+
+    return {
+      ...item,
+      safeStock: normalizedSafeStock,
       updatedAt: timestamp,
     };
   });

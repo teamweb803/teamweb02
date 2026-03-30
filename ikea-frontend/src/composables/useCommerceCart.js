@@ -4,6 +4,7 @@ import { useCartStore } from '../stores/cart';
 
 export function useCommerceCart() {
   const cartStore = useCartStore();
+  cartStore.refreshAvailability();
   const {
     cartItems,
     recommendations,

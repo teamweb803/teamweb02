@@ -27,6 +27,7 @@ function handleKeydown(event) {
 <template>
   <article
     class="hs-pick-card"
+    :class="{ 'is-soldout': item.isSoldOut }"
     role="button"
     tabindex="0"
     @click="handleActivate"
@@ -34,8 +35,11 @@ function handleKeydown(event) {
   >
     <div class="hs-pick-card__image-wrap">
       <img :src="item.image" :alt="item.title" :loading="imageLoading" decoding="async" />
-      <span class="hs-pick-card__badge" :class="item.accent === 'yellow' ? 'is-yellow' : 'is-blue'">
-        {{ item.badge }}
+      <span
+        class="hs-pick-card__badge"
+        :class="item.isSoldOut ? 'is-soldout' : (item.accent === 'yellow' ? 'is-yellow' : 'is-blue')"
+      >
+        {{ item.isSoldOut ? '품절' : item.badge }}
       </span>
     </div>
     <div class="hs-pick-card__copy">
@@ -45,14 +49,12 @@ function handleKeydown(event) {
         <span v-if="item.discount">{{ item.discount }}</span>
         <strong>{{ item.price }}</strong>
       </div>
+      <p v-if="item.isSoldOut" class="hs-pick-card__stock">품절 · 재입고 전까지 구매할 수 없습니다.</p>
       <div class="hs-pick-card__meta">
         <span v-if="item.rating">평점 {{ item.rating }}</span>
         <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
       </div>
     </div>
-    <button class="hs-pick-card__wish" type="button" aria-label="찜하기" @click.stop>
-      &#9825;
-    </button>
   </article>
 </template>
 
@@ -65,6 +67,10 @@ function handleKeydown(event) {
   background: #ffffff;
   padding: 16px;
   cursor: pointer;
+}
+
+.hs-pick-card.is-soldout {
+  background: #fbfbfc;
 }
 
 .hs-pick-card:focus-visible {
@@ -112,6 +118,11 @@ function handleKeydown(event) {
   color: #ffffff;
 }
 
+.hs-pick-card__badge.is-soldout {
+  background: #b42318;
+  color: #ffffff;
+}
+
 .hs-pick-card__copy {
   display: grid;
   gap: 10px;
@@ -121,6 +132,12 @@ function handleKeydown(event) {
   margin: 0;
   color: var(--hs-muted);
   font-size: 13px;
+}
+
+.hs-pick-card__stock {
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .hs-pick-card__copy h3 {
@@ -167,20 +184,4 @@ function handleKeydown(event) {
   font-weight: 600;
 }
 
-.hs-pick-card__wish {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #d8dde5;
-  border-radius: 50%;
-  background: #ffffff;
-  color: var(--hs-ink);
-  cursor: pointer;
-  font-size: 14px;
-}
 </style>

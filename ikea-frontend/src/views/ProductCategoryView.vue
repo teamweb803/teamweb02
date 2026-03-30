@@ -15,6 +15,7 @@ import {
   getFilterOptions,
   getProductFilterValue,
 } from '../constants/categoryFilters';
+import { decorateStorefrontItems } from '../services/storefrontStockService';
 import { useCatalogStore } from '../stores/catalog';
 
 const route = useRoute();
@@ -133,7 +134,7 @@ const filteredProducts = computed(() => {
       break;
   }
 
-  return result;
+  return decorateStorefrontItems(result);
 });
 
 const displayedProducts = computed(() => filteredProducts.value.slice(0, selectedPageSize.value));
@@ -469,12 +470,17 @@ watch(
             </div>
 
             <div class="hs-product-grid">
-              <article v-for="item in displayedProducts" :key="item.id" class="hs-product-card">
+              <article
+                v-for="item in displayedProducts"
+                :key="item.id"
+                class="hs-product-card"
+                :class="{ 'is-soldout': item.isSoldOut }"
+              >
                 <RouterLink :to="buildProductDetailPath(item.id)" class="hs-product-card__link" :aria-label="`${item.name} 상세 페이지로 이동`" />
                 <div class="hs-product-card__image-wrap">
                   <img :src="item.image" :alt="item.imageAlt ?? item.name" />
-                  <span v-if="item.badge" class="hs-product-card__badge">{{ item.badge }}</span>
-                  <button class="hs-product-card__wish" type="button" aria-label="찜하기" @click.stop>♡</button>
+                  <span v-if="item.isSoldOut" class="hs-product-card__badge hs-product-card__badge--soldout">품절</span>
+                  <span v-else-if="item.badge" class="hs-product-card__badge">{{ item.badge }}</span>
                 </div>
 
                 <div class="hs-product-card__copy">
@@ -496,6 +502,7 @@ watch(
                     <span v-if="item.rating !== null">★ {{ item.rating }}</span>
                     <span v-if="item.reviews !== null">후기 {{ Number(item.reviews ?? 0).toLocaleString('ko-KR') }}</span>
                   </div>
+                  <p v-if="item.isSoldOut" class="hs-product-stock">품절 · 상세 페이지에서 재입고 여부를 확인해 주세요.</p>
                   <div v-if="item.features?.length" class="hs-product-tags">
                     <span v-for="tag in item.features" :key="tag">{{ tag }}</span>
                   </div>
@@ -901,6 +908,10 @@ watch(
   gap: 14px;
 }
 
+.hs-product-card.is-soldout {
+  opacity: 0.78;
+}
+
 .hs-product-card__link {
   position: absolute;
   inset: 0;
@@ -942,17 +953,8 @@ watch(
   font-weight: 700;
 }
 
-.hs-product-card__wish {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 0;
-  background: rgba(255, 255, 255, 0.92);
-  cursor: pointer;
+.hs-product-card__badge--soldout {
+  background: #b42318;
 }
 
 .hs-product-card__copy {
@@ -1003,6 +1005,13 @@ watch(
 .hs-product-tags span,
 .hs-empty-state {
   color: #6b7280;
+}
+
+.hs-product-stock {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .hs-price__original {

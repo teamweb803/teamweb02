@@ -39,20 +39,22 @@ function buildVirtualAccount(orderNumber, amount, depositorName, banks = [], due
 }
 
 export function getCheckoutItems(items = [], mode = 'all', itemId = '') {
+  const purchasableItems = items.filter((item) => !item.isSoldOut);
+
   if (mode === 'single') {
-    const singleItem = items.find((item) => item.productId === String(itemId))
-      ?? items[0]
+    const singleItem = purchasableItems.find((item) => item.productId === String(itemId))
+      ?? purchasableItems[0]
       ?? null;
 
     return singleItem ? [singleItem] : [];
   }
 
   if (mode === 'selected') {
-    const selectedItems = items.filter((item) => item.selected);
-    return selectedItems.length ? selectedItems : (items[0] ? [items[0]] : []);
+    const selectedItems = purchasableItems.filter((item) => item.selected);
+    return selectedItems.length ? selectedItems : [];
   }
 
-  return items;
+  return purchasableItems;
 }
 
 export function removeCheckoutItems(items = [], mode = 'all', itemId = '') {
@@ -64,7 +66,7 @@ export function removeCheckoutItems(items = [], mode = 'all', itemId = '') {
     return items.filter((item) => !item.selected);
   }
 
-  return [];
+  return items.filter((item) => item.isSoldOut);
 }
 
 export function buildCompletedOrderSnapshot(

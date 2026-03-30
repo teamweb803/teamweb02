@@ -1,13 +1,21 @@
 <script setup>
-import { useRouter } from 'vue-router';
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { ROUTE_PATHS } from '../constants/routes';
 
+const route = useRoute();
 const router = useRouter();
+const joinedName = computed(() => String(route.query.name ?? route.query.loginId ?? 'HOMiO 회원').trim() || 'HOMiO 회원');
 
-const goLogin = () => {
-  router.push(ROUTE_PATHS.memberLogin);
-};
+function goLogin() {
+  const loginId = String(route.query.loginId ?? '').trim();
+
+  router.push({
+    path: ROUTE_PATHS.memberLogin,
+    query: loginId ? { loginId } : undefined,
+  });
+}
 </script>
 
 <template>
@@ -21,9 +29,9 @@ const goLogin = () => {
               <path d="M7 9.8V19H17V9.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </RouterLink>
-          <span>〉</span>
+          <span>></span>
           <span>회원가입</span>
-          <span>〉</span>
+          <span>></span>
           <span>가입완료</span>
         </div>
 
@@ -35,9 +43,9 @@ const goLogin = () => {
 
         <section class="signup-complete-card" aria-labelledby="signup-complete-title">
           <h1 id="signup-complete-title">가입 완료</h1>
-          <p class="signup-complete-name">HOMiO 회원가입이 완료되었습니다.</p>
+          <p class="signup-complete-name"><strong>{{ joinedName }}</strong> 님의 회원가입이 완료되었습니다.</p>
           <p class="signup-complete-desc">로그인 후 장바구니, 주문 조회, 마이페이지를 바로 이용할 수 있습니다.</p>
-          <button class="signup-complete-button" type="button" @click="goLogin">확인</button>
+          <button class="signup-complete-button" type="button" @click="goLogin">로그인 하러가기</button>
         </section>
       </div>
     </main>
@@ -108,36 +116,37 @@ const goLogin = () => {
 
 .signup-complete-card {
   max-width: 720px;
-  margin: 0 auto;
-  padding-top: 58px;
+  margin: 74px auto 0;
+  padding-top: 52px;
   text-align: center;
 }
 
 .signup-complete-card h1 {
   margin: 0;
   color: #111111;
-  font-size: 62px;
-  line-height: 1.08;
-  font-weight: 700;
-  letter-spacing: -0.045em;
+  font-size: 68px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.05em;
 }
 
 .signup-complete-name {
-  margin: 44px 0 0;
+  margin: 36px 0 0;
   color: #111111;
   font-size: 22px;
-  line-height: 1.5;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.signup-complete-name strong {
+  font-weight: 800;
 }
 
 .signup-complete-desc {
   margin: 20px 0 0;
-  color: #111111;
+  color: #4a4a4a;
   font-size: 18px;
-  line-height: 1.7;
-  font-weight: 400;
-  letter-spacing: -0.025em;
+  line-height: 1.8;
 }
 
 .signup-complete-button {
