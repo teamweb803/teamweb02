@@ -4,9 +4,12 @@ import com.example.ikea.domain.CartItem;
 import com.example.ikea.dto.CartItemResponseDto;
 import com.example.ikea.dto.CartRequestDto;
 import com.example.ikea.service.CartService;
+import com.example.ikea.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,18 +20,22 @@ import java.util.List;
 public class CartController {
 
     private final CartService cartService;
+    private final MemberService memberService;
 
     //장바구니 조회
-    @GetMapping("/{memberId}")
+    @GetMapping
     public ResponseEntity<List<CartItemResponseDto>> getCartList(
-            @PathVariable Long memberId) {
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
         return ResponseEntity.ok(cartService.getCartList(memberId));
     }
 
     //장바구니 담기
-    @PostMapping("/{memberId}")
-    public ResponseEntity<Void> addCart(@PathVariable Long memberId,
-                                        @RequestBody @Valid CartRequestDto dto) {
+    @PostMapping
+    public ResponseEntity<Void> addCart(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid CartRequestDto dto) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
         cartService.addCart(memberId, dto);
         return ResponseEntity.ok().build();
     }
@@ -49,8 +56,10 @@ public class CartController {
     }
 
     //전체 비우기
-    @DeleteMapping("/{memberId}/clear")
-    public ResponseEntity<Void> clearCart(@PathVariable Long memberId) {
+    @DeleteMapping("/clear")
+    public ResponseEntity<Void> clearCart(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
         cartService.clearCart(memberId);
         return ResponseEntity.ok().build();
     }

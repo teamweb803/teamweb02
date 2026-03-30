@@ -2,10 +2,13 @@ package com.example.ikea.controller;
 
 import com.example.ikea.dto.OrderRequestDto;
 import com.example.ikea.dto.OrderResponseDto;
+import com.example.ikea.service.MemberService;
 import com.example.ikea.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,11 +19,13 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final MemberService memberService;
 
     //주문 목록 조회(내 주문 내역)
-    @GetMapping("/{memberId}")
+    @GetMapping
     public ResponseEntity<List<OrderResponseDto>> getOrderList(
-            @PathVariable Long memberId) {
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
         return ResponseEntity.ok(orderService.getOrderList(memberId));
     }
 
@@ -32,9 +37,11 @@ public class OrderController {
     }
 
     //주문 생성 (장바구니 -> 주문)
-    @PostMapping("/{memberId}")
-    public ResponseEntity<Long> createOrder(@PathVariable Long memberId,
-                                            @RequestBody @Valid OrderRequestDto dto) {
+    @PostMapping
+    public ResponseEntity<Long> createOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid OrderRequestDto dto) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
         return ResponseEntity.ok(orderService.createOrder(memberId, dto));
     }
 

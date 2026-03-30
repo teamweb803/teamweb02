@@ -132,4 +132,11 @@ public class MemberService {
     public Long getMemberCount() {
         return memberRepository.count();
     }
+
+    // Jwt 방식 회원 조회
+    public Long getMemberIdByLoginId(String loginId) {
+        return memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalStateException("존재하지 않는 회원입니다."))
+                .getMemberId();
+    }
 }

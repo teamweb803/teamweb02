@@ -2,10 +2,13 @@ package com.example.ikea.controller;
 
 import com.example.ikea.dto.ReviewRequestDto;
 import com.example.ikea.dto.ReviewResponseDto;
+import com.example.ikea.service.MemberService;
 import com.example.ikea.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +19,7 @@ import java.util.List;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final MemberService memberService;
 
     //상품별 리뷰 목록 조회
     @GetMapping("/product/{productId}")
@@ -25,16 +29,19 @@ public class ReviewController {
     }
 
     // 내 리뷰 목록
-    @GetMapping("/member/{memberId}")
+    @GetMapping("/my")
     public ResponseEntity<List<ReviewResponseDto>> getMyReviewList(
-            @PathVariable Long memberId) {
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
         return ResponseEntity.ok(reviewService.getMyReviewList(memberId));
     }
     
     //상품 리뷰 생성
-    @PostMapping("/{memberId}")
-    public ResponseEntity<Long> createReview(@PathVariable Long memberId,
-                                             @RequestBody @Valid ReviewRequestDto dto) {
+    @PostMapping
+    public ResponseEntity<Long> createReview(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid ReviewRequestDto dto) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
         return ResponseEntity.ok(reviewService.createReview(memberId, dto));
     }
     
