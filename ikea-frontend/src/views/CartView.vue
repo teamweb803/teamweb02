@@ -17,12 +17,14 @@ const {
   selectedItems,
   allSelected,
   recommendations,
+  refreshCart,
   updateQuantity,
   removeItem,
   removeSelected,
 } = useCommerceCart();
 
 onMounted(() => {
+  void refreshCart({ force: true }).catch(() => {});
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 });
 

@@ -38,12 +38,12 @@ export function createCatalogItem(productId, fallback, findProductById) {
 
 export function createFallbackProfile(memberSession) {
   return {
-    memberName: memberSession.memberName || '고객',
+    memberName: memberSession.memberName || '-',
     loginId: memberSession.loginId || '-',
-    address: buildAddress(memberSession) || '기본 배송지 미등록',
-    phone: memberSession.phoneNumber || '연락처 미등록',
-    role: memberSession.role || 'USER',
-    membershipLabel: 'HOMiO FAMILY',
+    address: buildAddress(memberSession) || '등록된 배송지가 없습니다.',
+    phone: memberSession.phoneNumber || '등록된 연락처가 없습니다.',
+    role: memberSession.role || '-',
+    membershipLabel: memberSession.membershipLabel || '-',
   };
 }
 

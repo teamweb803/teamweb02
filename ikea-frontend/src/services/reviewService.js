@@ -4,12 +4,21 @@ export function getProductReviews(productId) {
   return httpRequester.get(`/review/product/${productId}`);
 }
 
-export function getMemberReviews(memberId) {
-  return httpRequester.get(`/review/member/${memberId}`);
+export function getMyReviews() {
+  return httpRequester.get('/review/my');
 }
 
-export function createMemberReview(memberId, reviewRequest) {
-  return httpRequester.post(`/review/${memberId}`, reviewRequest);
+export function getMemberReviews() {
+  return getMyReviews();
+}
+
+export function createMyReview(memberIdOrReviewRequest, maybeReviewRequest) {
+  const reviewRequest = maybeReviewRequest === undefined ? memberIdOrReviewRequest : maybeReviewRequest;
+  return httpRequester.post('/review', reviewRequest);
+}
+
+export function createMemberReview(memberIdOrReviewRequest, maybeReviewRequest) {
+  return createMyReview(memberIdOrReviewRequest, maybeReviewRequest);
 }
 
 export function updateMemberReview(reviewId, reviewRequest) {

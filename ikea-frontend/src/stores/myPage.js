@@ -1,20 +1,192 @@
 import { defineStore } from 'pinia';
-import { getMember } from '../services/memberService';
-import {
-  getFallbackMyPageProfile,
-  getMyPageStaticContent,
-} from '../services/myPageService';
 import { normalizeMemberProfile } from '../mappers/myPageMapper';
+import { getCurrentMember } from '../services/memberService';
+import { getMyPageStaticContent, getFallbackMyPageProfile } from '../services/myPageService';
+import { getMyOrders } from '../services/orderService';
+import { getMyReviews } from '../services/reviewService';
 import { useAccountStore } from './account';
 import { useCatalogStore } from './catalog';
 
+function unwrapArrayPayload(payload) {
+  const source = payload?.data ?? payload;
+
+  if (Array.isArray(source)) {
+    return source;
+  }
+
+  if (Array.isArray(source?.content)) {
+    return source.content;
+  }
+
+  if (Array.isArray(source?.items)) {
+    return source.items;
+  }
+
+  if (Array.isArray(source?.orderItems)) {
+    return source.orderItems;
+  }
+
+  return [];
+}
+
+function normalizeIdentifier(value) {
+  return String(value ?? '').trim();
+}
+
+function formatPriceLabel(value) {
+  return `${Number(value ?? 0).toLocaleString('ko-KR')}원`;
+}
+
+function formatDateLabel(value) {
+  const normalizedValue = String(value ?? '').trim();
+
+  if (!normalizedValue) {
+    return '-';
+  }
+
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    if (/^\d{4}\.\d{2}\.\d{2}$/.test(normalizedValue)) {
+      return normalizedValue;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(normalizedValue)) {
+      return normalizedValue.slice(0, 10).replace(/-/g, '.');
+    }
+
+    return normalizedValue;
+  }
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('.');
+}
+
+function normalizeOrderStatusLabel(value) {
+  const normalizedValue = normalizeIdentifier(value).toUpperCase();
+
+  switch (normalizedValue) {
+    case 'PENDING':
+    case 'ORDERED':
+      return '주문 접수';
+    case 'PAID':
+      return '결제완료';
+    case 'READY':
+    case 'PREPARING':
+      return '배송준비';
+    case 'SHIPPING':
+    case 'DELIVERING':
+      return '배송중';
+    case 'DELIVERED':
+    case 'COMPLETED':
+      return '구매확정';
+    case 'CANCELLED':
+      return '주문취소';
+    default:
+      return normalizeIdentifier(value) || '-';
+  }
+}
+
+function buildSummaryCards(orders = [], reviews = []) {
+  const inProgressStatuses = new Set(['PENDING', 'ORDERED', 'PAID', 'READY', 'PREPARING', 'SHIPPING', 'DELIVERING']);
+  const inProgressCount = orders.filter((order) => (
+    inProgressStatuses.has(normalizeIdentifier(order.orderStatus ?? order.status).toUpperCase())
+  )).length;
+
+  return [
+    { id: 'orders', label: '진행중 주문', value: `${inProgressCount}건` },
+    { id: 'coupon', label: '사용 가능 쿠폰', value: '-' },
+    { id: 'point', label: '보유 포인트', value: '-' },
+    { id: 'review', label: '내 리뷰', value: `${reviews.length}건` },
+  ];
+}
+
+function buildOrderSteps(orders = []) {
+  const counts = {
+    paid: 0,
+    ready: 0,
+    shipping: 0,
+    done: 0,
+  };
+
+  orders.forEach((order) => {
+    switch (normalizeIdentifier(order.orderStatus ?? order.status).toUpperCase()) {
+      case 'PAID':
+        counts.paid += 1;
+        break;
+      case 'READY':
+      case 'PREPARING':
+        counts.ready += 1;
+        break;
+      case 'SHIPPING':
+      case 'DELIVERING':
+        counts.shipping += 1;
+        break;
+      case 'DELIVERED':
+      case 'COMPLETED':
+        counts.done += 1;
+        break;
+      default:
+        break;
+    }
+  });
+
+  return [
+    { id: 'paid', label: '결제완료', count: counts.paid },
+    { id: 'ready', label: '배송준비', count: counts.ready },
+    { id: 'shipping', label: '배송중', count: counts.shipping },
+    { id: 'done', label: '구매확정', count: counts.done },
+  ];
+}
+
+function buildOrderOption(product, orderItem = {}, order = {}) {
+  const optionParts = [
+    product?.color,
+    product?.material,
+    normalizeIdentifier(orderItem.option),
+    normalizeIdentifier(order.option),
+  ].filter(Boolean);
+
+  return optionParts.length ? optionParts.join(' / ') : '-';
+}
+
+function buildRecentOrders(orders = [], findProductById) {
+  return orders.slice(0, 5).map((order, index) => {
+    const firstItem = unwrapArrayPayload(order?.orderItems).at(0) ?? {};
+    const productId = normalizeIdentifier(firstItem.productId ?? order.productId);
+    const product = typeof findProductById === 'function' ? findProductById(productId) : null;
+    const priceValue = (
+      firstItem.totalPrice
+      ?? order.totalPrice
+      ?? order.finalPrice
+      ?? firstItem.orderPrice
+      ?? firstItem.price
+      ?? product?.price
+      ?? 0
+    );
+
+    return {
+      id: normalizeIdentifier(order.orderId ?? order.id ?? order.orderNo ?? `order-${index}`),
+      date: formatDateLabel(order.createdAt ?? order.orderedAt ?? order.orderDate),
+      status: normalizeOrderStatusLabel(order.orderStatus ?? order.status),
+      option: buildOrderOption(product, firstItem, order),
+      image: firstItem.imgPath ?? product?.image ?? '',
+      title: firstItem.productName ?? product?.name ?? '주문 상품',
+      price: formatPriceLabel(priceValue),
+      productId: productId || normalizeIdentifier(product?.id),
+    };
+  });
+}
+
 export const useMyPageStore = defineStore('myPage', {
   state: () => {
-    const catalogStore = useCatalogStore();
     const accountStore = useAccountStore();
 
     return {
-      ...getMyPageStaticContent((productId) => catalogStore.findProductById(productId)),
+      ...getMyPageStaticContent(),
       profile: getFallbackMyPageProfile(accountStore),
       isProfileLoading: false,
       profileError: '',
@@ -22,11 +194,22 @@ export const useMyPageStore = defineStore('myPage', {
     };
   },
   actions: {
+    resetDynamicSections() {
+      const baseContent = getMyPageStaticContent();
+      this.summaryCards = baseContent.summaryCards;
+      this.orderSteps = baseContent.orderSteps;
+      this.recentOrders = baseContent.recentOrders;
+      this.wishListItems = baseContent.wishListItems;
+      this.recentViewItems = baseContent.recentViewItems;
+    },
     async loadProfile() {
       const accountStore = useAccountStore();
+      const catalogStore = useCatalogStore();
+      accountStore.hydrate();
 
-      if (!accountStore.memberId) {
+      if (!accountStore.accessToken) {
         this.profile = getFallbackMyPageProfile(accountStore);
+        this.resetDynamicSections();
         this.loaded = true;
         return;
       }
@@ -34,11 +217,42 @@ export const useMyPageStore = defineStore('myPage', {
       this.isProfileLoading = true;
       this.profileError = '';
 
+      const [memberResult, ordersResult, reviewsResult] = await Promise.allSettled([
+        getCurrentMember(),
+        getMyOrders(),
+        getMyReviews(),
+      ]);
+
       try {
-        const response = await getMember(accountStore.memberId);
-        this.profile = normalizeMemberProfile(response, accountStore);
+        if (memberResult.status === 'fulfilled') {
+          this.profile = normalizeMemberProfile(memberResult.value, accountStore);
+        } else {
+          this.profile = getFallbackMyPageProfile(accountStore);
+          this.profileError = '회원 정보를 다시 확인해 주세요.';
+        }
+
+        const orders = ordersResult.status === 'fulfilled'
+          ? unwrapArrayPayload(ordersResult.value)
+          : [];
+        const reviews = reviewsResult.status === 'fulfilled'
+          ? unwrapArrayPayload(reviewsResult.value)
+          : [];
+
+        this.summaryCards = buildSummaryCards(orders, reviews);
+        this.orderSteps = buildOrderSteps(orders);
+        this.recentOrders = buildRecentOrders(
+          orders,
+          (productId) => catalogStore.findProductById(productId),
+        );
+        this.wishListItems = [];
+        this.recentViewItems = [];
+
+        if (ordersResult.status === 'rejected' || reviewsResult.status === 'rejected') {
+          this.profileError = this.profileError || '마이페이지 데이터를 모두 불러오지 못했습니다.';
+        }
       } catch (error) {
         this.profile = getFallbackMyPageProfile(accountStore);
+        this.resetDynamicSections();
         this.profileError = '회원 정보를 다시 확인해 주세요.';
         console.error(error);
       } finally {

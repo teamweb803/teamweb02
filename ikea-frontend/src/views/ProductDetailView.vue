@@ -129,18 +129,23 @@ function increaseQuantity() {
   quantity.value += 1;
 }
 
-function syncCurrentProductToCart() {
+async function syncCurrentProductToCart() {
   if (isSoldOut.value) {
     return null;
   }
 
-  return cartStore.addCartItem(currentProduct.value?.id, {
-    quantity: quantity.value,
-  });
+  try {
+    return await cartStore.addCartItem(currentProduct.value?.id, {
+      quantity: quantity.value,
+    });
+  } catch (error) {
+    window.alert(error?.message ?? '장바구니 처리 중 오류가 발생했습니다.');
+    return null;
+  }
 }
 
-function goToCart() {
-  const cartItem = syncCurrentProductToCart();
+async function goToCart() {
+  const cartItem = await syncCurrentProductToCart();
 
   if (!cartItem) {
     return;
@@ -149,12 +154,12 @@ function goToCart() {
   router.push(ROUTE_PATHS.cart);
 }
 
-function goToCheckout() {
+async function goToCheckout() {
   if (isSoldOut.value) {
     return;
   }
 
-  const cartItem = syncCurrentProductToCart();
+  const cartItem = await syncCurrentProductToCart();
 
   router.push({
     path: ROUTE_PATHS.orderCheckout,

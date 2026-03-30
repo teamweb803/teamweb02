@@ -10,9 +10,9 @@ export function useGuestOrderLookup() {
     orderNumber: '',
     phoneNumber: '',
   });
-  const isPhoneVerified = shallowRef(false);
   const statusMessage = shallowRef('');
   const searchedOrders = shallowRef([]);
+  const isSubmitting = shallowRef(false);
 
   const canSubmit = computed(() => {
     if (!form.buyerName.trim()) {
@@ -23,7 +23,7 @@ export function useGuestOrderLookup() {
       return Boolean(form.orderNumber.trim());
     }
 
-    return Boolean(form.phoneNumber.trim() && isPhoneVerified.value);
+    return Boolean(form.phoneNumber.trim());
   });
 
   function hydrateFromRouteQuery(query) {
@@ -31,33 +31,32 @@ export function useGuestOrderLookup() {
     form.inquiryType = query.mode === 'phone' ? 'phone' : 'order';
     form.orderNumber = String(query.orderNumber ?? '').trim();
     form.phoneNumber = String(query.phoneNumber ?? '').trim();
-    isPhoneVerified.value = form.inquiryType === 'phone' && Boolean(form.phoneNumber);
   }
 
-  function resetVerification() {
-    isPhoneVerified.value = false;
-  }
-
-  function verifyPhoneNumber() {
-    if (!form.phoneNumber.trim()) {
-      statusMessage.value = '연락처를 먼저 입력해 주세요.';
+  async function submitLookup() {
+    if (!canSubmit.value || isSubmitting.value) {
       return;
     }
 
-    isPhoneVerified.value = true;
-    statusMessage.value = '프론트 기준 본인 확인이 완료되었습니다.';
-  }
+    isSubmitting.value = true;
+    statusMessage.value = '';
 
-  function submitLookup() {
-    searchedOrders.value = lookupGuestOrders({
-      buyerName: form.buyerName,
-      orderNumber: form.inquiryType === 'order' ? form.orderNumber : '',
-      phoneNumber: form.inquiryType === 'phone' ? form.phoneNumber : '',
-    });
+    try {
+      searchedOrders.value = await lookupGuestOrders({
+        buyerName: form.buyerName,
+        orderNumber: form.inquiryType === 'order' ? form.orderNumber : '',
+        phoneNumber: form.inquiryType === 'phone' ? form.phoneNumber : '',
+      });
 
-    statusMessage.value = searchedOrders.value.length
-      ? `${searchedOrders.value.length}건의 주문을 찾았습니다.`
-      : '일치하는 주문이 없습니다.';
+      statusMessage.value = searchedOrders.value.length
+        ? `${searchedOrders.value.length}건의 주문을 찾았습니다.`
+        : '일치하는 주문이 없습니다.';
+    } catch (error) {
+      searchedOrders.value = [];
+      statusMessage.value = error?.message ?? '비회원 주문 정보를 불러오지 못했습니다.';
+    } finally {
+      isSubmitting.value = false;
+    }
   }
 
   hydrateFromRouteQuery(route.query);
@@ -74,20 +73,15 @@ export function useGuestOrderLookup() {
     () => {
       statusMessage.value = '';
       searchedOrders.value = [];
-      if (form.inquiryType === 'order') {
-        isPhoneVerified.value = false;
-      }
     },
   );
 
   return {
     canSubmit,
     form,
-    isPhoneVerified,
-    resetVerification,
+    isSubmitting,
     searchedOrders,
     statusMessage,
     submitLookup,
-    verifyPhoneNumber,
   };
 }

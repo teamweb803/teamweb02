@@ -4,24 +4,37 @@ import {
   createCommerceRecommendations,
 } from '../data/commerceSeed';
 
-export function getMemberCart(memberId) {
-  return httpRequester.get(`/cart/${memberId}`);
+export function getMyCart() {
+  return httpRequester.get('/cart');
 }
 
-export function addCartItem(memberId, cartRequest) {
-  return httpRequester.post(`/cart/${memberId}`, cartRequest);
+export function getMemberCart() {
+  return getMyCart();
+}
+
+export function addCartItem(memberIdOrCartRequest, maybeCartRequest) {
+  const cartRequest = maybeCartRequest === undefined ? memberIdOrCartRequest : maybeCartRequest;
+  return httpRequester.post('/cart', cartRequest);
 }
 
 export function updateCartItemQuantity(cartItemId, quantity) {
-  return httpRequester.patch(`/cart/${cartItemId}/quantity`, { quantity });
+  return httpRequester.patch(
+    `/cart/${cartItemId}/quantity`,
+    { quantity },
+    { query: { quantity } },
+  );
 }
 
 export function deleteCartItem(cartItemId) {
   return httpRequester.delete(`/cart/${cartItemId}`);
 }
 
-export function clearMemberCart(memberId) {
-  return httpRequester.delete(`/cart/${memberId}/clear`);
+export function clearMyCart() {
+  return httpRequester.delete('/cart/clear');
+}
+
+export function clearMemberCart() {
+  return clearMyCart();
 }
 
 export function getFallbackCartItems() {

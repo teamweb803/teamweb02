@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   CUSTOMER_SERVICE_FAQ_CATEGORIES,
@@ -12,21 +12,25 @@ const BOARD_PAGE_SIZE = 6;
 
 export function useCustomerServiceBoard() {
   const route = useRoute();
+
   const noticeKeyword = ref('');
   const activeFaqCategory = ref(CUSTOMER_SERVICE_FAQ_CATEGORIES[0]);
   const openFaqIds = ref(['faq-1']);
   const qnaKeyword = ref('');
   const noticePage = ref(1);
   const qnaPage = ref(1);
+  const qnaRows = ref([]);
+  const isQnaLoading = ref(false);
+  const qnaLoadError = ref('');
 
   const currentSection = computed(() => resolveCustomerServiceSection(route.name));
-  const qnaRows = computed(() => getCustomerSupportQnaRows());
   const qnaSubmitted = computed(
     () => currentSection.value === 'qna' && route.query.submitted === '1',
   );
 
   const filteredNotices = computed(() => {
     const keyword = noticeKeyword.value.trim();
+
     if (!keyword) {
       return CUSTOMER_SERVICE_NOTICE_ROWS;
     }
@@ -53,6 +57,7 @@ export function useCustomerServiceBoard() {
 
   const filteredQnaRows = computed(() => {
     const keyword = qnaKeyword.value.trim();
+
     if (!keyword) {
       return qnaRows.value;
     }
@@ -68,6 +73,20 @@ export function useCustomerServiceBoard() {
     const start = (qnaPage.value - 1) * BOARD_PAGE_SIZE;
     return filteredQnaRows.value.slice(start, start + BOARD_PAGE_SIZE);
   });
+
+  async function loadQnaRows() {
+    isQnaLoading.value = true;
+    qnaLoadError.value = '';
+
+    try {
+      qnaRows.value = await getCustomerSupportQnaRows();
+    } catch (error) {
+      qnaRows.value = [];
+      qnaLoadError.value = error?.message ?? '문의 내역을 불러오지 못했습니다.';
+    } finally {
+      isQnaLoading.value = false;
+    }
+  }
 
   function selectFaqCategory(category) {
     activeFaqCategory.value = category;
@@ -89,6 +108,12 @@ export function useCustomerServiceBoard() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
 
+  onMounted(() => {
+    if (currentSection.value === 'qna') {
+      void loadQnaRows();
+    }
+  });
+
   watch(noticeKeyword, () => {
     noticePage.value = 1;
   });
@@ -97,9 +122,13 @@ export function useCustomerServiceBoard() {
     qnaPage.value = 1;
   });
 
-  watch(currentSection, () => {
+  watch(currentSection, (section) => {
     noticePage.value = 1;
     qnaPage.value = 1;
+
+    if (section === 'qna') {
+      void loadQnaRows();
+    }
   });
 
   return {
@@ -109,12 +138,14 @@ export function useCustomerServiceBoard() {
     currentSection,
     faqCategories: CUSTOMER_SERVICE_FAQ_CATEGORIES,
     filteredFaqRows,
+    isQnaLoading,
     noticeKeyword,
     noticeTotalPages,
     openFaqIds,
     pagedNotices,
     pagedQnaRows,
     qnaKeyword,
+    qnaLoadError,
     qnaSubmitted,
     qnaTotalPages,
     selectFaqCategory,

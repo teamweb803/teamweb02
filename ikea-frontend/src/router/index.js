@@ -8,6 +8,8 @@ import {
   DEFAULT_PRODUCT_ID,
   ROUTE_PATHS,
 } from '../constants/routes';
+import { useAccountStore } from '../stores/account';
+import { hasAdminAccess, hasAuthenticatedSession } from '../utils/accessControl';
 
 const HomeView = () => import('../views/HomeView.vue');
 const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
@@ -57,41 +59,73 @@ const router = createRouter({
       path: ROUTE_PATHS.adminDashboard,
       name: 'admin-dashboard',
       component: AdminDashboardView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.adminProducts,
       name: 'admin-products',
       component: AdminProductsView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.adminInventory,
       name: 'admin-inventory',
       component: AdminInventoryView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.adminMembers,
       name: 'admin-members',
       component: AdminMembersView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.adminOrders,
       name: 'admin-orders',
       component: AdminOrdersView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.adminQna,
       name: 'admin-qna',
       component: AdminQnaView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.adminReviews,
       name: 'admin-reviews',
       component: AdminReviewsView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.adminNotices,
       name: 'admin-notices',
       component: AdminNoticesView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: ROUTE_PATHS.productCategoryBase,
@@ -172,6 +206,9 @@ const router = createRouter({
       path: ROUTE_PATHS.memberMyPage,
       name: 'member-my-page',
       component: MyPageView,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: ROUTE_PATHS.memberJoin,
@@ -251,6 +288,35 @@ const router = createRouter({
       redirect: ROUTE_PATHS.home,
     },
   ],
+});
+
+router.beforeEach((to) => {
+  const accountStore = useAccountStore();
+  accountStore.hydrate();
+
+  const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth);
+  const requiresAdmin = to.matched.some((record) => record.meta?.requiresAdmin);
+
+  if (!requiresAuth && !requiresAdmin) {
+    return true;
+  }
+
+  if (!hasAuthenticatedSession(accountStore)) {
+    return {
+      path: ROUTE_PATHS.memberLogin,
+      query: {
+        redirect: to.fullPath,
+      },
+    };
+  }
+
+  if (requiresAdmin && !hasAdminAccess(accountStore)) {
+    return {
+      path: ROUTE_PATHS.home,
+    };
+  }
+
+  return true;
 });
 
 export default router;

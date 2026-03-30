@@ -5,6 +5,7 @@ import { useCartStore } from '../stores/cart';
 export function useCommerceCart() {
   const cartStore = useCartStore();
   cartStore.refreshAvailability();
+  void cartStore.ensureCartLoaded().catch(() => {});
   const {
     cartItems,
     recommendations,
@@ -20,16 +21,35 @@ export function useCommerceCart() {
     },
   });
 
-  function updateQuantity(itemId, delta) {
-    cartStore.updateQuantity(itemId, delta);
+  async function updateQuantity(itemId, delta) {
+    try {
+      return await cartStore.updateQuantity(itemId, delta);
+    } catch (error) {
+      window.alert(error?.message ?? '장바구니 수량을 변경하지 못했습니다.');
+      return null;
+    }
   }
 
-  function removeItem(itemId) {
-    cartStore.removeItem(itemId);
+  async function removeItem(itemId) {
+    try {
+      return await cartStore.removeItem(itemId);
+    } catch (error) {
+      window.alert(error?.message ?? '장바구니 상품을 삭제하지 못했습니다.');
+      return null;
+    }
   }
 
-  function removeSelected() {
-    cartStore.removeSelected();
+  async function removeSelected() {
+    try {
+      return await cartStore.removeSelected();
+    } catch (error) {
+      window.alert(error?.message ?? '선택한 상품을 삭제하지 못했습니다.');
+      return null;
+    }
+  }
+
+  function refreshCart(options = {}) {
+    return cartStore.ensureCartLoaded(options);
   }
 
   return {
@@ -37,6 +57,7 @@ export function useCommerceCart() {
     selectedItems,
     allSelected,
     recommendations,
+    refreshCart,
     updateQuantity,
     removeItem,
     removeSelected,

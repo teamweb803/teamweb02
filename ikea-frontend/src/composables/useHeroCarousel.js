@@ -4,6 +4,7 @@ export function useHeroCarousel(slides) {
   const currentSlide = shallowRef(0);
   const trackIndex = shallowRef(slides.value.length > 1 ? 1 : 0);
   const isTrackTransitionEnabled = shallowRef(slides.value.length > 1);
+  const isTrackAnimating = shallowRef(false);
 
   let heroIntervalId;
 
@@ -34,12 +35,13 @@ export function useHeroCarousel(slides) {
     }
 
     isTrackTransitionEnabled.value = slides.value.length > 1;
+    isTrackAnimating.value = slides.value.length > 1;
     currentSlide.value = logicalIndex;
     trackIndex.value = nextTrackIndex;
   }
 
   function nextSlide() {
-    if (slides.value.length <= 1) {
+    if (slides.value.length <= 1 || isTrackAnimating.value) {
       return;
     }
 
@@ -50,7 +52,7 @@ export function useHeroCarousel(slides) {
   }
 
   function previousSlide() {
-    if (slides.value.length <= 1) {
+    if (slides.value.length <= 1 || isTrackAnimating.value) {
       return;
     }
 
@@ -61,7 +63,7 @@ export function useHeroCarousel(slides) {
   }
 
   function selectSlide(index) {
-    if (index === currentSlide.value || !slides.value.length) {
+    if (index === currentSlide.value || !slides.value.length || isTrackAnimating.value) {
       return;
     }
 
@@ -95,6 +97,7 @@ export function useHeroCarousel(slides) {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
           isTrackTransitionEnabled.value = true;
+          isTrackAnimating.value = false;
         });
       });
       return;
@@ -106,9 +109,13 @@ export function useHeroCarousel(slides) {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
           isTrackTransitionEnabled.value = true;
+          isTrackAnimating.value = false;
         });
       });
+      return;
     }
+
+    isTrackAnimating.value = false;
   }
 
   function stopAutoSlide() {

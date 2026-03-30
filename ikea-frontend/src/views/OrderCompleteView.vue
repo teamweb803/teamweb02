@@ -13,16 +13,23 @@ onMounted(() => {
 
 const hasOrder = computed(() => Boolean(order.value?.orderNumber));
 const isBankTransfer = computed(() => order.value?.paymentMethod === 'bank');
+const isGuestOrder = computed(() => Boolean(order.value?.isGuestOrder));
 const pageTitle = computed(() => (
   isBankTransfer.value
     ? '주문이 접수되었습니다.'
     : '결제가 완료되었습니다.'
 ));
-const pageDescription = computed(() => (
-  isBankTransfer.value
-    ? '가상계좌 입금이 확인되면 배송 준비가 시작됩니다. 아래 계좌 정보와 입금기한을 꼭 확인해 주세요.'
-    : '주문과 결제가 정상적으로 완료되었습니다. 배송 일정과 주문 내역은 아래에서 다시 확인할 수 있습니다.'
-));
+const pageDescription = computed(() => {
+  if (isBankTransfer.value) {
+    return '가상계좌 입금이 확인되면 배송 준비가 시작됩니다. 아래 계좌 정보와 입금기한을 꼭 확인해 주세요.';
+  }
+
+  if (isGuestOrder.value) {
+    return '비회원 주문이 정상적으로 접수되었습니다. 배송 확인이 필요할 때를 대비해 주문번호를 저장해 주세요.';
+  }
+
+  return '주문과 결제가 정상적으로 완료되었습니다. 배송 일정과 주문 내역은 아래에서 다시 확인할 수 있습니다.';
+});
 const totalDiscount = computed(() => (
   Number(order.value?.discountTotal ?? 0)
   + Number(order.value?.couponDiscount ?? 0)
@@ -75,6 +82,9 @@ function resolveDetailPath(item) {
               <span class="order-complete-hero__eyebrow">ORDER COMPLETE</span>
               <h1>{{ pageTitle }}</h1>
               <p>{{ pageDescription }}</p>
+              <p v-if="isGuestOrder" class="order-complete-hero__guest-note">
+                비회원 주문은 회원 마이페이지에 저장되지 않습니다. 화면에 표시된 주문번호를 따로 보관해 주세요.
+              </p>
             </div>
 
             <div class="order-complete-hero__meta">
@@ -231,18 +241,27 @@ function resolveDetailPath(item) {
               </section>
 
               <section class="order-complete-side-card">
-                <h2>다음 단계</h2>
+                <h2>{{ isGuestOrder ? '비회원 주문 안내' : '다음 단계' }}</h2>
                 <ul class="order-complete-note-list order-complete-note-list--compact">
-                  <li>주문 내역과 배송 진행 상태는 마이페이지에서 다시 확인할 수 있습니다.</li>
+                  <li v-if="isGuestOrder">주문번호와 주문자명을 함께 보관해 두면 주문 확인이 쉬워집니다.</li>
+                  <li v-else>주문 내역과 배송 진행 상태는 마이페이지에서 다시 확인할 수 있습니다.</li>
                   <li v-if="isBankTransfer">입금 확인 후 배송 준비가 시작되며, 상태가 자동으로 업데이트됩니다.</li>
                   <li v-else>결제가 완료된 주문은 상품 준비 상태에 따라 배송 일정이 순차적으로 반영됩니다.</li>
                 </ul>
 
                 <div class="order-complete-actions">
-                  <RouterLink :to="ROUTE_PATHS.memberMyPage" class="order-complete-action order-complete-action--primary">
+                  <RouterLink
+                    v-if="!isGuestOrder"
+                    :to="ROUTE_PATHS.memberMyPage"
+                    class="order-complete-action order-complete-action--primary"
+                  >
                     주문내역 확인
                   </RouterLink>
-                  <RouterLink :to="ROUTE_PATHS.home" class="order-complete-action order-complete-action--secondary">
+                  <RouterLink
+                    :to="ROUTE_PATHS.home"
+                    class="order-complete-action"
+                    :class="isGuestOrder ? 'order-complete-action--primary' : 'order-complete-action--secondary'"
+                  >
                     쇼핑 계속하기
                   </RouterLink>
                 </div>
@@ -355,6 +374,12 @@ function resolveDetailPath(item) {
   color: #6b7280;
   font-size: 14px;
   line-height: 1.7;
+}
+
+.order-complete-hero__guest-note {
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
 }
 
 .order-complete-hero__meta {

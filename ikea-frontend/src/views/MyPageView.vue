@@ -170,22 +170,25 @@ function moveToSection(sectionId) {
                   <span>관리</span>
                 </div>
 
-                <article v-for="order in recentOrders" :key="order.id" class="my-order-row">
-                  <span class="my-order-row__date">{{ order.date }}</span>
-                  <div class="my-order-row__product">
-                    <img :src="order.image" :alt="order.title" />
-                    <div>
-                      <strong>{{ order.title }}</strong>
-                      <p>{{ order.option }}</p>
+                <template v-if="recentOrders.length">
+                  <article v-for="order in recentOrders" :key="order.id" class="my-order-row">
+                    <span class="my-order-row__date">{{ order.date }}</span>
+                    <div class="my-order-row__product">
+                      <img :src="order.image" :alt="order.title" />
+                      <div>
+                        <strong>{{ order.title }}</strong>
+                        <p>{{ order.option }}</p>
+                      </div>
                     </div>
-                  </div>
-                  <span class="my-order-row__status">{{ order.status }}</span>
-                  <strong class="my-order-row__price">{{ order.price }}</strong>
-                  <div class="my-order-row__actions">
-                    <RouterLink :to="buildProductDetailPath(order.productId)">상품 보기</RouterLink>
-                    <RouterLink :to="ROUTE_PATHS.cart">장바구니</RouterLink>
-                  </div>
-                </article>
+                    <span class="my-order-row__status">{{ order.status }}</span>
+                    <strong class="my-order-row__price">{{ order.price }}</strong>
+                    <div class="my-order-row__actions">
+                      <RouterLink :to="buildProductDetailPath(order.productId)">상품 보기</RouterLink>
+                      <RouterLink :to="ROUTE_PATHS.cart">장바구니</RouterLink>
+                    </div>
+                  </article>
+                </template>
+                <p v-else class="my-empty-state">표시할 주문 내역이 없습니다.</p>
               </div>
             </section>
 
@@ -199,7 +202,7 @@ function moveToSection(sectionId) {
                   <header class="my-panel__head">
                     <strong>찜한 상품</strong>
                   </header>
-                  <div class="my-product-list">
+                  <div v-if="wishListItems.length" class="my-product-list">
                     <RouterLink
                       v-for="item in wishListItems"
                       :key="item.id"
@@ -215,13 +218,14 @@ function moveToSection(sectionId) {
                       <b>{{ item.price }}</b>
                     </RouterLink>
                   </div>
+                  <p v-else class="my-empty-state">찜한 상품이 없습니다.</p>
                 </section>
 
                 <section class="my-panel">
                   <header class="my-panel__head">
                     <strong>최근 본 상품</strong>
                   </header>
-                  <div class="my-product-list">
+                  <div v-if="recentViewItems.length" class="my-product-list">
                     <RouterLink
                       v-for="item in recentViewItems"
                       :key="item.id"
@@ -237,6 +241,7 @@ function moveToSection(sectionId) {
                       <b>{{ item.price }}</b>
                     </RouterLink>
                   </div>
+                  <p v-else class="my-empty-state">최근 본 상품이 없습니다.</p>
                 </section>
               </div>
             </section>
@@ -370,6 +375,15 @@ function moveToSection(sectionId) {
 .my-sidebar__support strong {
   color: #111111;
   font-size: 15px;
+  font-weight: 700;
+}
+
+.my-empty-state {
+  margin: 0;
+  padding: 22px 0;
+  color: #666666;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .my-sidebar__support a {

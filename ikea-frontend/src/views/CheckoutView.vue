@@ -2,21 +2,26 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
-import { completeCheckout, getCheckoutSeedItems } from '../composables/useCommerceCart';
+import {
+  completeCheckout,
+  getCheckoutSeedItems,
+  useCommerceCart,
+} from '../composables/useCommerceCart';
 import { ROUTE_PATHS } from '../constants/routes';
 import { useAccountStore } from '../stores/account';
 
 const route = useRoute();
 const router = useRouter();
 const accountStore = useAccountStore();
+const { refreshCart } = useCommerceCart();
 const scheduleTimeOptions = ['오전', '오후'];
 
 const orderItems = ref([]);
-const ordererName = ref('김민진');
-const ordererPhone = ref('010-9438-0461');
+const ordererName = ref('');
+const ordererPhone = ref('');
 const sameAsOrderer = ref(true);
-const receiverName = ref('김민진');
-const receiverPhone = ref('010-9438-0461');
+const receiverName = ref('');
+const receiverPhone = ref('');
 const zoneCode = ref('');
 const addressMain = ref('');
 const addressDetail = ref('');
@@ -33,6 +38,8 @@ const paymentMethod = ref('kakaopay');
 const finalAgreement = ref(false);
 const isSubmitting = ref(false);
 const checkoutAddressGuide = ref('');
+const isGuestCheckout = computed(() => !accountStore.accessToken);
+const canUseMemberBenefits = computed(() => Boolean(accountStore.accessToken));
 
 const paymentMethods = [
   { id: 'kakaopay', label: '카카오페이' },
@@ -41,23 +48,31 @@ const paymentMethods = [
   { id: 'bank', label: '무통장입금' },
 ];
 
-function syncOrderItems() {
+async function syncOrderItems() {
+  accountStore.hydrate();
+
+  try {
+    await refreshCart({ force: true });
+  } catch {
+    // Keep the current checkout snapshot when the cart sync is temporarily unavailable.
+  }
+
   orderItems.value = getCheckoutSeedItems(
     String(route.query.mode ?? 'all'),
     String(route.query.itemId ?? ''),
   );
 }
 
-onMounted(() => {
-  syncOrderItems();
+onMounted(async () => {
+  await syncOrderItems();
   prefillCheckoutFormFromAccount();
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 });
 
 watch(
   () => [route.query.mode, route.query.itemId],
-  () => {
-    syncOrderItems();
+  async () => {
+    await syncOrderItems();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   },
 );
@@ -73,6 +88,12 @@ watch(pointAmount, (value) => {
   const normalized = String(value ?? '').replace(/[^\d]/g, '');
   pointAmount.value = normalized === '' ? '0' : String(Number(normalized));
 });
+
+watch(canUseMemberBenefits, (enabled) => {
+  if (!enabled) {
+    pointAmount.value = '0';
+  }
+}, { immediate: true });
 
 const orderCount = computed(() => orderItems.value.reduce((sum, item) => sum + item.quantity, 0));
 const productTotal = computed(() => orderItems.value.reduce(
@@ -310,7 +331,7 @@ async function submitOrder() {
   isSubmitting.value = true;
 
   try {
-    const completedOrder = completeCheckout({
+    const completedOrder = await completeCheckout({
       mode: String(route.query.mode ?? 'all'),
       itemId: String(route.query.itemId ?? ''),
       orderItems: orderItems.value,
@@ -339,6 +360,8 @@ async function submitOrder() {
         orderNumber: completedOrder.orderNumber,
       },
     });
+  } catch (error) {
+    window.alert(error?.message ?? '주문 처리 중 오류가 발생했습니다.');
   } finally {
     isSubmitting.value = false;
   }
@@ -361,6 +384,16 @@ async function submitOrder() {
         </nav>
 
         <section class="checkout-section">
+          <div class="checkout-entry-note" :class="{ 'is-guest': isGuestCheckout }">
+            <strong>{{ isGuestCheckout ? '비회원 결제' : '회원 결제' }}</strong>
+            <p>
+              {{
+                isGuestCheckout
+                  ? '비회원 주문은 배송 정보를 직접 입력해야 하며, 완료 화면에 표시되는 주문번호를 따로 저장해 주세요.'
+                  : '회원 주문은 저장된 회원 정보를 기준으로 주문자와 배송지 정보가 자동 입력됩니다.'
+              }}
+            </p>
+          </div>
           <div class="checkout-section__title-row">
             <h1>주문서작성</h1>
             <button class="checkout-outline-button" type="button" @click="router.push(ROUTE_PATHS.cart)">장바구니가기</button>
@@ -457,7 +490,9 @@ async function submitOrder() {
                   <div class="checkout-form-row__content checkout-form-row__content--inline">
                     <input v-model="ordererName" type="text" placeholder="주문자 이름" />
                     <input v-model="ordererPhone" type="text" placeholder="휴대폰 번호" />
-                    <p class="checkout-inline-note">주문자 정보는 이 화면에서 직접 수정할 수 있습니다.</p>
+                    <p class="checkout-inline-note">
+                      {{ isGuestCheckout ? '비회원은 주문자 정보를 직접 입력해 주세요.' : '회원 정보가 자동 입력되며, 이 화면에서 직접 수정할 수 있습니다.' }}
+                    </p>
                   </div>
                 </div>
 
@@ -594,9 +629,12 @@ async function submitOrder() {
                 <div class="checkout-kv-list__inline">
                   <span>포인트</span>
                   <div>
-                    <input v-model="pointAmount" type="text" />
-                    <button class="checkout-outline-button is-small" type="button" @click="applyMaxPointAmount">전액사용</button>
+                    <input v-model="pointAmount" type="text" :disabled="!canUseMemberBenefits" />
+                    <button class="checkout-outline-button is-small" type="button" :disabled="!canUseMemberBenefits" @click="applyMaxPointAmount">전액사용</button>
                   </div>
+                </div>
+                <div v-if="!canUseMemberBenefits" class="checkout-kv-list__note">
+                  비회원 주문에서는 적립금과 회원 전용 혜택을 사용할 수 없습니다.
                 </div>
               </div>
             </section>
@@ -650,9 +688,10 @@ async function submitOrder() {
             </button>
 
             <ul class="checkout-final-card__notes">
-              <li>영수증과 주문 내역은 주문 완료 후 마이페이지에서 다시 확인할 수 있습니다.</li>
+              <li>{{ isGuestCheckout ? '비회원 주문은 완료 화면에서 주문번호를 먼저 확인해 주세요.' : '영수증과 주문 내역은 주문 완료 후 마이페이지에서 다시 확인할 수 있습니다.' }}</li>
               <li>배송 일정은 상품 준비 상태와 배송 환경에 따라 조정될 수 있습니다.</li>
               <li>배송지 변경은 상품 준비 상태에 따라 제한될 수 있습니다.</li>
+              <li v-if="isGuestCheckout">비회원 주문은 완료 화면에 표시되는 주문번호를 꼭 저장해 주세요.</li>
             </ul>
           </aside>
         </div>
@@ -742,6 +781,33 @@ async function submitOrder() {
 .checkout-section__title-row {
   padding-bottom: 18px;
   border-bottom: 2px solid #111111;
+}
+
+.checkout-entry-note {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.checkout-entry-note.is-guest {
+  border-color: #dbe5f0;
+  background: #f5f9ff;
+}
+
+.checkout-entry-note strong {
+  color: #111111;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.checkout-entry-note p {
+  margin: 0;
+  color: #5b6470;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .checkout-section__title-row h1,

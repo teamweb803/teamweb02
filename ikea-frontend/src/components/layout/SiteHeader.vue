@@ -8,6 +8,7 @@ import { buildSearchPath, ROUTE_PATHS } from '../../constants/routes';
 import { useAccountStore } from '../../stores/account';
 import { useCatalogStore } from '../../stores/catalog';
 import { useHomeStore } from '../../stores/home';
+import { hasAdminAccess } from '../../utils/accessControl';
 
 const route = useRoute();
 const router = useRouter();
@@ -41,6 +42,7 @@ const {
 
 const accountActionLabel = computed(() => (loggedIn.value ? '로그아웃' : '로그인'));
 const myPageActionLabel = computed(() => (memberName.value ? `${memberName.value}님` : '마이'));
+const showAdminAction = computed(() => hasAdminAccess(accountStore));
 
 function handleAccountClick() {
   if (loggedIn.value) {
@@ -201,7 +203,7 @@ defineExpose({
           <span>{{ myPageActionLabel }}</span>
         </button>
 
-        <button class="hs-util" type="button" @click="router.push(adminDashboardPath)">
+        <button v-if="showAdminAction" class="hs-util" type="button" @click="router.push(adminDashboardPath)">
           <svg viewBox="0 0 24 24" fill="none">
             <rect
               x="4.5"

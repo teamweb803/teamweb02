@@ -109,15 +109,10 @@ export function useAccountSession() {
       return null;
     }
 
-    if (!accountStore.memberId) {
-      accountStore.setProfileRequested(false);
-      return null;
-    }
-
     accountStore.setProfileRequested(true);
 
     try {
-      const response = await getCurrentMember(accountStore.memberId);
+      const response = await getCurrentMember();
       const session = extractMemberSession(response);
 
       if (session) {
@@ -165,9 +160,7 @@ export function useAccountSession() {
         accountStore.setMemberSession(memberSession);
       }
 
-      if (accountStore.memberId) {
-        await hydrateCurrentMember({ force: true, silent: true });
-      }
+      await hydrateCurrentMember({ force: true, silent: true });
 
       router.push(resolveRedirectPath(redirectPath));
       return response;

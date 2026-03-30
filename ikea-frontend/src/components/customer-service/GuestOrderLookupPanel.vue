@@ -1,31 +1,20 @@
 <script setup>
-import { watch } from 'vue';
 import { useGuestOrderLookup } from '../../composables/useGuestOrderLookup';
 
 const {
   canSubmit,
   form,
-  isPhoneVerified,
-  resetVerification,
+  isSubmitting,
   searchedOrders,
   statusMessage,
   submitLookup,
-  verifyPhoneNumber,
 } = useGuestOrderLookup();
-
-watch(
-  () => form.inquiryType,
-  () => {
-    resetVerification();
-    statusMessage.value = '';
-  },
-);
 </script>
 
 <template>
   <section class="guest-order">
     <div class="guest-order__intro">
-      <p>회원이 아니어도 주문번호 또는 연락처로 최근 주문 상태를 확인할 수 있습니다.</p>
+      <p>이름과 주문번호 또는 연락처를 입력하면 최근 주문 상태를 확인할 수 있습니다.</p>
     </div>
 
     <form class="guest-order__form" @submit.prevent="submitLookup">
@@ -57,16 +46,15 @@ watch(
         <label for="guest-order-phone">연락처</label>
         <div class="guest-order__phone">
           <input id="guest-order-phone" v-model.trim="form.phoneNumber" type="text" maxlength="20" placeholder="010-0000-0000" />
-          <button type="button" class="guest-order__verify" @click="verifyPhoneNumber">
-            {{ isPhoneVerified ? '확인 완료' : '본인 확인' }}
-          </button>
         </div>
       </div>
 
       <p v-if="statusMessage" class="guest-order__status">{{ statusMessage }}</p>
 
       <div class="guest-order__actions">
-        <button type="submit" class="guest-order__primary" :disabled="!canSubmit">조회</button>
+        <button type="submit" class="guest-order__primary" :disabled="!canSubmit || isSubmitting">
+          {{ isSubmitting ? '조회 중...' : '조회' }}
+        </button>
       </div>
     </form>
 
@@ -188,24 +176,17 @@ watch(
   flex: 1;
 }
 
-.guest-order__verify,
 .guest-order__primary {
   height: 48px;
   min-height: 48px;
   padding: 0 18px;
-  border: 1px solid #d9d9d9;
-  background: #ffffff;
-  color: #111111;
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
   font-size: 14px;
   box-sizing: border-box;
   cursor: pointer;
   white-space: nowrap;
-}
-
-.guest-order__primary {
-  border-color: #111111;
-  background: #111111;
-  color: #ffffff;
 }
 
 .guest-order__actions {

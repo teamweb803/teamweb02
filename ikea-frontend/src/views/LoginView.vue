@@ -121,11 +121,11 @@ onMounted(() => {
               </button>
 
               <div class="login-actions">
-                <button type="button" @click="openAccountRecoverySupport">아이디·비밀번호 찾기</button>
+                <button type="button" @click="openAccountRecoverySupport">아이디/비밀번호 찾기</button>
                 <button type="button" @click="router.push(ROUTE_PATHS.memberJoin)">회원가입</button>
               </div>
               <p class="login-help login-help--member">
-                계정 찾기 기능은 아직 준비 중이며, 현재는 고객센터 QnA로 연결됩니다.
+                계정 찾기 기능은 아직 준비 중이며 현재는 고객센터 QnA로 연결됩니다.
               </p>
             </section>
 
@@ -150,7 +150,7 @@ onMounted(() => {
 
               <div v-if="inquiryType === 'phone'" class="login-inline login-inline--phone">
                 <input v-model.trim="guestLookupForm.phoneNumber" type="text" :placeholder="inquiryPlaceholder" />
-                <button type="button" @click="router.push(ROUTE_PATHS.guestOrderLookup)">조회 페이지</button>
+                <button type="button" @click="openGuestLookup">조회 페이지</button>
               </div>
               <div v-else class="login-inline login-inline--order">
                 <input v-model.trim="guestLookupForm.orderNumber" type="text" :placeholder="inquiryPlaceholder" />

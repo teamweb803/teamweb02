@@ -1,106 +1,122 @@
 <script setup>
-import { reactive, shallowRef } from 'vue';
+import { onMounted, reactive, shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { ROUTE_PATHS } from '../../constants/routes';
 import { createCustomerSupportQna } from '../../services/customerSupportService';
+import { useAccountStore } from '../../stores/account';
 
 const router = useRouter();
+const accountStore = useAccountStore();
 const isSubmitting = shallowRef(false);
 const statusMessage = shallowRef('');
+const questionTypes = ['배송', '주문/결제', '교환/반품', '상품', '기타'];
 
 const form = reactive({
-  type: '배송',
+  type: questionTypes[0],
   writer: '',
-  email: '',
-  phoneNumber: '',
   title: '',
   content: '',
-  agreed: false,
 });
 
 function resetForm() {
-  form.type = '배송';
-  form.writer = '';
-  form.email = '';
-  form.phoneNumber = '';
+  form.type = questionTypes[0];
+  form.writer = accountStore.memberName || '';
   form.title = '';
   form.content = '';
-  form.agreed = false;
   statusMessage.value = '';
 }
 
-async function submitQna() {
-  if (!form.writer.trim() || !form.phoneNumber.trim() || !form.title.trim() || !form.content.trim()) {
-    statusMessage.value = '이름, 연락처, 제목, 문의 내용을 모두 입력해 주세요.';
-    return;
+function buildSubmitTitle() {
+  const title = String(form.title ?? '').trim();
+  const type = String(form.type ?? '').trim();
+
+  if (!type) {
+    return title;
   }
 
-  if (!form.agreed) {
-    statusMessage.value = '개인정보 수집 및 이용 안내에 동의해 주세요.';
+  return `[${type}] ${title}`;
+}
+
+async function submitQna() {
+  if (!form.writer.trim() || !form.title.trim() || !form.content.trim()) {
+    statusMessage.value = '작성자, 제목, 문의 내용을 모두 입력해 주세요.';
     return;
   }
 
   isSubmitting.value = true;
+  statusMessage.value = '';
 
   try {
-    createCustomerSupportQna(form);
+    await createCustomerSupportQna({
+      writer: form.writer,
+      title: buildSubmitTitle(),
+      content: form.content,
+    });
+
     router.push({
       path: ROUTE_PATHS.customerServiceQna,
       query: { submitted: '1' },
     });
+  } catch (error) {
+    statusMessage.value = error?.message ?? '문의를 등록하지 못했습니다.';
   } finally {
     isSubmitting.value = false;
   }
 }
+
+onMounted(() => {
+  accountStore.hydrate();
+  resetForm();
+});
 </script>
 
 <template>
   <section class="cs-write">
     <div class="cs-write__intro">
-      <p>배송, 주문, 교환, 상품 문의를 남기시면 접수 상태부터 답변 완료까지 한 곳에서 확인할 수 있습니다.</p>
+      <p>회원과 비회원 모두 문의를 작성할 수 있습니다. 공개 목록에 노출될 수 있으니 이메일, 휴대폰 번호, 상세 주소 같은 개인정보는 작성하지 마세요.</p>
     </div>
 
     <form class="cs-write__form" @submit.prevent="submitQna">
       <div class="cs-write__row">
         <label for="cs-qna-type">문의 유형</label>
         <select id="cs-qna-type" v-model="form.type">
-          <option value="배송">배송</option>
-          <option value="주문/결제">주문/결제</option>
-          <option value="교환/반품">교환/반품</option>
-          <option value="상품">상품</option>
-          <option value="기타">기타</option>
+          <option v-for="type in questionTypes" :key="type" :value="type">
+            {{ type }}
+          </option>
         </select>
       </div>
 
       <div class="cs-write__row">
-        <label for="cs-qna-writer">이름</label>
-        <input id="cs-qna-writer" v-model.trim="form.writer" type="text" maxlength="30" />
-      </div>
-
-      <div class="cs-write__row">
-        <label for="cs-qna-email">이메일</label>
-        <input id="cs-qna-email" v-model.trim="form.email" type="email" maxlength="60" />
-      </div>
-
-      <div class="cs-write__row">
-        <label for="cs-qna-phone">연락처</label>
-        <input id="cs-qna-phone" v-model.trim="form.phoneNumber" type="text" maxlength="20" placeholder="010-0000-0000" />
+        <label for="cs-qna-writer">작성자</label>
+        <input
+          id="cs-qna-writer"
+          v-model.trim="form.writer"
+          type="text"
+          maxlength="30"
+          placeholder="이름 또는 닉네임"
+        />
       </div>
 
       <div class="cs-write__row">
         <label for="cs-qna-title">제목</label>
-        <input id="cs-qna-title" v-model.trim="form.title" type="text" maxlength="80" />
+        <input
+          id="cs-qna-title"
+          v-model.trim="form.title"
+          type="text"
+          maxlength="80"
+          placeholder="문의 제목을 입력해 주세요"
+        />
       </div>
 
       <div class="cs-write__row cs-write__row--textarea">
         <label for="cs-qna-content">문의 내용</label>
-        <textarea id="cs-qna-content" v-model.trim="form.content" rows="8" />
+        <textarea
+          id="cs-qna-content"
+          v-model.trim="form.content"
+          rows="8"
+          placeholder="주문 정보나 상황을 설명해 주세요"
+        />
       </div>
-
-      <label class="cs-write__agree">
-        <input v-model="form.agreed" type="checkbox" />
-        <span>문의 답변을 위한 개인정보 수집 및 이용 안내에 동의합니다.</span>
-      </label>
 
       <p v-if="statusMessage" class="cs-write__status">{{ statusMessage }}</p>
 
@@ -170,14 +186,6 @@ async function submitQna() {
 
 .cs-write__row textarea {
   resize: vertical;
-}
-
-.cs-write__agree {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #444444;
-  font-size: 14px;
 }
 
 .cs-write__actions {
