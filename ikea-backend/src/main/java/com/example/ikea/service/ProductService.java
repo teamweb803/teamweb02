@@ -3,10 +3,12 @@ package com.example.ikea.service;
 
 import com.example.ikea.domain.Category;
 import com.example.ikea.domain.Product;
+import com.example.ikea.domain.ProductStock;
 import com.example.ikea.dto.ProductRequestDto;
 import com.example.ikea.dto.ProductResponseDto;
 import com.example.ikea.repository.CategoryRepository;
 import com.example.ikea.repository.ProductRepository;
+import com.example.ikea.repository.ProductStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,8 +28,9 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ProductService {
 
-    public final ProductRepository productRepository;
-    public final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductStockRepository productStockRepository;
 
     //상품 목록 조회
     public List<ProductResponseDto> getProductList() {
@@ -106,7 +109,16 @@ public class ProductService {
                 .category(category)
                 .build();
 
-        return productRepository.save(product).getProductId();
+        Product savedProduct = productRepository.save(product);
+
+        ProductStock stock = ProductStock.builder()
+                .product(savedProduct)
+                .quantity(0)
+                .build();
+
+        productStockRepository.save(stock);
+
+        return savedProduct.getProductId();
     }
 
     //상품 수정
@@ -132,7 +144,16 @@ public class ProductService {
     //상품 삭제
     @Transactional
     public void deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                        .orElseThrow(() -> new IllegalStateException("존재하지 않는 상품입니다."));
+
+        if(product.getImgPath() != null & !product.getImgPath().isBlank()) {
+            deleteImage(product.getImgPath());
+        }
+
+        productStockRepository.deleteByProduct_ProductId(productId);
         productRepository.deleteById(productId);
+
     }
 
     //대시보드용 상품 수

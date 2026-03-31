@@ -24,7 +24,7 @@ public class Order {
     private String orderNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "member_id")
     private Member member;
 
     @Enumerated(EnumType.STRING)
@@ -48,5 +48,12 @@ public class Order {
     @Builder.Default
     @OneToMany(mappedBy = "order")
     private List<OrderItem> orderItemList = new ArrayList<>();
+
+    //비회원
+    @Column(length = 50)
+    private String guestName;
+
+    @Column(length = 20)
+    private String guestPhone;
 
 }
