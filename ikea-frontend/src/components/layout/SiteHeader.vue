@@ -54,17 +54,7 @@ function handleAccountClick() {
 }
 
 function handleMyPageClick() {
-  if (loggedIn.value) {
-    router.push(memberMyPagePath);
-    return;
-  }
-
-  router.push({
-    path: memberLoginPath,
-    query: {
-      redirect: memberMyPagePath,
-    },
-  });
+  router.push(memberMyPagePath);
 }
 
 function syncSearchKeywordFromRoute() {
