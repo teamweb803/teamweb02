@@ -12,7 +12,7 @@ import java.util.List;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     //카테고리별 상품 조회
-    List<Product> findByCategory_CategoryId(Long categoryId);
+    List<Product> findByCategory_Id(Long categoryId);
 
     //상품 검색
     List<Product> findByNameContaining(String keyword);

@@ -9,15 +9,11 @@ spring:
     password: 1234
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    locations: classpath:db/migration
 
 payment:
   toss:
@@ -25,7 +21,7 @@ payment:
     client-key: ${TOSS_CLIENT_KEY}
     base-url: https://api.tosspayments.com/v1
   kakao:
-    secret-key: ${KAKAO_ADMIN_KEY}
+    admin-key: ${KAKAO_ADMIN_KEY}
     base-url: https://kapi.kakao.com/v1/payment
 #  spring:
 #    servlet:

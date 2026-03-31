@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
     //멤버이름으로 조회(포함된 키워드)
-    List<Member> findByMemberNameContaining(String keyword);
+    List<Member> findByNameContaining(String keyword);
     //로그인
     Optional<Member> findByLoginId(String loginId);
 
