@@ -107,8 +107,8 @@ export function useAdminInventory() {
     };
   });
 
-  function loadInventoryItems() {
-    inventoryItems.value = getAdminInventoryItems();
+  async function loadInventoryItems() {
+    inventoryItems.value = await getAdminInventoryItems();
 
     if (!selectedProductId.value && inventoryItems.value[0]) {
       selectedProductId.value = inventoryItems.value[0].productId;
@@ -121,28 +121,45 @@ export function useAdminInventory() {
     safeStockStatusMessage.value = '';
   }
 
-  function submitAdjustment() {
+  async function submitAdjustment() {
     if (!selectedItem.value) {
       return;
     }
 
     const normalizedQuantity = Number(adjustmentForm.quantity);
+
     if (!Number.isInteger(normalizedQuantity) || normalizedQuantity < 1) {
       adjustmentStatusMessage.value = '조정 수량은 1 이상의 정수로 입력해 주세요.';
       return;
     }
 
     const targetName = selectedItem.value.name;
-    inventoryItems.value = adjustAdminInventoryItem(selectedItem.value.productId, {
-      type: adjustmentForm.type,
-      quantity: normalizedQuantity,
-    });
 
-    adjustmentStatusMessage.value = `${targetName} 재고를 ${normalizedQuantity}개 ${
-      adjustmentForm.type === 'increase' ? '추가' : '차감'
-    }했습니다.`;
-    safeStockStatusMessage.value = '';
-    adjustmentForm.quantity = 1;
+    try {
+      const updatedInventory = await adjustAdminInventoryItem(selectedItem.value.productId, {
+        type: adjustmentForm.type,
+        quantity: normalizedQuantity,
+        currentStock: selectedItem.value.stock,
+      });
+
+      inventoryItems.value = inventoryItems.value.map((item) => (
+        item.productId === updatedInventory.productId
+          ? {
+            ...item,
+            stock: updatedInventory.stock,
+            updatedAt: updatedInventory.updatedAt,
+          }
+          : item
+      ));
+
+      adjustmentStatusMessage.value = `${targetName} 재고를 ${normalizedQuantity}개${
+        adjustmentForm.type === 'increase' ? ' 추가' : ' 차감'
+      }했습니다.`;
+      safeStockStatusMessage.value = '';
+      adjustmentForm.quantity = 1;
+    } catch (error) {
+      adjustmentStatusMessage.value = error?.message ?? '재고를 업데이트하지 못했습니다.';
+    }
   }
 
   function submitSafeStockUpdate() {
@@ -151,15 +168,26 @@ export function useAdminInventory() {
     }
 
     const normalizedSafeStock = Number(safeStockForm.safeStock);
+
     if (!Number.isInteger(normalizedSafeStock) || normalizedSafeStock < 0) {
       safeStockStatusMessage.value = '안전재고는 0 이상의 정수로 입력해 주세요.';
       return;
     }
 
     const targetName = selectedItem.value.name;
-    inventoryItems.value = updateAdminInventorySafeStock(selectedItem.value.productId, {
+    const safeStockUpdate = updateAdminInventorySafeStock(selectedItem.value.productId, {
       safeStock: normalizedSafeStock,
     });
+
+    inventoryItems.value = inventoryItems.value.map((item) => (
+      item.productId === safeStockUpdate.productId
+        ? {
+          ...item,
+          safeStock: safeStockUpdate.safeStock,
+          updatedAt: safeStockUpdate.updatedAt,
+        }
+        : item
+    ));
 
     safeStockStatusMessage.value = `${targetName} 안전재고를 ${normalizedSafeStock}개로 저장했습니다.`;
     adjustmentStatusMessage.value = '';
@@ -184,12 +212,15 @@ export function useAdminInventory() {
     { immediate: true },
   );
 
-  onMounted(loadInventoryItems);
+  onMounted(() => {
+    void loadInventoryItems();
+  });
 
   return {
     adjustmentStatusMessage,
     adjustmentForm,
     filteredItems,
+    loadInventoryItems,
     resolveStockStateKey,
     resolveStockStateLabel,
     safeStockForm,

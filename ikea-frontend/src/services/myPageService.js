@@ -1,4 +1,4 @@
-import { ROUTE_PATHS, buildProductCategoryPath } from '../constants/routes';
+import { ROUTE_PATHS } from '../constants/routes';
 import { createFallbackProfile } from '../mappers/myPageMapper';
 
 export function getMyPageStaticContent() {
@@ -28,9 +28,9 @@ export function getMyPageStaticContent() {
         to: ROUTE_PATHS.cart,
       },
       {
-        id: 'sofa',
-        label: '소파 다시 보기',
-        to: buildProductCategoryPath('sofa'),
+        id: 'home',
+        label: '홈으로 가기',
+        to: ROUTE_PATHS.home,
       },
       {
         id: 'qna',

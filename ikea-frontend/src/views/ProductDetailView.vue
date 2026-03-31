@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
+import ProductCartAddedDialog from '../components/product/ProductCartAddedDialog.vue';
 import ProductDimensionDiagram from '../components/product/ProductDimensionDiagram.vue';
 import { useProductGallery } from '../composables/useProductGallery';
 import {
@@ -28,6 +29,7 @@ const catalogStore = useCatalogStore();
 const { products: catalogProducts } = storeToRefs(catalogStore);
 
 const quantity = ref(1);
+const isCartDialogOpen = ref(false);
 
 onMounted(() => {
   void catalogStore.ensureCatalogLoaded();
@@ -110,6 +112,7 @@ watch(
   () => currentProduct.value.id,
   () => {
     quantity.value = 1;
+    isCartDialogOpen.value = false;
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   },
   { immediate: true },
@@ -148,13 +151,22 @@ async function syncCurrentProductToCart() {
   }
 }
 
-async function goToCart() {
+async function openCartDialog() {
   const cartItem = await syncCurrentProductToCart();
 
   if (!cartItem) {
     return;
   }
 
+  isCartDialogOpen.value = true;
+}
+
+function closeCartDialog() {
+  isCartDialogOpen.value = false;
+}
+
+function viewCartFromDialog() {
+  closeCartDialog();
   router.push(ROUTE_PATHS.cart);
 }
 
@@ -183,6 +195,11 @@ function scrollToSection(sectionId) {
 
 function goToProduct(productId) {
   router.push(buildProductDetailPath(productId));
+}
+
+function handleDialogProductSelect(productId) {
+  closeCartDialog();
+  goToProduct(productId);
 }
 </script>
 
@@ -311,7 +328,7 @@ function goToProduct(productId) {
             </div>
 
             <div class="detail-purchase-panel__actions">
-              <button class="detail-purchase-panel__cart" type="button" :disabled="isSoldOut" @click="goToCart">
+              <button class="detail-purchase-panel__cart" type="button" :disabled="isSoldOut" @click="openCartDialog">
                 {{ isSoldOut ? '품절' : '장바구니' }}
               </button>
               <button class="detail-purchase-panel__buy" type="button" :disabled="isSoldOut" @click="goToCheckout">
@@ -463,5 +480,13 @@ function goToProduct(productId) {
         </section>
       </div>
     </main>
+    <ProductCartAddedDialog
+      :open="isCartDialogOpen"
+      :product="currentProduct"
+      :recommendations="relatedProducts"
+      @close="closeCartDialog"
+      @view-cart="viewCartFromDialog"
+      @select-product="handleDialogProductSelect"
+    />
   </SiteChrome>
 </template>

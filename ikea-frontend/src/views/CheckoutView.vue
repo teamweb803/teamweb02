@@ -1,14 +1,22 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import CheckoutDeliveryGroupTable from '../components/checkout/CheckoutDeliveryGroupTable.vue';
 import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import {
   completeCheckout,
   getCheckoutSeedItems,
+  startKakaoCheckout,
   useCommerceCart,
 } from '../composables/useCommerceCart';
 import { ROUTE_PATHS } from '../constants/routes';
+import {
+  buildDeliveryGroups,
+  calculateShippingTotal,
+  hasSpecialDeliveryItems as hasSpecialDeliveryItemsInOrder,
+  isSpecialDeliveryItem,
+} from '../services/commerceShippingService';
 import { useAccountStore } from '../stores/account';
 
 const route = useRoute();
@@ -40,9 +48,8 @@ const finalAgreement = ref(false);
 const isSubmitting = ref(false);
 const checkoutAddressGuide = ref('');
 const isGuestCheckout = computed(() => !accountStore.accessToken);
-const canUseMemberBenefits = computed(() => Boolean(accountStore.accessToken));
 
-const paymentMethods = [
+const BASE_PAYMENT_METHODS = [
   { id: 'kakaopay', label: '카카오페이' },
   { id: 'tosspay', label: '토스페이' },
   { id: 'card', label: '신용카드' },
@@ -90,12 +97,27 @@ watch(pointAmount, (value) => {
   pointAmount.value = normalized === '' ? '0' : String(Number(normalized));
 });
 
-watch(canUseMemberBenefits, (enabled) => {
-  if (!enabled) {
-    pointAmount.value = '0';
+const paymentMethods = computed(() => BASE_PAYMENT_METHODS.map((method) => {
+  return {
+    ...method,
+    disabled: false,
+    disabledReason: '',
+    helperText: '',
+  };
+}));
+
+watch(paymentMethods, (methods) => {
+  const currentMethod = methods.find((method) => method.id === paymentMethod.value);
+
+  if (currentMethod && !currentMethod.disabled) {
+    return;
   }
+
+  paymentMethod.value = methods.find((method) => !method.disabled)?.id ?? 'bank';
 }, { immediate: true });
 
+const deliveryGroups = computed(() => buildDeliveryGroups(orderItems.value));
+const hasInstallDeliveryItems = computed(() => hasSpecialDeliveryItemsInOrder(orderItems.value));
 const orderCount = computed(() => orderItems.value.reduce((sum, item) => sum + item.quantity, 0));
 const productTotal = computed(() => orderItems.value.reduce(
   (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity),
@@ -106,7 +128,7 @@ const catalogDiscountTotal = computed(() => orderItems.value.reduce(
   0,
 ));
 const couponDiscount = computed(() => 0);
-const shippingTotal = computed(() => 0);
+const shippingTotal = computed(() => calculateShippingTotal(orderItems.value));
 const maxPointUsage = computed(() => Math.max(
   0,
   productTotal.value - catalogDiscountTotal.value - couponDiscount.value,
@@ -117,12 +139,12 @@ const finalTotal = computed(() => Math.max(
   maxPointUsage.value - pointApplied.value + shippingTotal.value,
 ));
 const selectedPaymentMethod = computed(
-  () => paymentMethods.find((method) => method.id === paymentMethod.value) ?? paymentMethods[0],
+  () => paymentMethods.value.find((method) => method.id === paymentMethod.value)
+    ?? paymentMethods.value[0],
 );
-const paymentMethodNotice = computed(() => (
-  paymentMethod.value === 'bank'
-    ? '무통장입금 선택 시 주문완료 페이지에서 가상계좌와 입금기한을 확인할 수 있습니다.'
-    : '선택한 결제수단으로 주문이 완료되면 결제 완료 화면으로 이동합니다.'
+const paymentMethodNotice = computed(() => '');
+const submitButtonLabel = computed(() => (
+  paymentMethod.value === 'kakaopay' ? '카카오페이로 이동' : '주문 접수하기'
 ));
 const availableScheduleDates = computed(() => {
   const dates = [];
@@ -190,6 +212,10 @@ const installationCategoryCounts = computed(() => {
   const grouped = new Map();
 
   orderItems.value.forEach((item) => {
+    if (!isSpecialDeliveryItem(item)) {
+      return;
+    }
+
     const currentCount = grouped.get(item.categoryLabel) ?? 0;
     grouped.set(item.categoryLabel, currentCount + item.quantity);
   });
@@ -332,7 +358,11 @@ async function submitOrder() {
   isSubmitting.value = true;
 
   try {
-    const completedOrder = await completeCheckout({
+    if (selectedPaymentMethod.value?.disabled) {
+      throw new Error(selectedPaymentMethod.value.disabledReason);
+    }
+
+    const checkoutPayload = {
       mode: String(route.query.mode ?? 'all'),
       itemId: String(route.query.itemId ?? ''),
       orderItems: orderItems.value,
@@ -353,7 +383,15 @@ async function submitOrder() {
       pointApplied: pointApplied.value,
       shippingTotal: shippingTotal.value,
       finalTotal: finalTotal.value,
-    });
+    };
+
+    if (paymentMethod.value === 'kakaopay') {
+      const paymentRedirect = await startKakaoCheckout(checkoutPayload);
+      window.location.assign(paymentRedirect.redirectUrl);
+      return;
+    }
+
+    const completedOrder = await completeCheckout(checkoutPayload);
 
     await router.push({
       path: ROUTE_PATHS.orderComplete,
@@ -391,7 +429,111 @@ async function submitOrder() {
             <button class="checkout-outline-button" type="button" @click="router.push(ROUTE_PATHS.cart)">장바구니가기</button>
           </div>
 
-          <div v-if="orderItems.length" class="checkout-board">
+          <div v-if="deliveryGroups.length" class="checkout-board">
+            <div class="checkout-board__head">
+              <span class="checkout-board__info">상품정보</span>
+              <span>수량</span>
+              <span>상품금액</span>
+              <span>배송정보</span>
+            </div>
+
+            <template v-for="group in deliveryGroups" :key="group.key">
+              <div class="checkout-board__bundle">
+                <strong>{{ group.title }} ({{ group.itemCount }})</strong>
+                <span>{{ group.subtitle }}</span>
+              </div>
+
+              <CheckoutDeliveryGroupTable
+                :group="group"
+                :format-price="formatPrice"
+                :open-shipping-guide="openShippingGuide"
+              />
+
+              <template v-if="false" v-for="entry in group.items" :key="entry.key">
+                <article
+                  v-if="entry.showShippingInfoBefore"
+                  class="checkout-shipping-summary-row"
+                >
+                  <div class="checkout-shipping-summary-row__spacer" aria-hidden="true"></div>
+                  <div class="checkout-shipping-summary-row__spacer" aria-hidden="true"></div>
+                  <div class="checkout-shipping-summary-row__spacer" aria-hidden="true"></div>
+                  <div class="checkout-shipping-summary-row__content">
+                    <button
+                      class="checkout-shipping-trigger"
+                      type="button"
+                      @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
+                    >
+                      {{ entry.deliveryGuide.shippingText }}
+                    </button>
+                    <p>{{ entry.deliveryGuide.shippingSubText }}</p>
+                  </div>
+                </article>
+
+                <article
+                  class="checkout-item"
+                >
+                  <div class="checkout-item__info">
+                    <RouterLink :to="entry.item.detailPath" class="checkout-item__thumb">
+                      <img :src="entry.item.image" :alt="entry.item.name" />
+                    </RouterLink>
+                    <div class="checkout-item__copy">
+                      <div class="checkout-item__meta">
+                        <strong>{{ entry.item.brand }}</strong>
+                        <span>{{ entry.item.seller }}</span>
+                      </div>
+                      <h2>
+                        <RouterLink :to="entry.item.detailPath">{{ entry.item.name }}</RouterLink>
+                      </h2>
+                      <p>{{ entry.item.option }}</p>
+                    </div>
+                  </div>
+
+                  <div class="checkout-item__qty">{{ entry.item.quantity }}</div>
+
+                  <div class="checkout-item__price">
+                    <strong>{{ formatPrice(entry.item.price * entry.item.quantity) }}</strong>
+                    <span v-if="(entry.item.originalPrice ?? entry.item.price) > entry.item.price">
+                      {{ formatPrice((entry.item.originalPrice ?? entry.item.price) * entry.item.quantity) }}
+                    </span>
+                  </div>
+
+                  <div class="checkout-item__shipping">
+                    <template v-if="entry.showShippingInfo">
+                      <button
+                        class="checkout-shipping-trigger"
+                        type="button"
+                        @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
+                      >
+                        {{ entry.deliveryGuide.shippingText }}
+                      </button>
+                      <p>{{ entry.deliveryGuide.shippingSubText }}</p>
+                    </template>
+                  </div>
+                </article>
+              </template>
+            </template>
+
+            <div class="checkout-total-strip">
+              <article>
+                <span>총 상품금액</span>
+                <strong>{{ formatPrice(productTotal) }}</strong>
+              </article>
+              <article>
+                <span>총 할인금액</span>
+                <strong>{{ formatPrice(catalogDiscountTotal + couponDiscount + pointApplied) }}</strong>
+              </article>
+              <article>
+                <span>총 배송비</span>
+                <strong>{{ formatPrice(shippingTotal) }}</strong>
+              </article>
+              <article class="is-accent">
+                <span>총 결제예정금액</span>
+                <strong>{{ formatPrice(finalTotal) }}</strong>
+              </article>
+            </div>
+          </div>
+
+          <div v-else-if="orderItems.length" class="checkout-board">
             <div class="checkout-board__head">
               <span class="checkout-board__info">상품정보</span>
               <span>수량</span>
@@ -528,7 +670,7 @@ async function submitOrder() {
                   </div>
                 </div>
 
-                <div class="checkout-form-row">
+                <div v-if="hasInstallDeliveryItems" class="checkout-form-row">
                   <div class="checkout-form-row__label">배송 / 설치 참고 정보 <span>*</span></div>
                   <div class="checkout-form-row__content checkout-form-row__content--install">
                     <div class="checkout-choice-row">
@@ -581,7 +723,7 @@ async function submitOrder() {
                   </div>
                 </div>
 
-                <div class="checkout-form-row">
+                <div v-if="hasInstallDeliveryItems" class="checkout-form-row">
                   <div class="checkout-form-row__label">배송 일정 선택</div>
                   <div class="checkout-form-row__content checkout-inline">
                     <select v-model="scheduleYear">
@@ -599,7 +741,7 @@ async function submitOrder() {
                   </div>
                 </div>
 
-                <div class="checkout-form-row">
+                <div v-if="hasInstallDeliveryItems" class="checkout-form-row">
                   <div class="checkout-form-row__label">배송 요청사항</div>
                   <div class="checkout-form-row__content">
                     <textarea v-model="deliveryRequest" rows="4" placeholder="추가 요청사항이 있다면 입력해 주세요"></textarea>
@@ -619,21 +761,15 @@ async function submitOrder() {
                   <span>상품쿠폰할인</span>
                   <div>
                     <input type="text" :value="couponDiscount" readonly />
-                    <button class="checkout-outline-button is-small" type="button" disabled>적용가능쿠폰 (0)</button>
+                    <button class="checkout-outline-button is-small" type="button">적용가능쿠폰 (0)</button>
                   </div>
-                </div>
-                <div class="checkout-kv-list__note">
-                  쿠폰 기능은 아직 연결 전이며, 현재 적용 가능한 쿠폰은 없습니다.
                 </div>
                 <div class="checkout-kv-list__inline">
                   <span>포인트</span>
                   <div>
-                    <input v-model="pointAmount" type="text" :disabled="!canUseMemberBenefits" />
-                    <button class="checkout-outline-button is-small" type="button" :disabled="!canUseMemberBenefits" @click="applyMaxPointAmount">전액사용</button>
+                    <input v-model="pointAmount" type="text" />
+                    <button class="checkout-outline-button is-small" type="button" @click="applyMaxPointAmount">전액사용</button>
                   </div>
-                </div>
-                <div v-if="!canUseMemberBenefits" class="checkout-kv-list__note">
-                  비회원 주문에서는 적립금과 회원 전용 혜택을 사용할 수 없습니다.
                 </div>
               </div>
             </section>
@@ -651,10 +787,11 @@ async function submitOrder() {
                   type="button"
                   @click="paymentMethod = method.id"
                 >
-                  {{ method.label }}
+                  <span>{{ method.label }}</span>
+                  <small v-if="method.helperText">{{ method.helperText }}</small>
                 </button>
               </div>
-              <p class="checkout-payment-note">{{ paymentMethodNotice }}</p>
+              <p v-if="paymentMethodNotice" class="checkout-payment-note">{{ paymentMethodNotice }}</p>
             </section>
           </section>
 
@@ -683,7 +820,7 @@ async function submitOrder() {
               :disabled="isSubmitting"
               @click="submitOrder"
             >
-              {{ isSubmitting ? '주문 처리 중...' : '결제하기' }}
+              {{ isSubmitting ? '주문 처리 중...' : submitButtonLabel }}
             </button>
 
             <ul class="checkout-final-card__notes">
@@ -827,6 +964,7 @@ async function submitOrder() {
 }
 
 .checkout-board__head,
+.checkout-shipping-summary-row,
 .checkout-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 128px 168px 188px;
@@ -858,8 +996,37 @@ async function submitOrder() {
   font-size: 14px;
 }
 
+.checkout-shipping-summary-row {
+  min-height: 0;
+  height: 0;
+  overflow: visible;
+  position: relative;
+  border: 0;
+  pointer-events: none;
+}
+
+.checkout-shipping-summary-row__spacer {
+  min-height: 0;
+}
+
+.checkout-shipping-summary-row__content {
+  grid-column: 4;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  justify-self: stretch;
+  position: relative;
+  z-index: 2;
+  padding: 16px 0;
+  background: #ffffff;
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+
 .checkout-board__bundle span,
 .checkout-item__copy p,
+.checkout-shipping-summary-row__content p,
 .checkout-item__shipping p,
 .checkout-final-card__notes li {
   color: #6b7280;
@@ -916,6 +1083,15 @@ async function submitOrder() {
   justify-items: center;
   gap: 8px;
   text-align: center;
+}
+
+.checkout-item__shipping p {
+  white-space: pre-line;
+}
+
+.checkout-shipping-summary-row__content p {
+  margin: 0;
+  white-space: pre-line;
 }
 
 .checkout-item__qty {
@@ -1340,15 +1516,39 @@ async function submitOrder() {
   border: 1px solid #d8dde5;
   background: #ffffff;
   color: #111111;
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  justify-items: start;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.checkout-payment-button span {
   font-size: 15px;
   font-weight: 600;
-  cursor: pointer;
+}
+
+.checkout-payment-button small {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .checkout-payment-button.is-active {
   border-color: #111827;
   background: #111827;
   color: #ffffff;
+}
+
+.checkout-payment-button.is-active small {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.checkout-payment-button.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.54;
 }
 
 .checkout-final-card {

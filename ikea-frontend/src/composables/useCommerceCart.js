@@ -75,3 +75,19 @@ export function completeCheckout(payload) {
 export function getLatestCompletedOrder() {
   return useCartStore().getLatestCompletedOrder();
 }
+
+export function startKakaoCheckout(payload) {
+  return useCartStore().startKakaoCheckout(payload);
+}
+
+export function confirmPendingKakaoPayment(pgToken) {
+  return useCartStore().confirmPendingKakaoPayment(pgToken);
+}
+
+export function cancelPendingPaymentFlow() {
+  return useCartStore().cancelPendingPaymentFlow();
+}
+
+export function getPendingPayment() {
+  return useCartStore().getPendingPayment();
+}

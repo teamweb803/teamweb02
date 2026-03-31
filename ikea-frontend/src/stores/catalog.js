@@ -9,6 +9,8 @@ import {
   getFallbackProductList,
   getProductList,
 } from '../services/productService';
+import { syncCategoryRouteMap } from '../constants/routes';
+import { primeStorefrontInventory } from '../services/storefrontStockService';
 import {
   buildCategoryRouteMap,
   normalizeCategoryCollection,
@@ -91,6 +93,7 @@ export const useCatalogStore = defineStore('catalog', {
         const response = await getCategoryList();
         this.categories = normalizeCategoryCollection(response, fallbackCategories);
         this.categoriesLoadedFromApi = true;
+        syncCategoryRouteMap(this.categories);
       } catch {
         this.categories = normalizeCategoryCollection(fallbackCategories);
         this.categoriesLoadedFromApi = false;
@@ -101,6 +104,7 @@ export const useCatalogStore = defineStore('catalog', {
         const response = await getProductList();
         this.products = normalizeProductCollection(response, getFallbackProductList());
         this.productsLoadedFromApi = true;
+        void primeStorefrontInventory(this.products).catch(() => {});
       } catch {
         this.products = normalizeProductCollection(getFallbackProductList());
         this.productsLoadedFromApi = false;
