@@ -204,6 +204,12 @@ const router = createRouter({
       props: { documentId: 'privacy' },
     },
     {
+      path: ROUTE_PATHS.policyLocation,
+      name: 'policy-location',
+      component: LegalDocumentView,
+      props: { documentId: 'location' },
+    },
+    {
       path: ROUTE_PATHS.memberLogin,
       name: 'member-login',
       component: LoginView,
@@ -214,6 +220,7 @@ const router = createRouter({
       component: MyPageView,
       meta: {
         requiresAuth: true,
+        allowGuestPreview: true,
       },
     },
     {
@@ -302,12 +309,13 @@ router.beforeEach((to) => {
 
   const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth);
   const requiresAdmin = to.matched.some((record) => record.meta?.requiresAdmin);
+  const allowGuestPreview = to.matched.some((record) => record.meta?.allowGuestPreview);
 
   if (!requiresAuth && !requiresAdmin) {
     return true;
   }
 
-  if (!hasAuthenticatedSession(accountStore)) {
+  if (!hasAuthenticatedSession(accountStore) && !allowGuestPreview) {
     return {
       path: ROUTE_PATHS.memberLogin,
       query: {

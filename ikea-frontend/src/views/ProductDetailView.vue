@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import ProductDimensionDiagram from '../components/product/ProductDimensionDiagram.vue';
@@ -28,6 +28,10 @@ const catalogStore = useCatalogStore();
 const { products: catalogProducts } = storeToRefs(catalogStore);
 
 const quantity = ref(1);
+
+onMounted(() => {
+  void catalogStore.ensureCatalogLoaded();
+});
 
 const currentProduct = computed(() => (
   catalogStore.findProductById(route.params.productId) ?? catalogStore.getDefaultCatalogProduct()

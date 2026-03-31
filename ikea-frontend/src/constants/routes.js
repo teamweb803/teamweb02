@@ -36,6 +36,7 @@ export const ROUTE_PATHS = {
   guestOrderLookup: '/order/guest-lookup',
   policyTerms: '/policy/terms',
   policyPrivacy: '/policy/privacy',
+  policyLocation: '/policy/location',
   customerServiceNotice: '/customer-service/notice',
   customerServiceFaq: '/customer-service/faq',
   customerServiceQna: '/customer-service/qna',

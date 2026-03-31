@@ -110,5 +110,20 @@ export const useCatalogStore = defineStore('catalog', {
       this.products = normalizeProductCollection(getFallbackProductList());
       this.productsLoadedFromApi = false;
     },
+    async ensureCatalogLoaded({ force = false } = {}) {
+      const tasks = [];
+
+      if (force || !this.categoriesLoadedFromApi) {
+        tasks.push(this.loadCategories());
+      }
+
+      if (force || !this.productsLoadedFromApi) {
+        tasks.push(this.loadProducts());
+      }
+
+      if (tasks.length) {
+        await Promise.all(tasks);
+      }
+    },
   },
 });

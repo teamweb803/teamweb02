@@ -2,8 +2,10 @@
 import { computed, ref } from 'vue';
 import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
+import MyPageReviewDialog from '../components/my-page/MyPageReviewDialog.vue';
 import { ROUTE_PATHS } from '../constants/routes';
 import { useMyPage } from '../composables/useMyPage';
+import { useMyPageReviewComposer } from '../composables/useMyPageReviewComposer';
 
 const {
   accountHighlights,
@@ -41,6 +43,19 @@ const sectionMetaMap = {
 const activeSectionMeta = computed(
   () => sectionMetaMap[activeSectionId.value] ?? sectionMetaMap.overview,
 );
+const {
+  closeDialog: closeReviewDialog,
+  getActionLabel: getReviewActionLabel,
+  isActionDisabled: isReviewActionDisabled,
+  isDialogOpen: isReviewDialogOpen,
+  isSubmitting: isReviewSubmitting,
+  openDialog: openReviewDialog,
+  selectedOrder: selectedReviewOrder,
+  shouldShowAction: shouldShowReviewAction,
+  statusMessage: reviewStatusMessage,
+  statusTone: reviewStatusTone,
+  submitReview,
+} = useMyPageReviewComposer();
 
 const statusMessage = computed(() => {
   if (isProfileLoading.value) {
@@ -60,6 +75,11 @@ const profileStateDescription = computed(() => (
     ? '저장된 회원 정보와 최근 주문 상태를 확인하고 있습니다.'
     : statusMessage.value
 ));
+
+const reviewStatusClass = computed(() => ({
+  'my-order-board__status--error': reviewStatusTone.value === 'error',
+  'my-order-board__status--success': reviewStatusTone.value === 'success',
+}));
 
 function moveToSection(sectionId) {
   activeSectionId.value = sectionId;
@@ -182,6 +202,10 @@ function moveToSection(sectionId) {
                 </article>
               </div>
 
+              <p v-if="reviewStatusMessage" class="my-order-board__status" :class="reviewStatusClass">
+                {{ reviewStatusMessage }}
+              </p>
+
               <div class="my-order-board">
                 <div class="my-order-board__head">
                   <span>주문일</span>
@@ -204,6 +228,16 @@ function moveToSection(sectionId) {
                     <span class="my-order-row__status">{{ order.status }}</span>
                     <strong class="my-order-row__price">{{ order.price }}</strong>
                     <div class="my-order-row__actions">
+                      <button
+                        v-if="shouldShowReviewAction(order)"
+                        type="button"
+                        class="my-order-row__action-button"
+                        :class="{ 'is-complete': isReviewActionDisabled(order) }"
+                        :disabled="isReviewActionDisabled(order)"
+                        @click="openReviewDialog(order)"
+                      >
+                        {{ getReviewActionLabel(order) }}
+                      </button>
                       <RouterLink :to="buildProductDetailPath(order.productId)">상품 보기</RouterLink>
                       <RouterLink :to="ROUTE_PATHS.cart">장바구니</RouterLink>
                     </div>
@@ -324,6 +358,15 @@ function moveToSection(sectionId) {
         </section>
       </div>
     </main>
+    <MyPageReviewDialog
+      :is-open="isReviewDialogOpen"
+      :is-submitting="isReviewSubmitting"
+      :order="selectedReviewOrder"
+      :status-message="reviewStatusMessage"
+      :status-tone="reviewStatusTone"
+      @close="closeReviewDialog"
+      @submit="submitReview"
+    />
   </SiteChrome>
 </template>
 
@@ -602,6 +645,20 @@ function moveToSection(sectionId) {
   border-top: 1px solid #111111;
 }
 
+.my-order-board__status {
+  margin: 18px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.my-order-board__status--error {
+  color: #c62828;
+}
+
+.my-order-board__status--success {
+  color: #0f6b3b;
+}
+
 .my-order-board__head,
 .my-order-row {
   display: grid;
@@ -680,7 +737,8 @@ function moveToSection(sectionId) {
   gap: 8px;
 }
 
-.my-order-row__actions a {
+.my-order-row__actions a,
+.my-order-row__action-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -690,6 +748,16 @@ function moveToSection(sectionId) {
   text-decoration: none;
   font-size: 13px;
   background: #ffffff;
+}
+
+.my-order-row__action-button {
+  cursor: pointer;
+}
+
+.my-order-row__action-button.is-complete {
+  background: #f6f6f6;
+  color: #8a8a8a;
+  cursor: default;
 }
 
 .my-panel-grid {

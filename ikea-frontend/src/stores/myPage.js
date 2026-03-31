@@ -29,6 +29,10 @@ function unwrapArrayPayload(payload) {
   return [];
 }
 
+function unwrapObjectPayload(payload) {
+  return payload?.data ?? payload ?? {};
+}
+
 function normalizeIdentifier(value) {
   return String(value ?? '').trim();
 }
@@ -154,31 +158,50 @@ function buildOrderOption(product, orderItem = {}, order = {}) {
 }
 
 function buildRecentOrders(orders = [], findProductById) {
-  return orders.slice(0, 5).map((order, index) => {
-    const firstItem = unwrapArrayPayload(order?.orderItems).at(0) ?? {};
-    const productId = normalizeIdentifier(firstItem.productId ?? order.productId);
-    const product = typeof findProductById === 'function' ? findProductById(productId) : null;
-    const priceValue = (
-      firstItem.totalPrice
-      ?? order.totalPrice
-      ?? order.finalPrice
-      ?? firstItem.orderPrice
-      ?? firstItem.price
-      ?? product?.price
-      ?? 0
-    );
+  return orders.flatMap((order, orderIndex) => {
+    const orderId = normalizeIdentifier(order.orderId ?? order.id);
+    const orderNumber = normalizeIdentifier(order.orderNo ?? order.orderNumber);
+    const orderStatusCode = normalizeIdentifier(order.orderStatus ?? order.status).toUpperCase();
+    const orderDate = formatDateLabel(order.createdAt ?? order.orderedAt ?? order.orderDate);
+    const orderItems = unwrapArrayPayload(order?.orderItems);
+    const sourceItems = orderItems.length ? orderItems : [order];
 
-    return {
-      id: normalizeIdentifier(order.orderId ?? order.id ?? order.orderNo ?? `order-${index}`),
-      date: formatDateLabel(order.createdAt ?? order.orderedAt ?? order.orderDate),
-      status: normalizeOrderStatusLabel(order.orderStatus ?? order.status),
-      option: buildOrderOption(product, firstItem, order),
-      image: firstItem.imgPath ?? product?.image ?? '',
+    return sourceItems.map((orderItem, itemIndex) => {
+      const productId = normalizeIdentifier(orderItem.productId ?? order.productId);
+      const product = typeof findProductById === 'function' ? findProductById(productId) : null;
+      const priceValue = (
+        orderItem.totalPrice
+        ?? orderItem.orderPrice
+        ?? order.totalPrice
+        ?? order.finalPrice
+        ?? orderItem.price
+        ?? product?.price
+        ?? 0
+      );
+      const firstItem = orderItem;
+
+      return {
+        id: normalizeIdentifier(
+          orderItem.orderItemId
+          ?? `${orderId || orderNumber || `order-${orderIndex}`}-${productId || itemIndex}`,
+        ),
+        orderId,
+        orderItemId: normalizeIdentifier(orderItem.orderItemId),
+        orderNumber,
+        date: orderDate,
       title: firstItem.productName ?? product?.name ?? '주문 상품',
-      price: formatPriceLabel(priceValue),
-      productId: productId || normalizeIdentifier(product?.id),
+        status: normalizeOrderStatusLabel(orderStatusCode),
+        statusCode: orderStatusCode,
+        option: buildOrderOption(product, orderItem, order),
+        image: orderItem.imgPath ?? product?.image ?? '',
+        title: orderItem.productName ?? product?.name ?? '二쇰Ц ?곹뭹',
+        price: formatPriceLabel(priceValue),
+        productId: productId || normalizeIdentifier(product?.id),
+        quantity: Number(orderItem.quantity ?? 1) || 1,
+        canWriteReview: orderStatusCode === 'COMPLETED',
     };
-  });
+    });
+  }).slice(0, 5);
 }
 
 export const useMyPageStore = defineStore('myPage', {
@@ -191,6 +214,7 @@ export const useMyPageStore = defineStore('myPage', {
       isProfileLoading: false,
       profileError: '',
       loaded: false,
+      loadedSessionKey: '',
     };
   },
   actions: {
@@ -206,18 +230,24 @@ export const useMyPageStore = defineStore('myPage', {
       const accountStore = useAccountStore();
       const catalogStore = useCatalogStore();
       accountStore.hydrate();
+      const sessionKey = accountStore.accessToken
+        ? String(accountStore.memberId ?? accountStore.loginId ?? 'member')
+        : '';
 
       if (!accountStore.accessToken) {
         this.profile = getFallbackMyPageProfile(accountStore);
         this.resetDynamicSections();
+        this.profileError = '';
         this.loaded = true;
+        this.loadedSessionKey = '';
         return;
       }
 
       this.isProfileLoading = true;
       this.profileError = '';
 
-      const [memberResult, ordersResult, reviewsResult] = await Promise.allSettled([
+      const [, memberResult, ordersResult, reviewsResult] = await Promise.allSettled([
+        catalogStore.ensureCatalogLoaded(),
         getCurrentMember(),
         getMyOrders(),
         getMyReviews(),
@@ -225,8 +255,12 @@ export const useMyPageStore = defineStore('myPage', {
 
       try {
         if (memberResult.status === 'fulfilled') {
-          this.profile = normalizeMemberProfile(memberResult.value, accountStore);
+          const memberPayload = unwrapObjectPayload(memberResult.value);
+          accountStore.setMemberSession(memberPayload);
+          accountStore.setProfileHydrated(true);
+          this.profile = normalizeMemberProfile(memberPayload, accountStore);
         } else {
+          accountStore.setProfileHydrated(false);
           this.profile = getFallbackMyPageProfile(accountStore);
           this.profileError = '회원 정보를 다시 확인해 주세요.';
         }
@@ -251,6 +285,7 @@ export const useMyPageStore = defineStore('myPage', {
           this.profileError = this.profileError || '마이페이지 데이터를 모두 불러오지 못했습니다.';
         }
       } catch (error) {
+        accountStore.setProfileHydrated(false);
         this.profile = getFallbackMyPageProfile(accountStore);
         this.resetDynamicSections();
         this.profileError = '회원 정보를 다시 확인해 주세요.';
@@ -258,6 +293,7 @@ export const useMyPageStore = defineStore('myPage', {
       } finally {
         this.isProfileLoading = false;
         this.loaded = true;
+        this.loadedSessionKey = sessionKey;
       }
     },
   },

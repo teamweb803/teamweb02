@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import AdminPagination from '../components/admin/AdminPagination.vue';
 import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import CustomerServiceShell from '../components/customer-service/CustomerServiceShell.vue';
 import { useCustomerServiceBoard } from '../composables/useCustomerServiceBoard';
@@ -17,12 +18,16 @@ const {
   currentSection,
   faqCategories,
   filteredFaqRows,
+  isNoticeLoading,
   isQnaLoading,
+  noticeLoadError,
   noticeKeyword,
+  noticePage,
   noticeTotalPages,
   openFaqIds,
   pagedNotices,
   pagedQnaRows,
+  qnaPage,
   qnaKeyword,
   qnaLoadError,
   qnaSubmitted,
@@ -77,6 +82,19 @@ function openQnaWrite() {
           </RouterLink>
         </div>
         <CommonStatePanel
+          v-else-if="isNoticeLoading"
+          tone="loading"
+          title="공지사항 목록을 불러오는 중입니다."
+          compact
+        />
+        <CommonStatePanel
+          v-else-if="noticeLoadError"
+          tone="error"
+          title="공지사항 목록을 확인할 수 없습니다."
+          :description="noticeLoadError"
+          compact
+        />
+        <CommonStatePanel
           v-else
           title="검색 결과가 없습니다."
           description="다른 검색어로 다시 확인해 주세요."
@@ -84,17 +102,11 @@ function openQnaWrite() {
         />
       </div>
 
-      <div class="cs-pagination">
-        <button type="button" aria-label="처음 페이지" @click="changeNoticePage(1)">«</button>
-        <button
-          v-for="page in noticeTotalPages"
-          :key="`notice-${page}`"
-          type="button"
-          @click="changeNoticePage(page)"
-        >
-          {{ page }}
-        </button>
-      </div>
+      <AdminPagination
+        :current-page="noticePage"
+        :page-count="noticeTotalPages"
+        @update:current-page="changeNoticePage"
+      />
     </template>
 
     <template v-else-if="currentSection === 'faq'">
@@ -182,17 +194,12 @@ function openQnaWrite() {
         />
       </div>
 
-      <div v-if="pagedQnaRows.length" class="cs-pagination">
-        <button type="button" aria-label="처음 페이지" @click="changeQnaPage(1)">«</button>
-        <button
-          v-for="page in qnaTotalPages"
-          :key="`qna-${page}`"
-          type="button"
-          @click="changeQnaPage(page)"
-        >
-          {{ page }}
-        </button>
-      </div>
+      <AdminPagination
+        v-if="pagedQnaRows.length"
+        :current-page="qnaPage"
+        :page-count="qnaTotalPages"
+        @update:current-page="changeQnaPage"
+      />
     </template>
   </CustomerServiceShell>
 </template>
@@ -321,22 +328,6 @@ function openQnaWrite() {
   font-size: 14px;
   line-height: 1.7;
   text-align: center;
-}
-
-.cs-pagination {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding-top: 18px;
-}
-
-.cs-pagination button {
-  min-width: 40px;
-  height: 40px;
-  border: 1px solid #d9d9d9;
-  background: #ffffff;
-  color: #111111;
-  cursor: pointer;
 }
 
 .cs-faq-filter {

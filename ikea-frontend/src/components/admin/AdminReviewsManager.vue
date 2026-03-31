@@ -19,6 +19,7 @@ const reviews = shallowRef([]);
 const searchKeyword = shallowRef('');
 const statusMessage = shallowRef('');
 const isLoading = shallowRef(false);
+const isRemoving = shallowRef(false);
 const currentPage = shallowRef(1);
 const pageSize = 5;
 
@@ -54,17 +55,25 @@ function applyReviews(items) {
     .filter((item) => item.reviewId);
 }
 
-async function loadReviews() {
+async function loadReviews(options = {}) {
+  const { fallbackOnError = true } = options;
   isLoading.value = true;
+  let didLoadFromServer = true;
 
   try {
     const payload = await getAdminReviews();
     applyReviews(normalizeArrayPayload(payload, createFallbackReviews(getFallbackAdminReviewItems())));
   } catch {
-    applyReviews(createFallbackReviews(getFallbackAdminReviewItems()));
+    didLoadFromServer = false;
+
+    if (fallbackOnError) {
+      applyReviews(createFallbackReviews(getFallbackAdminReviewItems()));
+    }
   } finally {
     isLoading.value = false;
   }
+
+  return didLoadFromServer;
 }
 
 async function removeReviewItem(review) {
@@ -73,14 +82,20 @@ async function removeReviewItem(review) {
     return;
   }
 
+  isRemoving.value = true;
+  statusMessage.value = '';
+
   try {
     await removeAdminReview(review.reviewId);
-    statusMessage.value = '리뷰를 삭제했습니다.';
+    const didLoadFromServer = await loadReviews({ fallbackOnError: false });
+    statusMessage.value = didLoadFromServer
+      ? '리뷰를 삭제했습니다.'
+      : '리뷰는 삭제됐지만 목록 재조회는 실패했습니다.';
   } catch {
-    statusMessage.value = '서버 연결 전 단계라 목록에서만 먼저 제거했습니다.';
+    statusMessage.value = '리뷰 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
 
-  reviews.value = reviews.value.filter((item) => item.reviewId !== review.reviewId);
+  isRemoving.value = false;
 }
 
 watch(searchKeyword, () => {
@@ -131,7 +146,7 @@ onMounted(loadReviews);
           <p>{{ review.content }}</p>
           <span>{{ review.rating }}점</span>
           <span>{{ formatAdminDateTime(review.createdAt) }}</span>
-          <button type="button" @click="removeReviewItem(review)">삭제</button>
+          <button type="button" :disabled="isRemoving" @click="removeReviewItem(review)">삭제</button>
         </article>
 
         <CommonStatePanel

@@ -24,7 +24,7 @@ export {
   weeklyDeals,
 };
 
-export const footerLinks = ['회사소개', '이용약관', '개인정보처리방침', '고객센터'];
+export const footerLinks = ['이용약관', '개인정보처리방침', '위치정보 이용약관', '이메일 무단수집 거부', '공지사항'];
 
 export const footerSupportCards = [
   {

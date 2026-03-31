@@ -131,11 +131,11 @@ export function deleteAdminQnaAnswer(qnaId) {
 }
 
 export function getAdminNoticeList() {
-  return httpRequester.get('/notices');
+  return httpRequester.get('/notice');
 }
 
 export function getAdminNoticeDetail(noticeId) {
-  return httpRequester.get(`/notices/${noticeId}`);
+  return httpRequester.get(`/notice/${noticeId}`);
 }
 
 export function createAdminNotice(payload) {
@@ -146,7 +146,7 @@ export function createAdminNotice(payload) {
   };
 
   return httpRequester.post(
-    '/admin/notices',
+    '/admin/notice',
     buildJsonPartFormData(dto, payload.files ?? [], 'files'),
   );
 }
@@ -159,13 +159,13 @@ export function updateAdminNotice(noticeId, payload) {
   };
 
   return httpRequester.patch(
-    `/admin/notices/${noticeId}`,
+    `/admin/notice/${noticeId}`,
     buildJsonPartFormData(dto, payload.files ?? [], 'files'),
   );
 }
 
 export function deleteAdminNotice(noticeId) {
-  return httpRequester.delete(`/admin/notices/${noticeId}`);
+  return httpRequester.delete(`/admin/notice/${noticeId}`);
 }
 
 export function getFallbackAdminCategories() {

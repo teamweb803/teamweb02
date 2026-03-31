@@ -1,4 +1,10 @@
 <script setup>
+import {
+  nextTick,
+  onMounted,
+  watch,
+} from 'vue';
+import { useRoute } from 'vue-router';
 import SiteChrome from '../layout/SiteChrome.vue';
 
 defineProps({
@@ -14,6 +20,35 @@ defineProps({
     type: Array,
     default: () => [],
   },
+});
+
+const route = useRoute();
+
+function scrollToHashTarget(hash = route.hash) {
+  const targetId = String(hash ?? '').replace(/^#/, '').trim();
+
+  if (!targetId) {
+    return;
+  }
+
+  nextTick(() => {
+    const targetElement = document.getElementById(targetId);
+    targetElement?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  });
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    scrollToHashTarget(hash);
+  },
+);
+
+onMounted(() => {
+  scrollToHashTarget();
 });
 </script>
 
@@ -81,6 +116,7 @@ defineProps({
               <article
                 v-for="(section, index) in document.sections"
                 :key="section.id"
+                :id="section.id"
                 class="legal-section"
               >
                 <div class="legal-section__head">

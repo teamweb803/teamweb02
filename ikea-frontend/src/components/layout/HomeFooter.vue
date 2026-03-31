@@ -1,9 +1,16 @@
 <script setup>
-import { computed } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  shallowRef,
+  watch,
+} from 'vue';
 import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
 import { ROUTE_PATHS } from '../../constants/routes';
 import { useHomeStore } from '../../stores/home';
 
+const router = useRouter();
 const homeStore = useHomeStore();
 const {
   footerInfoLines,
@@ -11,16 +18,70 @@ const {
   footerNotice,
   footerSupportCards,
 } = storeToRefs(homeStore);
+const isEmailRefusalOpen = shallowRef(false);
 
 const footerLinkTargets = computed(() => ({
   이용약관: ROUTE_PATHS.policyTerms,
   개인정보처리방침: ROUTE_PATHS.policyPrivacy,
-  고객센터: ROUTE_PATHS.customerServiceNotice,
+  '위치정보 이용약관': ROUTE_PATHS.policyLocation,
+  공지사항: ROUTE_PATHS.customerServiceNotice,
 }));
 
 function resolveFooterLink(linkLabel) {
   return footerLinkTargets.value[linkLabel] ?? '';
 }
+
+function handleFooterLinkClick(linkLabel) {
+  if (linkLabel === '이메일 무단수집 거부') {
+    isEmailRefusalOpen.value = true;
+  }
+}
+
+function closeEmailRefusalPopup() {
+  isEmailRefusalOpen.value = false;
+}
+
+function handleSupportCardClick(card) {
+  if (!card?.title) {
+    return;
+  }
+
+  if (card.title === '상품 문의') {
+    router.push(ROUTE_PATHS.customerServiceQnaWrite);
+    return;
+  }
+
+  router.push(ROUTE_PATHS.customerServiceQna);
+}
+
+function handleDocumentKeydown(event) {
+  if (event.key === 'Escape') {
+    closeEmailRefusalPopup();
+  }
+}
+
+watch(isEmailRefusalOpen, (isOpen) => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+
+  if (isOpen) {
+    window.addEventListener('keydown', handleDocumentKeydown);
+    return;
+  }
+
+  window.removeEventListener('keydown', handleDocumentKeydown);
+});
+
+onBeforeUnmount(() => {
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = '';
+  }
+
+  window.removeEventListener('keydown', handleDocumentKeydown);
+});
 </script>
 
 <template>
@@ -30,7 +91,14 @@ function resolveFooterLink(linkLabel) {
         <nav class="hs-footer__links">
           <template v-for="link in footerLinks" :key="link">
             <RouterLink v-if="resolveFooterLink(link)" :to="resolveFooterLink(link)">{{ link }}</RouterLink>
-            <a v-else href="/" @click.prevent>{{ link }}</a>
+            <button
+              v-else
+              type="button"
+              class="hs-footer__link-button"
+              @click="handleFooterLinkClick(link)"
+            >
+              {{ link }}
+            </button>
           </template>
         </nav>
         <button class="hs-footer__family" type="button">
@@ -66,7 +134,7 @@ function resolveFooterLink(linkLabel) {
             </div>
             <p>{{ card.description }}</p>
             <b>{{ card.phone }}</b>
-            <button type="button">{{ card.cta }}</button>
+            <button type="button" @click="handleSupportCardClick(card)">{{ card.cta }}</button>
           </article>
 
           <div class="hs-footer__qr">
@@ -80,7 +148,6 @@ function resolveFooterLink(linkLabel) {
         <div class="hs-footer__company-lines">
           <p v-for="line in footerInfoLines" :key="line">{{ line }}</p>
         </div>
-        <a href="/" @click.prevent>매장 위치보기</a>
       </section>
 
       <p class="hs-footer__escrow">
@@ -88,6 +155,37 @@ function resolveFooterLink(linkLabel) {
       </p>
       <p class="hs-footer__copy">(C) HOMiO. All rights reserved.</p>
       <p v-if="footerNotice" class="hs-footer__notice">{{ footerNotice }}</p>
+    </div>
+
+    <div
+      v-if="isEmailRefusalOpen"
+      class="hs-footer-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="footer-email-refusal-title"
+      @click.self="closeEmailRefusalPopup"
+    >
+      <article class="hs-footer-modal__panel">
+        <div class="hs-footer-modal__head">
+          <h2 id="footer-email-refusal-title">이메일 무단수집 거부</h2>
+          <button type="button" class="hs-footer-modal__close" aria-label="팝업 닫기" @click="closeEmailRefusalPopup">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div class="hs-footer-modal__body">
+          <p>HOMiO는 사전 동의 없이 게시된 이메일 주소를 수집하는 행위를 거부합니다.</p>
+          <p>
+            본 웹사이트에 게시된 이메일 주소가 전자우편 수집 프로그램이나 그 밖의 기술적 장치를 이용하여
+            무단으로 수집되는 것을 거부합니다.
+          </p>
+          <p>
+            이를 위반할 경우 정보통신망 이용촉진 및 정보보호 등에 관한 법률에 따라 처벌될 수 있습니다.
+          </p>
+        </div>
+      </article>
     </div>
   </footer>
 </template>
@@ -120,9 +218,33 @@ function resolveFooterLink(linkLabel) {
 }
 
 .hs-footer__links a,
-.hs-footer__company a {
+.hs-footer__link-button {
   color: var(--hs-ink, #111827);
   font-size: 13px;
+}
+
+.hs-footer__link-button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: inherit;
+  line-height: 1.55;
+  letter-spacing: inherit;
+  vertical-align: baseline;
+  cursor: pointer;
+  appearance: none;
+  transform: none !important;
+  transition: none !important;
+}
+
+.hs-footer__link-button:hover,
+.hs-footer__link-button:focus-visible,
+.hs-footer__link-button:active {
+  transform: none !important;
 }
 
 .hs-footer__family {
@@ -235,7 +357,7 @@ function resolveFooterLink(linkLabel) {
 .hs-footer__company {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 18px;
   padding-top: 8px;
   border-top: 1px solid #e4e8ef;
@@ -273,6 +395,69 @@ function resolveFooterLink(linkLabel) {
   font-size: 12px;
 }
 
+.hs-footer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 17, 17, 0.42);
+}
+
+.hs-footer-modal__panel {
+  width: min(100%, 372px);
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+.hs-footer-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 28px 18px;
+}
+
+.hs-footer-modal__head h2 {
+  margin: 0;
+  color: #111111;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.hs-footer-modal__close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #111111;
+  cursor: pointer;
+}
+
+.hs-footer-modal__close svg {
+  width: 100%;
+  height: 100%;
+}
+
+.hs-footer-modal__body {
+  padding: 0 28px 28px;
+  border-top: 1px solid #111111;
+}
+
+.hs-footer-modal__body p {
+  margin: 18px 0 0;
+  color: #333333;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.hs-footer-modal__body p:first-child {
+  margin-top: 20px;
+}
+
 @media (max-width: 1180px) {
   .hs-footer__service-grid {
     grid-template-columns: 1fr;
@@ -292,6 +477,16 @@ function resolveFooterLink(linkLabel) {
   .hs-footer__top {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .hs-footer-modal {
+    padding: 16px;
+  }
+
+  .hs-footer-modal__head,
+  .hs-footer-modal__body {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }
 </style>

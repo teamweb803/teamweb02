@@ -1,11 +1,16 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import {
   buildCustomerServiceNoticeDetailPath,
   ROUTE_PATHS,
 } from '../constants/routes';
+import {
+  getCustomerNoticeDetail,
+  getCustomerNoticeRows,
+} from '../services/noticeService';
 
 const route = useRoute();
 
@@ -14,6 +19,11 @@ const sidebarLinks = [
   { id: 'qna', label: 'QnA', to: ROUTE_PATHS.customerServiceQna },
   { id: 'notice', label: '공지사항', to: ROUTE_PATHS.customerServiceNotice },
 ];
+
+const noticeRows = ref([]);
+const noticeDetail = ref(null);
+const isNoticeLoading = ref(false);
+const noticeLoadError = ref('');
 
 const noticeDetails = {
   6247: {
@@ -154,11 +164,75 @@ const noticeDetails = {
   },
 };
 
-const currentNotice = computed(() => noticeDetails[route.params.noticeId] ?? noticeDetails[6245]);
-const previousNotice = computed(() =>
-  currentNotice.value.previousId ? noticeDetails[currentNotice.value.previousId] : null,
+const fallbackNotice = computed(() => noticeDetails[route.params.noticeId] ?? noticeDetails[6245]);
+const currentNotice = computed(() => noticeDetail.value ?? fallbackNotice.value);
+const noticeLines = computed(() => {
+  if (Array.isArray(currentNotice.value?.lines) && currentNotice.value.lines.length) {
+    return currentNotice.value.lines;
+  }
+
+  const content = String(currentNotice.value?.content ?? '').trim();
+  return content ? [content] : [];
+});
+const currentNoticeIndex = computed(() => noticeRows.value.findIndex(
+  (row) => String(row.id) === String(currentNotice.value?.id ?? route.params.noticeId ?? ''),
+));
+const previousNotice = computed(() => {
+  if (currentNoticeIndex.value <= 0) {
+    return noticeDetails[currentNotice.value?.previousId] ?? null;
+  }
+
+  return noticeRows.value[currentNoticeIndex.value - 1] ?? null;
+});
+const nextNotice = computed(() => {
+  if (currentNoticeIndex.value < 0 || currentNoticeIndex.value >= noticeRows.value.length - 1) {
+    return noticeDetails[currentNotice.value?.nextId] ?? null;
+  }
+
+  return noticeRows.value[currentNoticeIndex.value + 1] ?? null;
+});
+
+async function loadNoticeDetailData() {
+  const noticeId = String(route.params.noticeId ?? '').trim();
+
+  if (!noticeId) {
+    noticeDetail.value = null;
+    noticeLoadError.value = '공지사항을 찾을 수 없습니다.';
+    return;
+  }
+
+  isNoticeLoading.value = true;
+  noticeLoadError.value = '';
+
+  const [detailResult, listResult] = await Promise.allSettled([
+    getCustomerNoticeDetail(noticeId),
+    getCustomerNoticeRows(),
+  ]);
+
+  if (listResult.status === 'fulfilled') {
+    noticeRows.value = listResult.value;
+  }
+
+  if (detailResult.status === 'fulfilled') {
+    noticeDetail.value = detailResult.value;
+  } else {
+    noticeDetail.value = null;
+    noticeLoadError.value = detailResult.reason?.message ?? '공지사항을 불러오지 못했습니다.';
+  }
+
+  isNoticeLoading.value = false;
+}
+
+onMounted(() => {
+  void loadNoticeDetailData();
+});
+
+watch(
+  () => route.params.noticeId,
+  () => {
+    void loadNoticeDetailData();
+  },
 );
-const nextNotice = computed(() => (currentNotice.value.nextId ? noticeDetails[currentNotice.value.nextId] : null));
 </script>
 
 <template>
@@ -199,6 +273,15 @@ const nextNotice = computed(() => (currentNotice.value.nextId ? noticeDetails[cu
               <h2>공지사항</h2>
             </header>
 
+            <CommonStatePanel
+              v-if="noticeLoadError"
+              tone="error"
+              title="최신 공지 데이터를 확인할 수 없습니다."
+              :description="noticeLoadError"
+              align="left"
+              compact
+            />
+
             <article class="notice-detail">
               <div class="notice-detail__head">
                 <strong>{{ currentNotice.title }}</strong>
@@ -206,7 +289,7 @@ const nextNotice = computed(() => (currentNotice.value.nextId ? noticeDetails[cu
               </div>
 
               <div class="notice-detail__body">
-                <p v-for="line in currentNotice.lines" :key="line">{{ line }}</p>
+                <p v-for="line in noticeLines" :key="line">{{ line }}</p>
               </div>
 
               <div class="notice-detail__nav">

@@ -99,6 +99,12 @@ function normalizeGuestOrder(source = {}) {
   };
 }
 
+function createUnsupportedGuestLookupError() {
+  const error = new Error('Guest order lookup is not available from the backend yet.');
+  error.status = 404;
+  return error;
+}
+
 export async function getCustomerSupportQnaRows() {
   const response = await httpRequester.get('/qna');
   return unwrapArrayPayload(response).map((item) => normalizeQnaRow(item));
@@ -113,13 +119,21 @@ export async function createCustomerSupportQna(payload) {
 }
 
 export async function lookupGuestOrders({ buyerName = '', orderNumber = '', phoneNumber = '' }) {
-  const response = await httpRequester.get('/order/guest-lookup', {
-    params: {
-      buyerName: String(buyerName ?? '').trim(),
-      orderNumber: String(orderNumber ?? '').trim(),
-      phoneNumber: normalizeDigits(phoneNumber),
-    },
-  });
+  try {
+    const response = await httpRequester.get('/order/guest-lookup', {
+      params: {
+        buyerName: String(buyerName ?? '').trim(),
+        orderNumber: String(orderNumber ?? '').trim(),
+        phoneNumber: normalizeDigits(phoneNumber),
+      },
+    });
 
-  return unwrapArrayPayload(response).map((item) => normalizeGuestOrder(item));
+    return unwrapArrayPayload(response).map((item) => normalizeGuestOrder(item));
+  } catch (error) {
+    if (error?.status === 404 || error?.status === 405) {
+      throw createUnsupportedGuestLookupError();
+    }
+
+    throw error;
+  }
 }
