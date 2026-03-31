@@ -1,31 +1,15 @@
 import httpRequester from '../libs/httpRequester';
-import { useAccountStore } from '../stores/account';
 
-function resolveCurrentMemberId() {
-  const accountStore = useAccountStore();
-  accountStore.hydrate();
-
-  if (accountStore.memberId === null || accountStore.memberId === undefined || accountStore.memberId === '') {
-    throw new Error('Current memberId is unavailable.');
+function resolveOrderRequest(memberIdOrOrderRequest, maybeOrderRequest) {
+  if (maybeOrderRequest !== undefined) {
+    return maybeOrderRequest;
   }
 
-  return accountStore.memberId;
+  return memberIdOrOrderRequest ?? {};
 }
 
 export function createMyOrder(memberIdOrOrderRequest, maybeOrderRequest) {
-  if (maybeOrderRequest === undefined) {
-    return httpRequester.post(
-      `/order/${resolveCurrentMemberId()}`,
-      undefined,
-      { params: memberIdOrOrderRequest },
-    );
-  }
-
-  return httpRequester.post(
-    `/order/${memberIdOrOrderRequest}`,
-    undefined,
-    { params: maybeOrderRequest },
-  );
+  return httpRequester.post('/order', resolveOrderRequest(memberIdOrOrderRequest, maybeOrderRequest));
 }
 
 export function createMemberOrder(memberIdOrOrderRequest, maybeOrderRequest) {
@@ -36,12 +20,12 @@ export function getOrderDetail(orderId) {
   return httpRequester.get(`/order/detail/${orderId}`);
 }
 
-export function getMyOrders(memberId = resolveCurrentMemberId()) {
-  return httpRequester.get(`/order/${memberId}`);
+export function getMyOrders() {
+  return httpRequester.get('/order');
 }
 
-export function getMemberOrders(memberId = resolveCurrentMemberId()) {
-  return getMyOrders(memberId);
+export function getMemberOrders() {
+  return getMyOrders();
 }
 
 export function cancelMemberOrder(orderId) {

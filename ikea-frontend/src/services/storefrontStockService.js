@@ -1,4 +1,5 @@
-import { getAdminInventoryItems } from './adminInventoryService';
+import { shallowRef } from 'vue';
+import { getProductStock } from './productStockService';
 
 const SOLD_OUT_FLAG_KEYS = ['isSoldOut', 'soldOut'];
 const STOCK_VALUE_KEYS = [
@@ -7,9 +8,16 @@ const STOCK_VALUE_KEYS = [
   'availableStock',
   'inventoryQuantity',
   'quantityAvailable',
+  'quantity',
 ];
+const storefrontInventoryMapState = shallowRef(new Map());
+const pendingStorefrontStockRequests = new Map();
 
 function normalizeProductId(source = {}) {
+  if (typeof source === 'string' || typeof source === 'number') {
+    return String(source).trim();
+  }
+
   return String(source.productId ?? source.id ?? '').trim();
 }
 
@@ -45,14 +53,86 @@ function resolveExplicitStock(source = {}) {
   return null;
 }
 
+function isTrackableProductId(productId = '') {
+  return /^\d+$/.test(String(productId ?? '').trim());
+}
+
+function unwrapStockPayload(payload) {
+  return payload?.data ?? payload ?? {};
+}
+
+function createStorefrontInventoryEntry(productId, payload = {}) {
+  const source = unwrapStockPayload(payload);
+
+  return {
+    productId: normalizeProductId(productId),
+    stock: resolveExplicitStock(source),
+    updatedAt: String(source.updatedAt ?? '').trim(),
+    isTracked: true,
+  };
+}
+
+function replaceStorefrontInventoryEntry(entry) {
+  const nextInventoryMap = new Map(storefrontInventoryMapState.value);
+  nextInventoryMap.set(entry.productId, entry);
+  storefrontInventoryMapState.value = nextInventoryMap;
+  return entry;
+}
+
 export function getStorefrontInventoryMap() {
-  try {
-    return new Map(
-      getAdminInventoryItems().map((item) => [String(item.productId ?? '').trim(), item]),
-    );
-  } catch {
-    return new Map();
+  return storefrontInventoryMapState.value;
+}
+
+export async function fetchStorefrontInventory(productId, { force = false } = {}) {
+  const normalizedProductId = normalizeProductId(productId);
+
+  if (!isTrackableProductId(normalizedProductId)) {
+    return null;
   }
+
+  if (!force && storefrontInventoryMapState.value.has(normalizedProductId)) {
+    return storefrontInventoryMapState.value.get(normalizedProductId) ?? null;
+  }
+
+  if (!force && pendingStorefrontStockRequests.has(normalizedProductId)) {
+    return pendingStorefrontStockRequests.get(normalizedProductId);
+  }
+
+  const request = getProductStock(Number(normalizedProductId))
+    .then((payload) => replaceStorefrontInventoryEntry(
+      createStorefrontInventoryEntry(normalizedProductId, payload),
+    ))
+    .catch((error) => {
+      if (error?.status === 404) {
+        return replaceStorefrontInventoryEntry({
+          productId: normalizedProductId,
+          stock: null,
+          updatedAt: '',
+          isTracked: true,
+        });
+      }
+
+      throw error;
+    })
+    .finally(() => {
+      pendingStorefrontStockRequests.delete(normalizedProductId);
+    });
+
+  pendingStorefrontStockRequests.set(normalizedProductId, request);
+  return request;
+}
+
+export async function primeStorefrontInventory(products = []) {
+  const productIds = Array.from(
+    new Set(
+      (Array.isArray(products) ? products : [products])
+        .map((product) => normalizeProductId(product))
+        .filter((productId) => isTrackableProductId(productId)),
+    ),
+  );
+
+  await Promise.all(productIds.map((productId) => fetchStorefrontInventory(productId).catch(() => null)));
+  return storefrontInventoryMapState.value;
 }
 
 export function resolveStorefrontAvailability(source = {}, inventoryMap = getStorefrontInventoryMap()) {
@@ -61,9 +141,10 @@ export function resolveStorefrontAvailability(source = {}, inventoryMap = getSto
   const explicitStock = resolveExplicitStock(source);
   const fallbackInventory = productId ? inventoryMap.get(productId) ?? null : null;
   const fallbackStock = normalizeInteger(fallbackInventory?.stock);
+  const trackedByInventory = Boolean(fallbackInventory?.isTracked) || fallbackStock !== null;
   const availableStock = explicitStock ?? fallbackStock;
   const isSoldOut = explicitSoldOut ?? (availableStock !== null ? availableStock <= 0 : false);
-  const isTracked = explicitSoldOut !== null || availableStock !== null;
+  const isTracked = explicitSoldOut !== null || explicitStock !== null || trackedByInventory;
 
   return {
     availableStock,

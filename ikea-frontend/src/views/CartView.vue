@@ -1,10 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import CartDeliveryGroupTable from '../components/cart/CartDeliveryGroupTable.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { useCommerceCart } from '../composables/useCommerceCart';
 import { useCartViewState } from '../composables/useCartViewState';
 import { ROUTE_PATHS } from '../constants/routes';
+import { buildDeliveryGroups } from '../services/commerceShippingService';
 
 const router = useRouter();
 const noticeVisible = ref(true);
@@ -42,6 +44,7 @@ const hasSelectableItems = computed(() => cartItems.value.some((item) => !item.i
 const canCheckoutSelected = computed(() => selectedItems.value.length > 0);
 const canCheckoutAll = computed(() => hasSelectableItems.value);
 const soldOutItemCount = computed(() => cartItems.value.filter((item) => item.isSoldOut).length);
+const deliveryGroups = computed(() => buildDeliveryGroups(cartItems.value));
 
 function _formatPriceLegacy(value) {
   return `${Number(value ?? 0).toLocaleString('ko-KR')}원`;
@@ -113,7 +116,120 @@ function closeShippingGuide() {
               <span>주문하기</span>
             </div>
 
-            <template v-if="cartItems.length">
+            <template v-if="deliveryGroups.length">
+              <template v-for="group in deliveryGroups" :key="group.key">
+                <div class="cart-delivery-row">
+                  <label class="cart-check cart-table__check">
+                    <input v-model="allSelected" type="checkbox" :disabled="!hasSelectableItems" />
+                  </label>
+                  <div class="cart-table__thumb-placeholder" aria-hidden="true"></div>
+                  <div class="cart-delivery-row__copy">
+                    <strong>{{ group.title }}({{ group.itemCount }})</strong>
+                    <span>{{ group.subtitle }}</span>
+                  </div>
+                </div>
+
+                <CartDeliveryGroupTable
+                  :group="group"
+                  :format-price="formatPrice"
+                  :go-to-checkout="goToCheckout"
+                  :open-shipping-guide="openShippingGuide"
+                  :remove-item="removeItem"
+                  :update-quantity="updateQuantity"
+                />
+
+                <template v-if="false" v-for="entry in group.items" :key="entry.key">
+                  <article
+                    v-if="entry.showShippingInfoBefore"
+                    class="cart-shipping-summary-row"
+                  >
+                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
+                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
+                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
+                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
+                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
+                    <div class="cart-shipping-summary-row__content">
+                      <button
+                        class="cart-shipping-trigger"
+                        type="button"
+                        @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
+                      >
+                        {{ entry.deliveryGuide.shippingText }}
+                      </button>
+                      <p>{{ entry.deliveryGuide.shippingSubText }}</p>
+                    </div>
+                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
+                  </article>
+
+                  <article
+                    class="cart-item"
+                    :class="{ 'is-soldout': entry.item.isSoldOut }"
+                  >
+                  <div class="cart-item__select">
+                    <label class="cart-check">
+                      <input v-model="entry.item.selected" type="checkbox" :disabled="entry.item.isSoldOut" />
+                    </label>
+                  </div>
+
+                  <RouterLink :to="entry.item.detailPath" class="cart-item__thumb-link">
+                    <img :src="entry.item.image" :alt="entry.item.name" />
+                  </RouterLink>
+
+                  <div class="cart-item__copy">
+                    <div class="cart-item__brand-line">
+                      <strong>{{ entry.item.brand }}</strong>
+                      <span>{{ entry.item.seller }}</span>
+                    </div>
+
+                    <h2>
+                      <RouterLink :to="entry.item.detailPath" class="cart-item__title-link">
+                        {{ entry.item.name }}
+                      </RouterLink>
+                    </h2>
+                    <p>{{ entry.item.option }}</p>
+                    <p v-if="entry.item.isSoldOut" class="cart-item__soldout">품절 상품입니다. 재입고 전까지 주문할 수 없습니다.</p>
+                  </div>
+
+                  <div class="cart-item__qty">
+                    <div class="qty-stepper">
+                      <button type="button" aria-label="수량 감소" :disabled="entry.item.isSoldOut" @click="updateQuantity(entry.item.id, -1)">-</button>
+                      <span>{{ entry.item.quantity }}</span>
+                      <button type="button" aria-label="수량 증가" :disabled="entry.item.isSoldOut" @click="updateQuantity(entry.item.id, 1)">+</button>
+                    </div>
+                  </div>
+
+                  <div class="cart-item__price">
+                    <strong>{{ formatPrice(entry.item.price * entry.item.quantity) }}</strong>
+                    <span v-if="(entry.item.originalPrice ?? entry.item.price) > entry.item.price">
+                      {{ formatPrice((entry.item.originalPrice ?? entry.item.price) * entry.item.quantity) }}
+                    </span>
+                  </div>
+
+                  <div class="cart-item__shipping">
+                    <template v-if="entry.showShippingInfo">
+                      <button
+                        class="cart-shipping-trigger"
+                        type="button"
+                        @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
+                      >
+                        {{ entry.deliveryGuide.shippingText }}
+                      </button>
+                      <p>{{ entry.deliveryGuide.shippingSubText }}</p>
+                    </template>
+                  </div>
+
+                  <div class="cart-item__actions">
+                    <button class="cart-item__order-btn" type="button" :disabled="entry.item.isSoldOut" @click="goToCheckout('single', entry.item.productId)">
+                      {{ entry.item.isSoldOut ? '품절' : '바로주문' }}
+                    </button>
+                    <button class="cart-item__remove-btn" type="button" @click="removeItem(entry.item.id)">삭제</button>
+                  </div>
+                  </article>
+                </template>
+              </template>
+            </template>
+
+            <template v-else-if="cartItems.length">
               <div class="cart-delivery-row">
                 <label class="cart-check cart-table__check">
                   <input v-model="allSelected" type="checkbox" :disabled="!hasSelectableItems" />
@@ -389,6 +505,7 @@ function closeShippingGuide() {
 
 .cart-table__head,
 .cart-delivery-row,
+.cart-shipping-summary-row,
 .cart-item {
   display: grid;
   grid-template-columns: 56px 136px minmax(0, 1fr) 132px 160px 188px 124px;
@@ -416,6 +533,42 @@ function closeShippingGuide() {
 .cart-delivery-row {
   min-height: 72px;
   border-bottom: 1px solid #d8dde5;
+}
+
+.cart-shipping-summary-row {
+  min-height: 0;
+  height: 0;
+  overflow: visible;
+  position: relative;
+  border: 0;
+  pointer-events: none;
+}
+
+.cart-shipping-summary-row__spacer {
+  min-height: 0;
+}
+
+.cart-shipping-summary-row__content {
+  grid-column: 6;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  justify-self: stretch;
+  position: relative;
+  z-index: 2;
+  padding: 16px 0;
+  background: #ffffff;
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+
+.cart-shipping-summary-row__content p {
+  margin: 0;
+  color: #6b7280;
+  white-space: pre-line;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .cart-delivery-row__copy {

@@ -1,58 +1,42 @@
-import { getFallbackAdminProducts } from './adminService';
+import { normalizeProductCollection } from '../mappers/catalogMapper';
+import { getFallbackProductList, getProductList } from './productService';
+import { getAdminProductStock, updateAdminProductStock } from './productStockService';
 
-const ADMIN_INVENTORY_STORAGE_KEY = 'homio-admin-inventory';
+const ADMIN_SAFE_STOCK_STORAGE_KEY = 'homio-admin-inventory-safe-stock';
 
 function canUseStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
 
-function buildSeedInventoryItems() {
-  return getFallbackAdminProducts().map((product, index) => {
-    const safeStock = 4 + (index % 3);
-    const stock = safeStock + 3 + (index % 7);
-    const reserved = index % 2;
-
-    return {
-      productId: String(product.productId),
-      name: product.name,
-      categoryName: product.categoryName || product.categoryLabel || '-',
-      image: product.imgPath || product.image || '',
-      sku: `HM-${String(product.productId).slice(-5)}`,
-      stock,
-      reserved,
-      safeStock,
-      updatedAt: '2026-03-29 18:30',
-    };
-  });
+function normalizeProductId(value) {
+  return String(value ?? '').trim();
 }
 
-function readStoredInventoryItems() {
-  if (!canUseStorage()) {
-    return buildSeedInventoryItems();
+function isTrackableProductId(productId) {
+  return /^\d+$/.test(normalizeProductId(productId));
+}
+
+function normalizeInteger(value, fallback = 0) {
+  const normalizedValue = Number(value);
+
+  if (!Number.isFinite(normalizedValue)) {
+    return fallback;
   }
 
-  try {
-    const raw = window.localStorage.getItem(ADMIN_INVENTORY_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    return Array.isArray(parsed) && parsed.length ? parsed : buildSeedInventoryItems();
-  } catch {
-    return buildSeedInventoryItems();
-  }
+  return Math.trunc(normalizedValue);
 }
 
-function writeStoredInventoryItems(items) {
-  if (!canUseStorage()) {
-    return;
+function formatInventoryTimestamp(value) {
+  if (!value) {
+    return '-';
   }
 
-  window.localStorage.setItem(ADMIN_INVENTORY_STORAGE_KEY, JSON.stringify(items));
-}
+  const date = new Date(value);
 
-export function getAdminInventoryItems() {
-  return readStoredInventoryItems();
-}
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
 
-function createInventoryTimestamp() {
   return new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: '2-digit',
@@ -60,49 +44,126 @@ function createInventoryTimestamp() {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(new Date());
+  }).format(date);
 }
 
-export function adjustAdminInventoryItem(productId, { type, quantity }) {
-  const timestamp = createInventoryTimestamp();
+function buildSeedSafeStock(index) {
+  return 4 + (index % 3);
+}
 
-  const nextItems = readStoredInventoryItems().map((item) => {
-    if (String(item.productId) !== String(productId)) {
-      return item;
-    }
+function readStoredSafeStockMap() {
+  if (!canUseStorage()) {
+    return {};
+  }
 
-    const delta = Math.max(0, Math.trunc(Number(quantity ?? 0)));
-    const nextStock = type === 'decrease'
-      ? Math.max(0, Number(item.stock ?? 0) - delta)
-      : Number(item.stock ?? 0) + delta;
+  try {
+    const raw = window.localStorage.getItem(ADMIN_SAFE_STOCK_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
-    return {
-      ...item,
-      stock: nextStock,
-      updatedAt: timestamp,
-    };
+function writeStoredSafeStockMap(safeStockMap) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(ADMIN_SAFE_STOCK_STORAGE_KEY, JSON.stringify(safeStockMap));
+}
+
+async function loadCatalogProducts() {
+  try {
+    const response = await getProductList();
+    return normalizeProductCollection(response, getFallbackProductList());
+  } catch {
+    return normalizeProductCollection(getFallbackProductList());
+  }
+}
+
+async function loadAdminStock(productId) {
+  if (!isTrackableProductId(productId)) {
+    return null;
+  }
+
+  try {
+    return await getAdminProductStock(Number(productId));
+  } catch {
+    return null;
+  }
+}
+
+function buildInventoryItem(product, index, safeStockMap = {}, stockPayload = null) {
+  const productId = normalizeProductId(product.productId ?? product.id);
+  const stockSource = stockPayload?.data ?? stockPayload ?? {};
+  const stock = normalizeInteger(stockSource.quantity, 0);
+  const storedSafeStock = safeStockMap[productId];
+  const safeStock = Math.max(0, normalizeInteger(storedSafeStock, buildSeedSafeStock(index)));
+
+  return {
+    productId,
+    name: product.name ?? '',
+    categoryName: product.categoryName ?? product.categoryLabel ?? '-',
+    image: product.imgPath ?? product.image ?? '',
+    sku: `HM-${productId.slice(-5) || String(index + 1).padStart(5, '0')}`,
+    stock,
+    reserved: 0,
+    safeStock,
+    updatedAt: formatInventoryTimestamp(stockSource.updatedAt),
+  };
+}
+
+export async function getAdminInventoryItems() {
+  const products = await loadCatalogProducts();
+  const safeStockMap = readStoredSafeStockMap();
+  const stockPayloads = await Promise.all(
+    products.map((product) => loadAdminStock(product.productId ?? product.id)),
+  );
+
+  return products.map((product, index) => (
+    buildInventoryItem(product, index, safeStockMap, stockPayloads[index])
+  ));
+}
+
+export async function adjustAdminInventoryItem(productId, { type, quantity, currentStock }) {
+  const normalizedProductId = normalizeProductId(productId);
+
+  if (!isTrackableProductId(normalizedProductId)) {
+    throw new Error('백엔드 재고와 연결할 수 없는 상품입니다.');
+  }
+
+  const delta = Math.max(0, normalizeInteger(quantity, 0));
+  const baseStock = Math.max(0, normalizeInteger(currentStock, 0));
+  const nextQuantity = type === 'decrease'
+    ? Math.max(0, baseStock - delta)
+    : baseStock + delta;
+  const response = await updateAdminProductStock(Number(normalizedProductId), {
+    quantity: nextQuantity,
   });
+  const payload = response?.data ?? response ?? {};
 
-  writeStoredInventoryItems(nextItems);
-  return nextItems;
+  return {
+    productId: normalizedProductId,
+    stock: normalizeInteger(payload.quantity, nextQuantity),
+    updatedAt: formatInventoryTimestamp(payload.updatedAt),
+  };
 }
 
 export function updateAdminInventorySafeStock(productId, { safeStock }) {
-  const timestamp = createInventoryTimestamp();
-  const normalizedSafeStock = Math.max(0, Math.trunc(Number(safeStock ?? 0)));
+  const normalizedProductId = normalizeProductId(productId);
+  const safeStockMap = readStoredSafeStockMap();
+  const normalizedSafeStock = Math.max(0, normalizeInteger(safeStock, 0));
+  const nextSafeStockMap = {
+    ...safeStockMap,
+    [normalizedProductId]: normalizedSafeStock,
+  };
 
-  const nextItems = readStoredInventoryItems().map((item) => {
-    if (String(item.productId) !== String(productId)) {
-      return item;
-    }
+  writeStoredSafeStockMap(nextSafeStockMap);
 
-    return {
-      ...item,
-      safeStock: normalizedSafeStock,
-      updatedAt: timestamp,
-    };
-  });
-
-  writeStoredInventoryItems(nextItems);
-  return nextItems;
+  return {
+    productId: normalizedProductId,
+    safeStock: normalizedSafeStock,
+    updatedAt: formatInventoryTimestamp(new Date()),
+  };
 }

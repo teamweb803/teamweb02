@@ -3,7 +3,8 @@ import {
   getFallbackCategoryRouteMap,
 } from '../services/catalogFallbackService';
 
-const CATEGORY_ROUTE_MAP = getFallbackCategoryRouteMap();
+const CATEGORY_ROUTE_STORAGE_KEY = 'homio-category-route-map';
+const FALLBACK_CATEGORY_ROUTE_MAP = getFallbackCategoryRouteMap();
 const DEFAULT_CATEGORY = getDefaultFallbackCategory();
 
 export const DEFAULT_CATEGORY_ID = DEFAULT_CATEGORY.backendCategoryId;
@@ -11,7 +12,7 @@ export const DEFAULT_CATEGORY_SLUG = DEFAULT_CATEGORY.slug;
 export const DEFAULT_PRODUCT_ID = '10489009';
 export const DEFAULT_NOTICE_ID = '6245';
 
-export { CATEGORY_ROUTE_MAP };
+export const CATEGORY_ROUTE_MAP = FALLBACK_CATEGORY_ROUTE_MAP;
 
 export const ROUTE_PATHS = {
   home: '/',
@@ -33,6 +34,9 @@ export const ROUTE_PATHS = {
   memberJoinComplete: '/member/join/complete',
   orderCheckout: '/order/checkout',
   orderComplete: '/order/complete',
+  paymentKakaoSuccess: '/payment/kakao/success',
+  paymentKakaoCancel: '/payment/kakao/cancel',
+  paymentKakaoFail: '/payment/kakao/fail',
   guestOrderLookup: '/order/guest-lookup',
   policyTerms: '/policy/terms',
   policyPrivacy: '/policy/privacy',
@@ -47,17 +51,98 @@ export const ROUTE_PATHS = {
   search: '/search',
 };
 
+function canUseStorage() {
+  return typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';
+}
+
+function normalizeCategoryRouteEntry(category = {}) {
+  const slug = String(category.slug ?? '').trim().toLowerCase();
+
+  if (!slug) {
+    return null;
+  }
+
+  return {
+    slug,
+    backendCategoryId: String(category.backendCategoryId ?? category.id ?? '').trim(),
+    label: String(category.label ?? category.name ?? '').trim(),
+  };
+}
+
+function normalizeCategoryRouteMap(routeMap = {}) {
+  return Object.fromEntries(
+    Object.values(routeMap)
+      .map((category) => normalizeCategoryRouteEntry(category))
+      .filter(Boolean)
+      .map((category) => [category.slug, category]),
+  );
+}
+
+function readStoredCategoryRouteMap() {
+  if (!canUseStorage()) {
+    return {};
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(CATEGORY_ROUTE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return normalizeCategoryRouteMap(parsed);
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredCategoryRouteMap(routeMap = {}) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.sessionStorage.setItem(CATEGORY_ROUTE_STORAGE_KEY, JSON.stringify(routeMap));
+}
+
+function getCategoryRouteMap() {
+  const storedCategoryRouteMap = readStoredCategoryRouteMap();
+
+  if (!Object.keys(storedCategoryRouteMap).length) {
+    return FALLBACK_CATEGORY_ROUTE_MAP;
+  }
+
+  return {
+    ...FALLBACK_CATEGORY_ROUTE_MAP,
+    ...storedCategoryRouteMap,
+  };
+}
+
+export function syncCategoryRouteMap(categories = []) {
+  const nextCategoryRouteMap = normalizeCategoryRouteMap(
+    Object.fromEntries(
+      categories.map((category) => [
+        String(category.slug ?? '').trim().toLowerCase(),
+        category,
+      ]),
+    ),
+  );
+
+  if (!Object.keys(nextCategoryRouteMap).length) {
+    return getCategoryRouteMap();
+  }
+
+  writeStoredCategoryRouteMap(nextCategoryRouteMap);
+  return getCategoryRouteMap();
+}
+
 export function resolveCategoryRoute(categoryValue = DEFAULT_CATEGORY_SLUG) {
+  const categoryRouteMap = getCategoryRouteMap();
   const normalizedValue = String(categoryValue ?? '').trim().toLowerCase();
 
-  if (CATEGORY_ROUTE_MAP[normalizedValue]) {
-    return CATEGORY_ROUTE_MAP[normalizedValue];
+  if (categoryRouteMap[normalizedValue]) {
+    return categoryRouteMap[normalizedValue];
   }
 
   return (
-    Object.values(CATEGORY_ROUTE_MAP).find(
+    Object.values(categoryRouteMap).find(
       (category) => String(category.backendCategoryId) === String(categoryValue ?? '').trim(),
-    ) ?? CATEGORY_ROUTE_MAP[DEFAULT_CATEGORY_SLUG]
+    ) ?? categoryRouteMap[DEFAULT_CATEGORY_SLUG]
   );
 }
 

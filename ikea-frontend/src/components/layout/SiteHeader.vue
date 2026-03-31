@@ -6,6 +6,7 @@ import { useAccountSession } from '../../composables/useAccountSession';
 import { useHeaderMenu } from '../../composables/useHeaderMenu';
 import { buildSearchPath, ROUTE_PATHS } from '../../constants/routes';
 import { useAccountStore } from '../../stores/account';
+import { useCartStore } from '../../stores/cart';
 import { useCatalogStore } from '../../stores/catalog';
 import { useHomeStore } from '../../stores/home';
 import { hasAdminAccess } from '../../utils/accessControl';
@@ -13,6 +14,7 @@ import { hasAdminAccess } from '../../utils/accessControl';
 const route = useRoute();
 const router = useRouter();
 const accountStore = useAccountStore();
+const cartStore = useCartStore();
 const catalogStore = useCatalogStore();
 const homeStore = useHomeStore();
 const headerElementRef = useTemplateRef('headerElementRef');
@@ -20,6 +22,7 @@ const searchKeyword = ref('');
 const adminDashboardPath = ROUTE_PATHS.adminDashboard;
 const { hydrateCurrentMember, loggedIn, submitLogout } = useAccountSession();
 const { memberName, profileHydrated, profileRequested } = storeToRefs(accountStore);
+const { cartItems } = storeToRefs(cartStore);
 const { backendCategories } = storeToRefs(catalogStore);
 const { mainTabs } = storeToRefs(homeStore);
 
@@ -43,6 +46,13 @@ const {
 const accountActionLabel = computed(() => (loggedIn.value ? '로그아웃' : '로그인'));
 const myPageActionLabel = computed(() => (memberName.value ? `${memberName.value}님` : '마이'));
 const showAdminAction = computed(() => hasAdminAccess(accountStore));
+const cartQuantity = computed(() => (
+  new Set(
+    cartItems.value
+      .map((item) => String(item?.productId ?? item?.id ?? '').trim())
+      .filter(Boolean),
+  ).size
+));
 
 function handleAccountClick() {
   if (loggedIn.value) {
@@ -71,6 +81,7 @@ function getHeaderElement() {
 
 onMounted(() => {
   void catalogStore.ensureCatalogLoaded();
+  void cartStore.ensureCartLoaded().catch(() => {});
   syncSearchKeywordFromRoute();
 
   if (!loggedIn.value || profileHydrated.value || profileRequested.value) {
@@ -158,14 +169,17 @@ defineExpose({
         </button>
 
         <button class="hs-util" type="button" @click="router.push(cartPath)">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M7 8H17L19 20H5L7 8Z" stroke="currentColor" stroke-width="1.8" />
-            <path
-              d="M9 8V6.8C9 4.7 10.34 3.5 12 3.5C13.66 3.5 15 4.7 15 6.8V8"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-          </svg>
+          <span class="hs-util__icon">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M7 8H17L19 20H5L7 8Z" stroke="currentColor" stroke-width="1.8" />
+              <path
+                d="M9 8V6.8C9 4.7 10.34 3.5 12 3.5C13.66 3.5 15 4.7 15 6.8V8"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+            </svg>
+            <span v-if="cartQuantity > 0" class="hs-util__badge">{{ cartQuantity }}</span>
+          </span>
           <span>장바구니</span>
         </button>
 
@@ -354,13 +368,36 @@ defineExpose({
   cursor: pointer;
 }
 
+.hs-util__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .hs-util svg {
   width: 24px;
   height: 24px;
 }
 
-.hs-util span {
+.hs-util > span {
   font-size: 13px;
+}
+
+.hs-util__badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #c62828;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
 }
 
 .hs-submenu {

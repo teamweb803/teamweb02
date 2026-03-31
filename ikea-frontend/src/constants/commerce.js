@@ -1,6 +1,7 @@
 export const COMMERCE_SESSION_KEYS = Object.freeze({
   cart: 'homio-commerce-cart',
   orderCompletion: 'homio-last-completed-order',
+  pendingPayment: 'homio-pending-payment',
 });
 
 export const VIRTUAL_ACCOUNT_BANKS = Object.freeze([

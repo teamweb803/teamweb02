@@ -25,6 +25,7 @@ const ProductCategoryView = () => import('../views/ProductCategoryView.vue');
 const CartView = () => import('../views/CartView.vue');
 const CheckoutView = () => import('../views/CheckoutView.vue');
 const OrderCompleteView = () => import('../views/OrderCompleteView.vue');
+const KakaoPaymentView = () => import('../views/KakaoPaymentView.vue');
 const CustomerServiceView = () => import('../views/CustomerServiceView.vue');
 const CustomerServiceQnaWriteView = () => import('../views/CustomerServiceQnaWriteView.vue');
 const CustomerServiceNoticeDetailView = () => import('../views/CustomerServiceNoticeDetailView.vue');
@@ -160,6 +161,24 @@ const router = createRouter({
       path: ROUTE_PATHS.orderComplete,
       name: 'order-complete',
       component: OrderCompleteView,
+    },
+    {
+      path: ROUTE_PATHS.paymentKakaoSuccess,
+      name: 'payment-kakao-success',
+      component: KakaoPaymentView,
+      props: { status: 'success' },
+    },
+    {
+      path: ROUTE_PATHS.paymentKakaoCancel,
+      name: 'payment-kakao-cancel',
+      component: KakaoPaymentView,
+      props: { status: 'cancel' },
+    },
+    {
+      path: ROUTE_PATHS.paymentKakaoFail,
+      name: 'payment-kakao-fail',
+      component: KakaoPaymentView,
+      props: { status: 'fail' },
     },
     {
       path: `${ROUTE_PATHS.customerServiceNotice}/:noticeId`,
