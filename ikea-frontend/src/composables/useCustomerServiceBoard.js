@@ -7,6 +7,7 @@ import {
 } from '../constants/customerServiceContent';
 import { resolveCustomerServiceSection } from '../constants/customerServiceNavigation';
 import { getCustomerSupportQnaRows } from '../services/customerSupportService';
+import { getCustomerNoticeRows } from '../services/noticeService';
 
 const BOARD_PAGE_SIZE = 6;
 
@@ -19,6 +20,10 @@ export function useCustomerServiceBoard() {
   const qnaKeyword = ref('');
   const noticePage = ref(1);
   const qnaPage = ref(1);
+  const noticeRows = ref([]);
+  const hasLoadedNoticeRows = ref(false);
+  const isNoticeLoading = ref(false);
+  const noticeLoadError = ref('');
   const qnaRows = ref([]);
   const isQnaLoading = ref(false);
   const qnaLoadError = ref('');
@@ -30,12 +35,13 @@ export function useCustomerServiceBoard() {
 
   const filteredNotices = computed(() => {
     const keyword = noticeKeyword.value.trim();
+    const sourceRows = hasLoadedNoticeRows.value ? noticeRows.value : CUSTOMER_SERVICE_NOTICE_ROWS;
 
     if (!keyword) {
-      return CUSTOMER_SERVICE_NOTICE_ROWS;
+      return sourceRows;
     }
 
-    return CUSTOMER_SERVICE_NOTICE_ROWS.filter((row) => row.title.includes(keyword));
+    return sourceRows.filter((row) => row.title.includes(keyword));
   });
 
   const noticeTotalPages = computed(() =>
@@ -74,6 +80,22 @@ export function useCustomerServiceBoard() {
     return filteredQnaRows.value.slice(start, start + BOARD_PAGE_SIZE);
   });
 
+  async function loadNoticeRows() {
+    isNoticeLoading.value = true;
+    noticeLoadError.value = '';
+    hasLoadedNoticeRows.value = false;
+
+    try {
+      noticeRows.value = await getCustomerNoticeRows();
+    } catch (error) {
+      noticeRows.value = CUSTOMER_SERVICE_NOTICE_ROWS;
+      noticeLoadError.value = error?.message ?? '공지사항을 불러오지 못했습니다.';
+    } finally {
+      hasLoadedNoticeRows.value = true;
+      isNoticeLoading.value = false;
+    }
+  }
+
   async function loadQnaRows() {
     isQnaLoading.value = true;
     qnaLoadError.value = '';
@@ -109,6 +131,10 @@ export function useCustomerServiceBoard() {
   }
 
   onMounted(() => {
+    if (currentSection.value === 'notice') {
+      void loadNoticeRows();
+    }
+
     if (currentSection.value === 'qna') {
       void loadQnaRows();
     }
@@ -126,6 +152,10 @@ export function useCustomerServiceBoard() {
     noticePage.value = 1;
     qnaPage.value = 1;
 
+    if (section === 'notice') {
+      void loadNoticeRows();
+    }
+
     if (section === 'qna') {
       void loadQnaRows();
     }
@@ -138,12 +168,16 @@ export function useCustomerServiceBoard() {
     currentSection,
     faqCategories: CUSTOMER_SERVICE_FAQ_CATEGORIES,
     filteredFaqRows,
+    isNoticeLoading,
     isQnaLoading,
+    noticeLoadError,
     noticeKeyword,
+    noticePage,
     noticeTotalPages,
     openFaqIds,
     pagedNotices,
     pagedQnaRows,
+    qnaPage,
     qnaKeyword,
     qnaLoadError,
     qnaSubmitted,

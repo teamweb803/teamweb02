@@ -85,17 +85,25 @@ function applyOrders(items) {
   }
 }
 
-async function loadOrders() {
+async function loadOrders(options = {}) {
+  const { fallbackOnError = true } = options;
   isLoading.value = true;
+  let didLoadFromServer = true;
 
   try {
     const payload = await getAdminOrders();
     applyOrders(normalizeArrayPayload(payload, getFallbackAdminOrders()));
   } catch {
-    applyOrders(getFallbackAdminOrders());
+    didLoadFromServer = false;
+
+    if (fallbackOnError) {
+      applyOrders(getFallbackAdminOrders());
+    }
   } finally {
     isLoading.value = false;
   }
+
+  return didLoadFromServer;
 }
 
 function selectOrder(order) {
@@ -108,21 +116,21 @@ async function submitStatusChange() {
     return;
   }
 
+  const orderId = selectedOrder.value.orderId;
   isSubmitting.value = true;
+  statusMessage.value = '';
 
   try {
-    await updateAdminOrderStatus(selectedOrder.value.orderId, statusDraft.value);
-    statusMessage.value = '주문 상태를 저장했습니다.';
+    await updateAdminOrderStatus(orderId, statusDraft.value);
+    const didLoadFromServer = await loadOrders({ fallbackOnError: false });
+    statusMessage.value = didLoadFromServer
+      ? '주문 상태를 저장했습니다.'
+      : '주문 상태는 저장됐지만 목록 재조회는 실패했습니다.';
   } catch {
-    statusMessage.value = '서버 연결 전 단계라 화면에 먼저 반영했습니다.';
-  } finally {
-    allOrders.value = allOrders.value.map((order) => (
-      order.orderId === selectedOrder.value.orderId
-        ? { ...order, orderStatus: statusDraft.value }
-        : order
-    ));
-    isSubmitting.value = false;
+    statusMessage.value = '주문 상태 변경에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
+
+  isSubmitting.value = false;
 }
 
 watch(selectedOrder, (order) => {
@@ -180,7 +188,7 @@ onMounted(loadOrders);
           :class="{ 'is-active': selectedOrderId === order.orderId }"
           @click="selectOrder(order)"
         >
-          <strong>#{{ order.orderId }}</strong>
+          <strong>#{{ order.orderNo || order.orderId }}</strong>
           <span>{{ order.orderItems?.[0]?.productName ?? order.orderItems?.[0]?.name ?? '-' }}</span>
           <span>{{ order.payment || '-' }}</span>
           <span>{{ formatStatusLabel(order.orderStatus) }}</span>
@@ -204,7 +212,7 @@ onMounted(loadOrders);
         <div class="admin-orders-manager__summary">
           <article>
             <span>주문번호</span>
-            <strong>#{{ selectedOrder.orderId }}</strong>
+            <strong>#{{ selectedOrder.orderNo || selectedOrder.orderId }}</strong>
           </article>
           <article>
             <span>주문 시각</span>

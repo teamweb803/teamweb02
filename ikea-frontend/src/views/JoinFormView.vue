@@ -69,11 +69,6 @@ function validateJoinForm() {
   return '';
 }
 
-function openZoneCodeGuide() {
-  joinStatusTone.value = 'neutral';
-  joinStatus.value = '우편번호 찾기는 아직 준비 중입니다. 우편번호와 기본 주소를 직접 입력하거나, 가입 후 마이페이지에서 배송지를 수정해 주세요.';
-}
-
 async function submitJoin() {
   const validationMessage = validateJoinForm();
 
@@ -141,7 +136,6 @@ async function submitJoin() {
 
         <section class="signup-info-formwrap">
           <h1>회원정보 입력</h1>
-          <p class="signup-info-subtitle">백엔드 DTO 기준으로 회원가입에 필요한 정보를 입력해 주세요.</p>
 
           <form class="signup-info-form" @submit.prevent="submitJoin">
             <label class="signup-info-field">
@@ -207,15 +201,12 @@ async function submitJoin() {
 
             <div class="signup-info-field signup-info-field--group">
               <span>기본주소 <i>(선택)</i></span>
-              <div class="signup-info-address-row">
-                <input
-                  v-model.trim="joinForm.zoneCode"
-                  type="text"
-                  placeholder="우편번호"
-                  autocomplete="postal-code"
-                />
-                <button type="button" @click="openZoneCodeGuide">우편번호 찾기</button>
-              </div>
+              <input
+                v-model.trim="joinForm.zoneCode"
+                type="text"
+                placeholder="우편번호"
+                autocomplete="postal-code"
+              />
               <input
                 v-model.trim="joinForm.addressMain"
                 type="text"
@@ -228,12 +219,8 @@ async function submitJoin() {
                 placeholder="상세 주소 입력"
                 autocomplete="address-line2"
               />
-              <p class="signup-info-helper">
-                우편번호 찾기는 준비 중입니다. 직접 입력해도 가입할 수 있으며, 배송지는 가입 후에도 수정할 수 있습니다.
-              </p>
             </div>
 
-            <div class="signup-info-note">입력한 정보는 회원가입과 주문 조회에 필요한 기본 항목으로만 사용됩니다.</div>
             <p v-if="joinStatus" class="signup-info-status" :class="joinStatusClass">{{ joinStatus }}</p>
 
             <button class="signup-info-submit" type="submit" :disabled="joinSubmitting">
@@ -322,14 +309,6 @@ async function submitJoin() {
   letter-spacing: -0.03em;
 }
 
-.signup-info-subtitle {
-  margin: 12px 0 0;
-  text-align: center;
-  color: #333333;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
 .signup-info-form {
   margin-top: 48px;
 }
@@ -381,39 +360,6 @@ async function submitJoin() {
 
 .signup-info-field--group {
   margin-bottom: 38px;
-}
-
-.signup-info-address-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px;
-  gap: 8px;
-}
-
-.signup-info-address-row button {
-  height: 56px;
-  border: 1px solid #d7d7d7;
-  background: #ffffff;
-  color: #111111;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.signup-info-helper {
-  margin: 4px 0 0;
-  color: #777777;
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.signup-info-note {
-  margin-top: 8px;
-  padding-top: 34px;
-  border-top: 1px solid #ebebeb;
-  text-align: center;
-  color: #888888;
-  font-size: 12px;
-  line-height: 1.7;
 }
 
 .signup-info-status {

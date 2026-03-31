@@ -29,6 +29,10 @@ function unwrapArrayPayload(payload) {
   return [];
 }
 
+function unwrapObjectPayload(payload) {
+  return payload?.data ?? payload ?? {};
+}
+
 function normalizeIdentifier(value) {
   return String(value ?? '').trim();
 }
@@ -191,6 +195,7 @@ export const useMyPageStore = defineStore('myPage', {
       isProfileLoading: false,
       profileError: '',
       loaded: false,
+      loadedSessionKey: '',
     };
   },
   actions: {
@@ -206,18 +211,24 @@ export const useMyPageStore = defineStore('myPage', {
       const accountStore = useAccountStore();
       const catalogStore = useCatalogStore();
       accountStore.hydrate();
+      const sessionKey = accountStore.accessToken
+        ? String(accountStore.memberId ?? accountStore.loginId ?? 'member')
+        : '';
 
       if (!accountStore.accessToken) {
         this.profile = getFallbackMyPageProfile(accountStore);
         this.resetDynamicSections();
+        this.profileError = '';
         this.loaded = true;
+        this.loadedSessionKey = '';
         return;
       }
 
       this.isProfileLoading = true;
       this.profileError = '';
 
-      const [memberResult, ordersResult, reviewsResult] = await Promise.allSettled([
+      const [, memberResult, ordersResult, reviewsResult] = await Promise.allSettled([
+        catalogStore.ensureCatalogLoaded(),
         getCurrentMember(),
         getMyOrders(),
         getMyReviews(),
@@ -225,8 +236,12 @@ export const useMyPageStore = defineStore('myPage', {
 
       try {
         if (memberResult.status === 'fulfilled') {
-          this.profile = normalizeMemberProfile(memberResult.value, accountStore);
+          const memberPayload = unwrapObjectPayload(memberResult.value);
+          accountStore.setMemberSession(memberPayload);
+          accountStore.setProfileHydrated(true);
+          this.profile = normalizeMemberProfile(memberPayload, accountStore);
         } else {
+          accountStore.setProfileHydrated(false);
           this.profile = getFallbackMyPageProfile(accountStore);
           this.profileError = '회원 정보를 다시 확인해 주세요.';
         }
@@ -251,6 +266,7 @@ export const useMyPageStore = defineStore('myPage', {
           this.profileError = this.profileError || '마이페이지 데이터를 모두 불러오지 못했습니다.';
         }
       } catch (error) {
+        accountStore.setProfileHydrated(false);
         this.profile = getFallbackMyPageProfile(accountStore);
         this.resetDynamicSections();
         this.profileError = '회원 정보를 다시 확인해 주세요.';
@@ -258,6 +274,7 @@ export const useMyPageStore = defineStore('myPage', {
       } finally {
         this.isProfileLoading = false;
         this.loaded = true;
+        this.loadedSessionKey = sessionKey;
       }
     },
   },

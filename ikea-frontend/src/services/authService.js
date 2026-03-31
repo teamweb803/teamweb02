@@ -1,7 +1,7 @@
 import httpRequester from '../libs/httpRequester';
 
 export function loginAuth(memberLoginRequest) {
-  return httpRequester.post('/auth/login', memberLoginRequest);
+  return httpRequester.post('/member/login', memberLoginRequest);
 }
 
 export function refreshAuthToken(refreshToken) {

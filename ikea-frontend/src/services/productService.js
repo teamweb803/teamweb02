@@ -28,6 +28,24 @@ export function getProductDetail(productId) {
   return httpRequester.get(`/product/${productId}`);
 }
 
+export function getNewProducts() {
+  return httpRequester.get('/product/new');
+}
+
+export function getBestProducts() {
+  return httpRequester.get('/product/best');
+}
+
+export function getRecommendedProducts(categoryId) {
+  return httpRequester.get('/product/recommend', {
+    params: { categoryId },
+  });
+}
+
+export function getRecommendedProductsBySlug(categorySlug) {
+  return getRecommendedProducts(getBackendCategoryId(categorySlug));
+}
+
 export function getFallbackProductList() {
   return getFallbackCatalogProducts();
 }

@@ -93,29 +93,51 @@ function syncAnswerForm(thread) {
   answerForm.content = thread?.answer?.content || '';
 }
 
-function applyThreads(items) {
-  threads.value = normalizeAdminQnaThreads(items);
+function syncSelectedThread(preferredThreadId = selectedThreadId.value) {
+  const matchedThread = threads.value.find((thread) => thread.id === preferredThreadId);
 
-  const hasSelectedThread = threads.value.some((thread) => thread.id === selectedThreadId.value);
-
-  if (!hasSelectedThread) {
-    selectedThreadId.value = threads.value[0]?.id ?? '';
+  if (matchedThread) {
+    selectedThreadId.value = matchedThread.id;
+    syncAnswerForm(matchedThread);
+    return;
   }
 
-  syncAnswerForm(selectedThread.value);
+  selectedThreadId.value = threads.value[0]?.id ?? '';
+  syncAnswerForm(threads.value[0] ?? null);
 }
 
-async function loadThreads() {
+function applyThreads(items) {
+  threads.value = normalizeAdminQnaThreads(items);
+}
+
+async function loadThreads(options = {}) {
+  const {
+    preferredThreadId = selectedThreadId.value,
+    fallbackOnError = true,
+  } = options;
   isLoading.value = true;
+  let didLoadFromServer = true;
 
   try {
     const payload = await getAdminQnas();
     applyThreads(normalizeArrayPayload(payload, getFallbackAdminQnaThreads()));
   } catch {
-    applyThreads(getFallbackAdminQnaThreads());
+    didLoadFromServer = false;
+
+    if (fallbackOnError) {
+      applyThreads(getFallbackAdminQnaThreads());
+    }
   } finally {
     isLoading.value = false;
   }
+
+  if (!didLoadFromServer && !fallbackOnError) {
+    return false;
+  }
+
+  syncSelectedThread(preferredThreadId);
+
+  return didLoadFromServer;
 }
 
 function selectThread(thread) {
@@ -130,7 +152,12 @@ async function submitAnswer() {
     return;
   }
 
+  const threadId = selectedThread.value.id;
+  const hasAnswer = Boolean(selectedThread.value.answer);
+  const answerId = selectedThread.value.answer?.qnaId;
+  const questionId = selectedThread.value.question.qnaId;
   isSubmitting.value = true;
+  statusMessage.value = '';
 
   const payload = {
     title: `${selectedThread.value.title} 답변`,
@@ -138,36 +165,33 @@ async function submitAnswer() {
     writer: answerForm.writer.trim() || resolveOperatorName(),
   };
 
-  const nextAnswer = {
-    qnaId: selectedThread.value.answer?.qnaId ?? `local-answer-${Date.now()}`,
-    title: payload.title,
-    content: payload.content,
-    writer: payload.writer,
-    createdAt: new Date().toISOString(),
-  };
-
   try {
-    if (selectedThread.value.answer) {
-      await updateAdminQnaAnswer(selectedThread.value.answer.qnaId, payload);
-      statusMessage.value = '답변을 수정했습니다.';
+    if (hasAnswer && answerId) {
+      await updateAdminQnaAnswer(answerId, payload);
+      const didLoadFromServer = await loadThreads({
+        preferredThreadId: threadId,
+        fallbackOnError: false,
+      });
+      statusMessage.value = didLoadFromServer
+        ? '답변을 수정했습니다.'
+        : '답변은 수정됐지만 목록 재조회는 실패했습니다.';
     } else {
-      await createAdminQnaAnswer(selectedThread.value.question.qnaId, payload);
-      statusMessage.value = '답변을 등록했습니다.';
+      await createAdminQnaAnswer(questionId, payload);
+      const didLoadFromServer = await loadThreads({
+        preferredThreadId: threadId,
+        fallbackOnError: false,
+      });
+      statusMessage.value = didLoadFromServer
+        ? '답변을 등록했습니다.'
+        : '답변은 등록됐지만 목록 재조회는 실패했습니다.';
     }
   } catch {
-    statusMessage.value = '서버 연결이 어려워 화면에서만 먼저 반영했습니다.';
-  } finally {
-    threads.value = threads.value.map((thread) => (
-      thread.id === selectedThread.value.id
-        ? {
-            ...thread,
-            answer: nextAnswer,
-          }
-        : thread
-    ));
-    syncAnswerForm({ answer: nextAnswer });
-    isSubmitting.value = false;
+    statusMessage.value = hasAnswer
+      ? '답변 수정에 실패했습니다. 서버 상태를 확인해 주세요.'
+      : '답변 등록에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
+
+  isSubmitting.value = false;
 }
 
 async function removeAnswer() {
@@ -180,23 +204,25 @@ async function removeAnswer() {
     return;
   }
 
+  const threadId = selectedThread.value.id;
+  const answerId = selectedThread.value.answer.qnaId;
+  isSubmitting.value = true;
+  statusMessage.value = '';
+
   try {
-    await deleteAdminQnaAnswer(selectedThread.value.answer.qnaId);
-    statusMessage.value = '답변을 삭제했습니다.';
+    await deleteAdminQnaAnswer(answerId);
+    const didLoadFromServer = await loadThreads({
+      preferredThreadId: threadId,
+      fallbackOnError: false,
+    });
+    statusMessage.value = didLoadFromServer
+      ? '답변을 삭제했습니다.'
+      : '답변은 삭제됐지만 목록 재조회는 실패했습니다.';
   } catch {
-    statusMessage.value = '서버 연결이 어려워 화면에서만 먼저 제거했습니다.';
+    statusMessage.value = '답변 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
 
-  threads.value = threads.value.map((thread) => (
-    thread.id === selectedThread.value.id
-      ? {
-          ...thread,
-          answer: null,
-        }
-      : thread
-  ));
-
-  syncAnswerForm({ answer: null });
+  isSubmitting.value = false;
 }
 
 watch(searchKeyword, () => {
@@ -306,7 +332,7 @@ onMounted(loadThreads);
             <button
               type="button"
               class="admin-qna-manager__secondary"
-              :disabled="!selectedThread.answer"
+              :disabled="!selectedThread.answer || isSubmitting"
               @click="removeAnswer"
             >
               답변 삭제

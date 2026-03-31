@@ -204,6 +204,12 @@ const router = createRouter({
       props: { documentId: 'privacy' },
     },
     {
+      path: ROUTE_PATHS.policyLocation,
+      name: 'policy-location',
+      component: LegalDocumentView,
+      props: { documentId: 'location' },
+    },
+    {
       path: ROUTE_PATHS.memberLogin,
       name: 'member-login',
       component: LoginView,

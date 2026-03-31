@@ -29,6 +29,7 @@ const selectedFiles = shallowRef([]);
 const statusMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isSubmitting = shallowRef(false);
+const isDeleting = shallowRef(false);
 const currentPage = shallowRef(1);
 const pageSize = 5;
 
@@ -102,17 +103,46 @@ function applyNotices(items) {
     .filter((item) => item.noticeId);
 }
 
-async function loadNotices() {
+function syncSelectedNotice(preferredNoticeId = selectedNoticeId.value) {
+  const matchedNotice = notices.value.find((notice) => notice.noticeId === preferredNoticeId);
+
+  if (matchedNotice) {
+    selectedNoticeId.value = matchedNotice.noticeId;
+    return true;
+  }
+
+  selectedNoticeId.value = '';
+  return false;
+}
+
+async function loadNotices(options = {}) {
+  const {
+    preferredNoticeId = selectedNoticeId.value,
+    fallbackOnError = true,
+  } = options;
   isLoading.value = true;
+  let didLoadFromServer = true;
 
   try {
     const payload = await getAdminNoticeList();
     applyNotices(normalizeArrayPayload(payload, getFallbackAdminNotices()));
   } catch {
-    applyNotices(getFallbackAdminNotices());
+    didLoadFromServer = false;
+
+    if (fallbackOnError) {
+      applyNotices(getFallbackAdminNotices());
+    }
   } finally {
     isLoading.value = false;
   }
+
+  if (!didLoadFromServer && !fallbackOnError) {
+    return false;
+  }
+
+  syncSelectedNotice(preferredNoticeId);
+
+  return didLoadFromServer;
 }
 
 function handleFileChange(event) {
@@ -125,7 +155,9 @@ async function submitNotice() {
     return;
   }
 
+  const noticeId = selectedNoticeId.value;
   isSubmitting.value = true;
+  statusMessage.value = '';
 
   const payload = {
     title: formState.title.trim(),
@@ -134,40 +166,37 @@ async function submitNotice() {
     files: selectedFiles.value,
   };
 
-  const optimisticNotice = normalizeAdminNotice({
-    noticeId: selectedNoticeId.value || `local-${Date.now()}`,
-    title: payload.title,
-    writer: payload.writer,
-    content: payload.content,
-    createdAt: selectedNotice.value?.createdAt ?? new Date().toISOString(),
-  });
-
   try {
-    if (selectedNoticeId.value) {
-      await updateAdminNotice(selectedNoticeId.value, payload);
-      notices.value = notices.value.map((notice) => (
-        notice.noticeId === selectedNoticeId.value ? optimisticNotice : notice
-      ));
-      statusMessage.value = '공지 내용을 수정했습니다.';
+    if (noticeId) {
+      await updateAdminNotice(noticeId, payload);
+      const didLoadFromServer = await loadNotices({
+        preferredNoticeId: noticeId,
+        fallbackOnError: false,
+      });
+      statusMessage.value = didLoadFromServer
+        ? '공지 내용을 수정했습니다.'
+        : '공지 수정은 완료됐지만 목록 재조회는 실패했습니다.';
     } else {
       await createAdminNotice(payload);
-      notices.value = [optimisticNotice, ...notices.value];
-      statusMessage.value = '새 공지를 등록했습니다.';
-    }
-  } catch {
-    if (selectedNoticeId.value) {
-      notices.value = notices.value.map((notice) => (
-        notice.noticeId === selectedNoticeId.value ? optimisticNotice : notice
-      ));
-    } else {
-      notices.value = [optimisticNotice, ...notices.value];
+      const didLoadFromServer = await loadNotices({ fallbackOnError: false });
+      statusMessage.value = didLoadFromServer
+        ? '새 공지를 등록했습니다.'
+        : '공지 등록은 완료됐지만 목록 재조회는 실패했습니다.';
     }
 
-    statusMessage.value = '서버 연결이 어려워 화면에서만 먼저 반영했습니다.';
-  } finally {
-    isSubmitting.value = false;
-    beginCreateMode({ clearStatus: false });
+    if (noticeId) {
+      beginCreateMode({ clearStatus: false });
+    } else {
+      beginCreateMode({ clearStatus: false });
+      currentPage.value = 1;
+    }
+  } catch {
+    statusMessage.value = noticeId
+      ? '공지 수정에 실패했습니다. 서버 상태를 확인해 주세요.'
+      : '공지 등록에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
+
+  isSubmitting.value = false;
 }
 
 async function removeNotice(notice) {
@@ -176,18 +205,24 @@ async function removeNotice(notice) {
     return;
   }
 
+  isDeleting.value = true;
+  statusMessage.value = '';
+
   try {
     await deleteAdminNotice(notice.noticeId);
-    statusMessage.value = '공지를 삭제했습니다.';
+    const didLoadFromServer = await loadNotices({ fallbackOnError: false });
+    statusMessage.value = didLoadFromServer
+      ? '공지를 삭제했습니다.'
+      : '공지 삭제는 완료됐지만 목록 재조회는 실패했습니다.';
   } catch {
-    statusMessage.value = '서버 연결이 어려워 목록에서만 먼저 제거했습니다.';
+    statusMessage.value = '공지 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
-
-  notices.value = notices.value.filter((item) => item.noticeId !== notice.noticeId);
 
   if (selectedNoticeId.value === notice.noticeId) {
     beginCreateMode({ clearStatus: false });
   }
+
+  isDeleting.value = false;
 }
 
 watch(
@@ -209,7 +244,7 @@ onMounted(async () => {
   <section class="admin-notices-manager">
     <AdminPanel title="공지 목록" description="고객센터 공지를 수정하거나 삭제할 수 있습니다.">
       <template v-if="showCreateShortcut" #action>
-        <button type="button" class="admin-notices-manager__primary" @click="beginCreateMode">
+        <button type="button" class="admin-notices-manager__primary" :disabled="isSubmitting || isDeleting" @click="beginCreateMode">
           새 공지로 전환
         </button>
       </template>
@@ -233,8 +268,8 @@ onMounted(async () => {
           <span>{{ notice.writer || '운영자' }}</span>
           <span>{{ formatAdminDateTime(notice.createdAt) }}</span>
           <div class="admin-notices-manager__actions">
-            <button type="button" @click="beginEditMode(notice)">수정</button>
-            <button type="button" @click="removeNotice(notice)">삭제</button>
+            <button type="button" :disabled="isSubmitting || isDeleting" @click="beginEditMode(notice)">수정</button>
+            <button type="button" :disabled="isSubmitting || isDeleting" @click="removeNotice(notice)">삭제</button>
           </div>
         </article>
 
@@ -275,7 +310,7 @@ onMounted(async () => {
           <button type="button" class="admin-notices-manager__secondary" @click="beginCreateMode">
             입력 초기화
           </button>
-          <button type="submit" class="admin-notices-manager__primary" :disabled="isSubmitting">
+          <button type="submit" class="admin-notices-manager__primary" :disabled="isSubmitting || isDeleting">
             {{ submitButtonLabel }}
           </button>
         </div>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import {
@@ -21,6 +21,10 @@ import { useCatalogStore } from '../stores/catalog';
 const route = useRoute();
 const router = useRouter();
 const catalogStore = useCatalogStore();
+
+onMounted(() => {
+  void catalogStore.ensureCatalogLoaded();
+});
 
 const selectedSort = ref('인기순');
 const selectedPageSize = ref(20);

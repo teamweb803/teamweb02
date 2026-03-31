@@ -1,5 +1,5 @@
 <script setup>
-import { computed, shallowRef } from 'vue';
+import { computed, onMounted, shallowRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import HomeCategorySection from '../components/home/HomeCategorySection.vue';
@@ -16,9 +16,11 @@ import {
   buildProductDetailPath,
 } from '../constants/routes';
 import { decorateStorefrontItems } from '../services/storefrontStockService';
+import { useCatalogStore } from '../stores/catalog';
 import { useHomeStore } from '../stores/home';
 
 const router = useRouter();
+const catalogStore = useCatalogStore();
 const homeStore = useHomeStore();
 const {
   categoryDealCollections,
@@ -31,6 +33,7 @@ const {
   topShortcutBoxes,
   weeklyDeals,
 } = storeToRefs(homeStore);
+const { catalogProducts } = storeToRefs(catalogStore);
 
 const activeCategoryDealKey = shallowRef(categoryDealFilters.value[0]?.id ?? 'sofa');
 const activeNewItemKey = shallowRef(newItemFilters.value[0]?.id ?? 'sofa');
@@ -52,15 +55,172 @@ const {
   scrollToSection,
 } = useHomeScrollBehavior({ trackVisibility: false });
 
+function formatHomePrice(value) {
+  return `${Number(value ?? 0).toLocaleString('ko-KR')}원`;
+}
+
+function createHomeMetaText(product) {
+  const reviewCount = Number(product.reviews ?? 0);
+  const rating = Number(product.rating ?? 0);
+
+  if (rating > 0) {
+    return `평점 ${rating.toFixed(1)} · 후기 ${reviewCount.toLocaleString('ko-KR')}개`;
+  }
+
+  return `후기 ${reviewCount.toLocaleString('ko-KR')}개`;
+}
+
+function createHomeProductCard(product, overrides = {}) {
+  if (!product) {
+    return null;
+  }
+
+  return {
+    id: overrides.id ?? `home-product-${product.id}`,
+    productId: String(product.id ?? product.productId ?? ''),
+    categorySlug: product.categorySlug ?? '',
+    typeSlug: product.typeSlug ?? '',
+    brand: product.brand ?? 'HOMiO',
+    title: product.name ?? '',
+    image: overrides.image ?? product.image ?? product.imgPath ?? '',
+    badge: overrides.badge ?? product.badge ?? product.label ?? product.categoryLabel ?? '',
+    price: formatHomePrice(product.price),
+    originalPrice: Number(product.originalPrice ?? 0) > Number(product.price ?? 0)
+      ? formatHomePrice(product.originalPrice)
+      : '',
+    discount: Number(product.discountRate ?? 0) > 0 ? `${product.discountRate}%` : '',
+    metaText: overrides.metaText ?? createHomeMetaText(product),
+    tags: overrides.tags ?? (product.features ?? []).slice(0, 2),
+  };
+}
+
+function createHomePickCard(product, overrides = {}) {
+  if (!product) {
+    return null;
+  }
+
+  return {
+    id: overrides.id ?? `home-pick-${product.id}`,
+    productId: String(product.id ?? product.productId ?? ''),
+    categorySlug: product.categorySlug ?? '',
+    typeSlug: product.typeSlug ?? '',
+    brand: product.brand ?? 'HOMiO',
+    title: product.name ?? '',
+    image: overrides.image ?? product.altImage ?? product.image ?? product.imgPath ?? '',
+    badge: overrides.badge ?? product.categoryLabel ?? '',
+    accent: overrides.accent ?? 'blue',
+    price: formatHomePrice(product.price),
+    discount: Number(product.discountRate ?? 0) > 0 ? `${product.discountRate}%` : '',
+    rating: Number(product.rating ?? 0) > 0 ? Number(product.rating).toFixed(1) : null,
+    tags: overrides.tags ?? (product.features ?? []).slice(0, 2),
+  };
+}
+
+function sortProductsByPriority(products = []) {
+  return [...products].sort((left, right) => {
+    const reviewGap = Number(right.reviews ?? 0) - Number(left.reviews ?? 0);
+    if (reviewGap !== 0) {
+      return reviewGap;
+    }
+
+    const ratingGap = Number(right.rating ?? 0) - Number(left.rating ?? 0);
+    if (ratingGap !== 0) {
+      return ratingGap;
+    }
+
+    return Number(right.price ?? 0) - Number(left.price ?? 0);
+  });
+}
+
+function sortProductsByLatest(products = []) {
+  return [...products].sort((left, right) => {
+    const leftTimestamp = Date.parse(left.createdAt ?? '') || 0;
+    const rightTimestamp = Date.parse(right.createdAt ?? '') || 0;
+    return rightTimestamp - leftTimestamp;
+  });
+}
+
+function takeCategoryProducts(products, categorySlug, limit = 4, mode = 'popular') {
+  const categoryProducts = products.filter((product) => product.categorySlug === categorySlug);
+  const orderedProducts = mode === 'latest'
+    ? sortProductsByLatest(categoryProducts)
+    : sortProductsByPriority(categoryProducts);
+
+  return orderedProducts.slice(0, limit);
+}
+
+const derivedWeeklyDeals = computed(() => {
+  const preferredCategories = ['sofa', 'bed-mattress', 'dining', 'kitchenware'];
+  const cards = preferredCategories
+    .map((categorySlug) => takeCategoryProducts(catalogProducts.value, categorySlug, 1)[0] ?? null)
+    .filter(Boolean)
+    .map((product) => createHomeProductCard(product, {
+      badge: product.categoryLabel ?? product.label ?? '',
+    }))
+    .filter(Boolean);
+
+  return cards.length ? cards : weeklyDeals.value;
+});
+
+const derivedCategoryDealCollections = computed(() => Object.fromEntries(
+  categoryDealFilters.value.map((filter) => [
+    filter.id,
+    takeCategoryProducts(catalogProducts.value, filter.id, 4)
+      .map((product) => createHomeProductCard(product, {
+        badge: product.label ?? filter.label,
+      }))
+      .filter(Boolean),
+  ]),
+));
+
+const derivedNewItemCollections = computed(() => Object.fromEntries(
+  newItemFilters.value.map((filter) => [
+    filter.id,
+    takeCategoryProducts(catalogProducts.value, filter.id, 4, 'latest')
+      .map((product) => createHomeProductCard(product, {
+        badge: product.label ?? filter.label,
+      }))
+      .filter(Boolean),
+  ]),
+));
+
+const derivedPickItems = computed(() => {
+  const picks = [
+    { slug: 'sofa', accent: 'yellow', id: 'pick-sofa' },
+    { slug: 'bed-mattress', accent: 'blue', id: 'pick-bed' },
+    { slug: 'desk', accent: 'yellow', id: 'pick-desk' },
+    { slug: 'plant', accent: 'blue', id: 'pick-plant' },
+  ];
+
+  return picks
+    .map((item) => {
+      const product = takeCategoryProducts(catalogProducts.value, item.slug, 1)[0] ?? null;
+
+      return createHomePickCard(product, {
+        id: item.id,
+        accent: item.accent,
+      });
+    })
+    .filter(Boolean);
+});
+
 const activeCategoryDealBanner = computed(
   () => categoryDealCollections.value[activeCategoryDealKey.value]?.banner ?? null,
 );
-const decoratedWeeklyDeals = computed(() => decorateStorefrontItems(weeklyDeals.value));
+const decoratedWeeklyDeals = computed(() => decorateStorefrontItems(derivedWeeklyDeals.value));
 const visibleCategoryDeals = computed(
-  () => decorateStorefrontItems(categoryDealCollections.value[activeCategoryDealKey.value]?.items ?? []),
+  () => decorateStorefrontItems(
+    derivedCategoryDealCollections.value[activeCategoryDealKey.value]?.length
+      ? derivedCategoryDealCollections.value[activeCategoryDealKey.value]
+      : categoryDealCollections.value[activeCategoryDealKey.value]?.items ?? [],
+  ),
 );
 const visibleNewItems = computed(
-  () => decorateStorefrontItems(newItemCollections.value[activeNewItemKey.value] ?? []),
+  () => decorateStorefrontItems(
+    derivedNewItemCollections.value[activeNewItemKey.value]?.length
+      ? derivedNewItemCollections.value[activeNewItemKey.value]
+      : newItemCollections.value[activeNewItemKey.value] ?? [],
+  ),
 );
 const decoratedSpotlight = computed(() => ({
   ...(curatedSpotlight.value ?? {}),
@@ -68,8 +228,14 @@ const decoratedSpotlight = computed(() => ({
 }));
 const decoratedPickSection = computed(() => ({
   ...pickSection.value,
-  items: decorateStorefrontItems(pickSection.value?.items ?? []),
+  items: decorateStorefrontItems(
+    derivedPickItems.value.length ? derivedPickItems.value : pickSection.value?.items ?? [],
+  ),
 }));
+
+onMounted(() => {
+  void catalogStore.ensureCatalogLoaded();
+});
 
 function handleShortcutClick(item) {
   if (item.anchorId) {

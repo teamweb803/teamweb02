@@ -80,6 +80,7 @@ function getHeaderElement() {
 }
 
 onMounted(() => {
+  void catalogStore.ensureCatalogLoaded();
   syncSearchKeywordFromRoute();
 
   if (!loggedIn.value || profileHydrated.value || profileRequested.value) {
@@ -164,18 +165,6 @@ defineExpose({
             />
           </svg>
           <span>{{ accountActionLabel }}</span>
-        </button>
-
-        <button class="hs-util" type="button">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 21C15.5 16.8 18 14 18 10.4C18 6.87 15.31 4 12 4C8.69 4 6 6.87 6 10.4C6 14 8.5 16.8 12 21Z"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8" />
-          </svg>
-          <span>매장찾기</span>
         </button>
 
         <button class="hs-util" type="button" @click="router.push(cartPath)">

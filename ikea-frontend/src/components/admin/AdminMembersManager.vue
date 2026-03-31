@@ -64,27 +64,64 @@ function applyMembers(items) {
     .filter((item) => item.memberId);
 }
 
+function syncSelectedMember(preferredMemberId = selectedMemberId.value) {
+  const matchedMember = members.value.find((member) => member.memberId === preferredMemberId);
+
+  if (matchedMember) {
+    setSelectedMember(matchedMember);
+    return;
+  }
+
+  if (members.value[0]) {
+    setSelectedMember(members.value[0]);
+    return;
+  }
+
+  selectedMemberId.value = '';
+  selectedMember.value = null;
+  roleDraft.value = 'USER';
+}
+
 function setSelectedMember(member) {
   selectedMemberId.value = member.memberId;
   selectedMember.value = member;
   roleDraft.value = member.memberRole;
+  statusMessage.value = '';
 }
 
-async function loadMembers() {
+async function loadMembers(options = {}) {
+  const {
+    preferredMemberId = selectedMemberId.value,
+    fallbackOnError = true,
+  } = options;
   isLoading.value = true;
+  const previousSelectedMemberId = selectedMemberId.value;
+  let didLoadFromServer = true;
 
   try {
     const payload = await getAdminMembers();
     applyMembers(normalizeArrayPayload(payload, getFallbackAdminMembers()));
   } catch {
-    applyMembers(getFallbackAdminMembers());
+    didLoadFromServer = false;
+
+    if (fallbackOnError) {
+      applyMembers(getFallbackAdminMembers());
+    }
   } finally {
     isLoading.value = false;
   }
 
-  if (!selectedMemberId.value && members.value[0]) {
-    setSelectedMember(members.value[0]);
+  if (!didLoadFromServer && !fallbackOnError) {
+    return false;
   }
+
+  syncSelectedMember(preferredMemberId);
+
+  if (selectedMemberId.value && selectedMemberId.value === previousSelectedMemberId) {
+    await loadMemberDetail(selectedMemberId.value);
+  }
+
+  return didLoadFromServer;
 }
 
 async function loadMemberDetail(memberId) {
@@ -122,26 +159,24 @@ async function submitRoleChange() {
     return;
   }
 
+  const memberId = selectedMember.value.memberId;
   isSaving.value = true;
   statusMessage.value = '';
 
   try {
-    await updateAdminMemberRole(selectedMember.value.memberId, roleDraft.value);
-    statusMessage.value = '회원 권한을 변경했습니다.';
+    await updateAdminMemberRole(memberId, roleDraft.value);
+    const didLoadFromServer = await loadMembers({
+      preferredMemberId: memberId,
+      fallbackOnError: false,
+    });
+    statusMessage.value = didLoadFromServer
+      ? '회원 권한을 변경했습니다.'
+      : '권한은 변경됐지만 목록 재조회는 실패했습니다.';
   } catch {
-    statusMessage.value = '서버 연결 전 단계라 화면에 먼저 반영했습니다.';
-  } finally {
-    selectedMember.value = {
-      ...selectedMember.value,
-      memberRole: roleDraft.value,
-    };
-    members.value = members.value.map((member) => (
-      member.memberId === selectedMember.value.memberId
-        ? { ...member, memberRole: roleDraft.value }
-        : member
-    ));
-    isSaving.value = false;
+    statusMessage.value = '회원 권한 변경에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
+
+  isSaving.value = false;
 }
 
 async function removeSelectedMember() {
@@ -154,20 +189,21 @@ async function removeSelectedMember() {
     return;
   }
 
+  const memberId = selectedMember.value.memberId;
+  isSaving.value = true;
+  statusMessage.value = '';
+
   try {
-    await deleteAdminMember(selectedMember.value.memberId);
-    statusMessage.value = '회원을 삭제했습니다.';
+    await deleteAdminMember(memberId);
+    const didLoadFromServer = await loadMembers({ fallbackOnError: false });
+    statusMessage.value = didLoadFromServer
+      ? '회원을 삭제했습니다.'
+      : '회원은 삭제됐지만 목록 재조회는 실패했습니다.';
   } catch {
-    statusMessage.value = '서버 연결 전 단계라 목록에서만 먼저 제거했습니다.';
+    statusMessage.value = '회원 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
 
-  members.value = members.value.filter((member) => member.memberId !== selectedMember.value.memberId);
-  selectedMemberId.value = '';
-  selectedMember.value = null;
-
-  if (members.value[0]) {
-    setSelectedMember(members.value[0]);
-  }
+  isSaving.value = false;
 }
 
 watch(
@@ -288,7 +324,7 @@ onMounted(loadMembers);
             <button
               type="button"
               class="admin-members-manager__secondary"
-              :disabled="selectedMember.memberRole !== 'USER'"
+              :disabled="selectedMember.memberRole !== 'USER' || isSaving"
               @click="removeSelectedMember"
             >
               회원 삭제

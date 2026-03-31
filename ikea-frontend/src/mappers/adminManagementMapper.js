@@ -143,6 +143,10 @@ export function normalizeAdminProduct(product, categories = []) {
 }
 
 export function normalizeAdminMember(member) {
+  const addressMain = member.addressMain ?? '';
+  const addressDetail = member.addressDetail ?? '';
+  const displayAddress = member.address ?? [addressMain, addressDetail].filter(Boolean).join(' ');
+
   return {
     memberId: String(member.memberId ?? member.id ?? ''),
     loginId: member.loginId ?? '',
@@ -151,22 +155,39 @@ export function normalizeAdminMember(member) {
     phoneNumber: member.phoneNumber ?? member.phone ?? member.tel ?? '',
     memberRole: member.memberRole ?? member.role ?? 'USER',
     zoneCode: member.zoneCode ?? '',
-    addressMain: member.addressMain ?? '',
-    addressDetail: member.addressDetail ?? '',
-    address: member.address ?? '',
+    addressMain,
+    addressDetail,
+    address: displayAddress,
     createdAt: member.createdAt ?? '',
   };
 }
 
-export function normalizeAdminOrder(order) {
+function normalizeAdminOrderItem(item = {}) {
   return {
-    orderId: String(order.orderId ?? ''),
+    orderItemId: String(item.orderItemId ?? item.id ?? ''),
+    productId: String(item.productId ?? item.id ?? ''),
+    productName: item.productName ?? item.name ?? '',
+    quantity: Number(item.quantity ?? 1),
+    orderPrice: Number(item.orderPrice ?? item.price ?? 0),
+    totalPrice: Number(item.totalPrice ?? item.orderPrice ?? item.price ?? 0),
+  };
+}
+
+export function normalizeAdminOrder(order) {
+  const orderItems = Array.isArray(order.orderItems)
+    ? order.orderItems.map((item) => normalizeAdminOrderItem(item))
+    : [];
+
+  return {
+    orderId: String(order.orderId ?? order.id ?? ''),
+    orderNo: String(order.orderNo ?? order.orderId ?? order.id ?? ''),
     orderStatus: order.orderStatus ?? 'ORDERED',
     payment: order.payment ?? '',
-    totalPrice: Number(order.totalPrice ?? order.finalTotal ?? 0),
+    totalPrice: Number(order.finalPrice ?? order.totalPrice ?? order.finalTotal ?? 0),
+    rawTotalPrice: Number(order.totalPrice ?? order.finalTotal ?? 0),
     address: order.address ?? [order.addressMain, order.addressDetail].filter(Boolean).join(' '),
     createdAt: order.createdAt ?? order.orderedAt ?? '',
-    orderItems: order.orderItems ?? [],
+    orderItems,
   };
 }
 

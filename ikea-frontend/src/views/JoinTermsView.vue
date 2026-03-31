@@ -6,6 +6,7 @@ import { ROUTE_PATHS } from '../constants/routes';
 
 const agreeAge = shallowRef(false);
 const agreeService = shallowRef(false);
+const agreePrivacy = shallowRef(false);
 const agreeLocation = shallowRef(false);
 const agreeEventPrivacy = shallowRef(false);
 const agreeEventReceive = shallowRef(false);
@@ -16,6 +17,7 @@ const allChecked = computed({
     return (
       agreeAge.value
       && agreeService.value
+      && agreePrivacy.value
       && agreeLocation.value
       && agreeEventPrivacy.value
       && agreeEventReceive.value
@@ -24,13 +26,14 @@ const allChecked = computed({
   set(value) {
     agreeAge.value = value;
     agreeService.value = value;
+    agreePrivacy.value = value;
     agreeLocation.value = value;
     agreeEventPrivacy.value = value;
     agreeEventReceive.value = value;
   },
 });
 
-const canSubmit = computed(() => agreeAge.value && agreeService.value);
+const canSubmit = computed(() => agreeAge.value && agreeService.value && agreePrivacy.value);
 
 watch(agreeEventPrivacy, (value) => {
   if (!value) {
@@ -95,17 +98,20 @@ watch(agreeEventPrivacy, (value) => {
 
             <div class="signup-row">
               <label class="signup-check">
-                <input v-model="agreeLocation" type="checkbox" />
-                <span>위치정보 수집 및 이용 동의 <i>(선택)</i></span>
+                <input v-model="agreePrivacy" type="checkbox" />
+                <span>개인정보 수집 및 이용 동의 <em>(필수)</em></span>
               </label>
-              <RouterLink class="signup-view-link" :to="ROUTE_PATHS.policyPrivacy">전문 보기</RouterLink>
+              <RouterLink class="signup-view-link" :to="{ path: ROUTE_PATHS.policyPrivacy, hash: '#purpose' }">전문 보기</RouterLink>
+            </div>
+
+            <div class="signup-row">
+              <label class="signup-check">
+                <input v-model="agreeLocation" type="checkbox" />
+                <span>위치정보 이용약관 동의 <i>(선택)</i></span>
+              </label>
+              <RouterLink class="signup-view-link" :to="ROUTE_PATHS.policyLocation">전문 보기</RouterLink>
             </div>
           </div>
-
-          <p class="signup-inline-note">
-            약관 전문은 정책 문서 페이지에서 확인할 수 있습니다. 필수 동의 항목은 다음 단계에서도 다시 확인할 수
-            있습니다.
-          </p>
 
           <div class="signup-divider signup-divider--section"></div>
 
@@ -116,7 +122,6 @@ watch(agreeEventPrivacy, (value) => {
               <input v-model="agreeEventPrivacy" type="checkbox" />
               <span>이벤트 혜택 정보 개인정보 수집 및 이용 동의 <i>(선택)</i></span>
             </label>
-            <RouterLink class="signup-view-link" :to="ROUTE_PATHS.policyPrivacy">전문 보기</RouterLink>
           </div>
 
           <div class="signup-row signup-row--disabled">
@@ -311,13 +316,6 @@ watch(agreeEventPrivacy, (value) => {
   color: #666666;
   font-size: 13px;
   text-decoration: none;
-}
-
-.signup-inline-note {
-  margin: 14px 0 0 28px;
-  color: #7b7b7b;
-  font-size: 12px;
-  line-height: 1.7;
 }
 
 .signup-section-title {
