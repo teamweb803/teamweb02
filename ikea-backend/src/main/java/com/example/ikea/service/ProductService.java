@@ -39,7 +39,7 @@ public class ProductService {
 
     //카테고리별 상품 목록
     public List<ProductResponseDto> getProductListByCategory(Long categoryId) {
-        return productRepository.findByCategory_CategoryId(categoryId)
+        return productRepository.findByCategory_Id(categoryId)
                 .stream()
                 .map(ProductResponseDto::new)
                 .collect(Collectors.toList());

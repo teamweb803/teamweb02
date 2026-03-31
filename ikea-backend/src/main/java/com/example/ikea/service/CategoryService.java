@@ -4,9 +4,11 @@ import com.example.ikea.domain.Category;
 import com.example.ikea.repository.CategoryRepository;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Service
 @Getter
 @AllArgsConstructor
 public class CategoryService {

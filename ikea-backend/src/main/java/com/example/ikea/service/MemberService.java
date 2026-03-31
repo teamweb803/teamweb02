@@ -109,7 +109,7 @@ public class MemberService {
 
     //회원 검색
     public List<MemberResponseDto> searchMember(String keyword) {
-        return memberRepository.findByMemberNameContaining(keyword)
+        return memberRepository.findByNameContaining(keyword)
                 .stream()
                 .map(MemberResponseDto::new)
                 .collect(Collectors.toList());
