@@ -1,9 +1,10 @@
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY build/libs/ikea.jar ikea.jar
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} app.jar
 
 EXPOSE 8402
 
-ENTRYPOINT ["java", "-jar", "ikea.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
