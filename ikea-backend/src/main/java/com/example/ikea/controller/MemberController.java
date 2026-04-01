@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,30 +46,27 @@ public class MemberController {
     }
 
     //마이페이지
-    @GetMapping("/{memberId}")
-    public ResponseEntity<MemberResponseDto> detail(@PathVariable Long memberId) {
-        return ResponseEntity.ok(memberService.detailMember(memberId));
-    }
-
-    //회원 정보 수정
-    @PutMapping("/{memberId}")
-    public ResponseEntity<MemberResponseDto> update(@PathVariable Long memberId,
-                                                    @Valid @RequestBody MemberUpdateDto dto) {
-        return ResponseEntity.ok(memberService.update(dto, memberId));
-    }
-
-    // 회원탈퇴
-    @DeleteMapping("/{memberId}")
-    public ResponseEntity<Void> deleteMember(@PathVariable Long memberId) {
-        memberService.deleteMember(memberId);
-        return ResponseEntity.ok().build();
-    }
-
-
-    // 내 정보 조회 (로그인한 회원 본인)
     @GetMapping("/me")
     public ResponseEntity<MemberResponseDto> getMe(
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(memberService.getMemberByLoginId(userDetails.getUsername()));
+        return ResponseEntity.ok(memberService.detailMember(memberService.getMemberIdByLoginId(userDetails.getUsername())));
+    }
+
+    //회원 정보 수정
+    @PutMapping("/me")
+    public ResponseEntity<MemberResponseDto> update(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody MemberUpdateDto dto) {
+        String loginId = userDetails.getUsername();
+        return ResponseEntity.ok(memberService.update(dto, loginId));
+    }
+
+    // 회원탈퇴
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMember(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String loginId = userDetails.getUsername();
+        memberService.deleteMember(loginId);
+        return ResponseEntity.ok().build();
     }
 }

@@ -1,8 +1,10 @@
 package com.example.ikea.service;
 
+import com.example.ikea.domain.Member;
 import com.example.ikea.domain.Qna;
 import com.example.ikea.dto.QnaRequestDto;
 import com.example.ikea.dto.QnaResponseDto;
+import com.example.ikea.repository.MemberRepository;
 import com.example.ikea.repository.QnaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 public class QnaService {
 
     private final QnaRepository qnaRepository;
+    private final MemberRepository memberRepository;
 
     // 전체 목록
     public List<QnaResponseDto> getQnaList() {
@@ -34,41 +37,58 @@ public class QnaService {
 
     // 특정 질문의 답변 목록
     public List<QnaResponseDto> getAnswerList(Long parentId) {
-        return qnaRepository.findByParentIdOrderByLevelAscCreatedAtAsc(parentId).stream()
+        return qnaRepository.findByParentIdAndLevelOrderByCreatedAtAsc(parentId, 1).stream()
                 .map(QnaResponseDto::new)
                 .collect(Collectors.toList());
     }
 
     // 질문 상세 조회
-    public QnaResponseDto getQna(Long qnaId) {
+    public QnaResponseDto getQna(Long qnaId, String loginId, boolean isAdmin) {
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+        if (!isAdmin && !question.getWriter().equals(loginId)) {
+            throw new IllegalArgumentException("해당 문의를 조회할 권한이 없습니다.");
+        }
+
         return new QnaResponseDto(question);
     }
 
     // 질문 등록 (일반회원)
     @Transactional
-    public Long createQna(QnaRequestDto dto) {
+    public Long createQna(String loginId, QnaRequestDto dto) {
+        Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
         Qna question = Qna.builder()
+                .memberId(member.getMemberId())
                 .title(dto.getTitle())
                 .content(dto.getContent())
-                .writer(dto.getWriter())
+                .writer(member.getLoginId())
+                .email(member.getEmail())
+                .phoneNumber(member.getPhoneNumber())
                 .level(0)
                 .parentId(0L)
                 .build();
 
         qnaRepository.save(question);
         question.setParentId(question.getQnaId());
+
         return question.getQnaId();
     }
 
     // 질문 수정 (일반회원)
     @Transactional
-    public void updateQna(Long qnaId, QnaRequestDto dto) {
+    public void updateQna(Long qnaId, String loginId, QnaRequestDto dto) {
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
         if (question.getLevel() != 0) {
             throw new IllegalArgumentException("질문만 수정할 수 있습니다.");
+        }
+
+        if (!question.getWriter().equals(loginId)) {
+            throw new IllegalArgumentException("본인 글만 수정할 수 있습니다.");
         }
         question.setTitle(dto.getTitle());
         question.setContent(dto.getContent());
@@ -76,12 +96,16 @@ public class QnaService {
 
     // 질문 삭제 (일반회원)
     @Transactional
-    public void deleteQuestion(Long qnaId) {
+    public void deleteQuestion(Long qnaId, String loginId) {
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
         if (question.getLevel() != 0) {
             throw new IllegalArgumentException("질문만 삭제할 수 있습니다.");
         }
+        if (!question.getWriter().equals(loginId)) {
+            throw new IllegalArgumentException("본인 글만 삭제할 수 있습니다.");
+        }
+
         qnaRepository.deleteByParentId(question.getQnaId());
         qnaRepository.delete(question);
     }
@@ -90,14 +114,21 @@ public class QnaService {
 
     // 답변 등록 (관리자)
     @Transactional
-    public Long createAnswer(Long parentId, QnaRequestDto dto) {
-        qnaRepository.findById(parentId)
+    public Long createAnswer(Long parentId, String loginId, QnaRequestDto dto) {
+        Qna question = qnaRepository.findById(parentId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 질문입니다."));
 
+        if (question.getLevel() != 0) {
+            throw new IllegalArgumentException("질문에만 답변할 수 있습니다.");
+        }
+
         Qna answer = Qna.builder()
+                .memberId(question.getMemberId())
                 .title(dto.getTitle())
                 .content(dto.getContent())
-                .writer(dto.getWriter())
+                .writer(loginId)
+                .email(question.getEmail())
+                .phoneNumber(question.getPhoneNumber())
                 .level(1)
                 .parentId(parentId)
                 .build();

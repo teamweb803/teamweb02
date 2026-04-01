@@ -58,7 +58,7 @@ public class MemberService {
         return member.getMemberId();
     }
 
-    // getMe 전용 회원조회
+    //me 회원조회
     public MemberResponseDto getMemberByLoginId(String loginId) {
         Member member = memberRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
@@ -75,8 +75,8 @@ public class MemberService {
 
     //회원 정보 수정
     @Transactional
-    public MemberResponseDto update(MemberUpdateDto dto, Long memberId) {
-        Member member = memberRepository.findById(memberId)
+    public MemberResponseDto update(MemberUpdateDto dto, String loginId) {
+        Member member = memberRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         member.setName(dto.getName());
@@ -91,10 +91,10 @@ public class MemberService {
 
     //회원 탈퇴
     @Transactional
-    public void deleteMember(Long memberId) {
-        memberRepository.findById(memberId)
+    public void deleteMember(String loginId) {
+        Member member = memberRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-        memberRepository.deleteById(memberId);
+        memberRepository.delete(member);
     }
 
 

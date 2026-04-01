@@ -27,4 +27,8 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
     void deleteByParentId(Long parentId);
 
 
+
+    //답변 조회용
+    List<Qna> findByParentIdAndLevelOrderByCreatedAtAsc(Long parentId, Integer level);
+
 }

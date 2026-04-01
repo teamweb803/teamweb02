@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,8 +33,10 @@ public class OrderController {
     //주문 상세 조회
     @GetMapping("/detail/{orderId}")
     public ResponseEntity<OrderResponseDto> getDetailOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long orderId) {
-        return ResponseEntity.ok(orderService.getDetailOrder(orderId));
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
+        return ResponseEntity.ok(orderService.getDetailOrder(orderId, memberId));
     }
 
     //주문 생성 (장바구니 -> 주문)
@@ -47,8 +50,11 @@ public class OrderController {
 
     //주문 취소
     @DeleteMapping("/{orderId}")
-    public ResponseEntity<Void> cancelOrder(@PathVariable Long orderId) {
-        orderService.cancelOrder(orderId);
+    public ResponseEntity<Void> cancelOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long orderId) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
+        orderService.cancelOrder(orderId, memberId);
         return ResponseEntity.ok().build();
     }
 }

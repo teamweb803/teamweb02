@@ -4,6 +4,7 @@ import com.example.ikea.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,13 +45,22 @@ public class SecurityConfig {
                                         "/api/auth/**",
                                         "/api/member/join",
                                         "/api/member/login",
-                                        "/api/auth/refresh",
                                         "/api/product/**",
                                         "/api/category/**",
-                                        "/api/qna/**",
-                                        "/api/review/**",
                                         "/api/notice/**"
                                 ).permitAll()
+
+                        // Qna : 조회만 공개, 나머지는 로그인
+                                .requestMatchers(HttpMethod.GET, "/api/qna/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/qna/**").authenticated()
+                                .requestMatchers(HttpMethod.PUT, "/api/qna/**").authenticated()
+                                .requestMatchers(HttpMethod.DELETE, "/api/qna/**").authenticated()
+                        // Review: 조회만 공개, 나머지는 로그인
+                                .requestMatchers(HttpMethod.GET, "/api/review/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/review/**").authenticated()
+                                .requestMatchers(HttpMethod.PUT, "/api/review/**").authenticated()
+                                .requestMatchers(HttpMethod.DELETE, "/api/review/**").authenticated()
+
                                 //결제시 로그인 필요
                                 .requestMatchers("/api/payment/**").authenticated()
                                 //관리자만 접근 가능

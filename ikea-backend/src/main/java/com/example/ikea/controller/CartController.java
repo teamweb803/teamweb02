@@ -42,16 +42,22 @@ public class CartController {
 
     //수량 수정
     @PatchMapping("/{cartItemId}/quantity")
-    public ResponseEntity<Void> updateQuantity(@PathVariable Long cartItemId,
-                                               @RequestParam int quantity) {
-        cartService.updateQuantity(cartItemId, quantity);
+    public ResponseEntity<Void> updateQuantity(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long cartItemId,
+            @RequestParam int quantity) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
+        cartService.updateQuantity(memberId, quantity, cartItemId);
         return ResponseEntity.ok().build();
     }
 
     //단건 삭제
     @DeleteMapping("/{cartItemId}")
-    public ResponseEntity<Void> deleteCartItem(@PathVariable Long cartItemId) {
-        cartService.deleteCartItem(cartItemId);
+    public ResponseEntity<Void> deleteCartItem(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long cartItemId) {
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
+        cartService.deleteCartItem(memberId, cartItemId);
         return ResponseEntity.ok().build();
     }
 

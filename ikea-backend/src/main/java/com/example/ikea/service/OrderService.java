@@ -6,8 +6,10 @@ import com.example.ikea.dto.OrderResponseDto;
 import com.example.ikea.repository.*;
 import lombok.AllArgsConstructor;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -34,9 +36,13 @@ public class OrderService {
     }
 
     //주문 상세 조회
-    public OrderResponseDto getDetailOrder(Long orderId) {
+    public OrderResponseDto getDetailOrder(Long orderId, Long memberId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
+
+        if (order.getMember() == null || !order.getMember().getMemberId().equals(memberId)) {
+            throw new AccessDeniedException("본인 주문만 조회할 수 있습니다.");
+        }
         return new OrderResponseDto(order);
     }
 
@@ -93,13 +99,20 @@ public class OrderService {
 
     //주문 취소
     @Transactional
-    public void cancelOrder(Long orderId) {
+    public void cancelOrder(Long orderId, Long memberId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
 
+        if (order.getMember() == null || !order.getMember().getMemberId().equals(memberId)) {
+            throw new AccessDeniedException("본인 주문만 취소할 수 있습니다.");
+        }
+
         //배송중인 주문은 취소 불가
-        if (order.getOrderStatus() == OrderStatus.DELIVERING) {
-            throw new IllegalArgumentException("이미 배송중인 주문은 취소할 수 없습니다.");
+        OrderStatus status = order.getOrderStatus();
+        if (status != OrderStatus.PENDING
+        && status != OrderStatus.PAID
+        && status != OrderStatus.ORDERED) {
+            throw new IllegalArgumentException("취소할 수 없는 주문입니다. 형재상태 : " + status);
         }
         order.setOrderStatus(OrderStatus.CANCELLED);
     }
