@@ -15,6 +15,7 @@ const LOGIN_ID_STORAGE_KEY = 'homio-saved-login-id';
 const inquiryType = shallowRef('phone');
 const rememberId = shallowRef(false);
 const guestLookupError = shallowRef('');
+const loginValidationError = shallowRef('');
 const guestLookupForm = reactive({
   buyerName: '',
   orderNumber: '',
@@ -32,6 +33,7 @@ const inquiryPlaceholder = computed(() => (
     ? '주문번호를 입력해 주세요.'
     : '휴대전화번호를 입력해 주세요.'
 ));
+const memberLoginError = computed(() => loginValidationError.value || loginError.value);
 const loginNotice = computed(() => {
   if (String(route.query.reason ?? '').trim() === 'auth-required') {
     return '로그인이 필요한 페이지입니다. 로그인 후 원래 보려던 화면으로 이동합니다.';
@@ -40,7 +42,39 @@ const loginNotice = computed(() => {
   return '';
 });
 
+function validateLoginForm() {
+  const normalizedLoginId = String(loginForm.loginId ?? '').trim();
+  const normalizedPassword = String(loginForm.password ?? '');
+
+  if (!normalizedLoginId && !normalizedPassword) {
+    return '아이디와 비밀번호를 입력해 주세요.';
+  }
+
+  if (!normalizedLoginId) {
+    return '아이디 또는 이메일을 입력해 주세요.';
+  }
+
+  if (!normalizedPassword) {
+    return '비밀번호를 입력해 주세요.';
+  }
+
+  return '';
+}
+
+function clearLoginValidationError() {
+  loginValidationError.value = '';
+}
+
 async function handleSubmitLogin() {
+  const validationMessage = validateLoginForm();
+
+  if (validationMessage) {
+    loginValidationError.value = validationMessage;
+    return;
+  }
+
+  loginValidationError.value = '';
+
   try {
     await submitLogin();
   } catch {
@@ -165,6 +199,7 @@ watch(
                   type="text"
                   placeholder="아이디 또는 이메일 입력"
                   autocomplete="username"
+                  @input="clearLoginValidationError"
                 />
               </label>
 
@@ -175,6 +210,7 @@ watch(
                   type="password"
                   placeholder="비밀번호"
                   autocomplete="current-password"
+                  @input="clearLoginValidationError"
                   @keydown.enter="handleSubmitLogin"
                 />
               </label>
@@ -184,7 +220,7 @@ watch(
                 <span>아이디 저장</span>
               </label>
               <p class="login-note">(개인정보 보호를 위해 개인 PC에서만 이용해 주세요.)</p>
-              <p v-if="loginError" class="login-status login-status--error">{{ loginError }}</p>
+              <p v-if="memberLoginError" class="login-status login-status--error">{{ memberLoginError }}</p>
 
               <button class="login-primary" type="button" :disabled="loginSubmitting" @click="handleSubmitLogin">
                 {{ loginSubmitting ? '로그인 중..' : '로그인' }}

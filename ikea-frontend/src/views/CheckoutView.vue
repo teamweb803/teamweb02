@@ -2,14 +2,18 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import CheckoutDeliveryGroupTable from '../components/checkout/CheckoutDeliveryGroupTable.vue';
+import CheckoutFinalCard from '../components/checkout/CheckoutFinalCard.vue';
+import CheckoutInstallNoticeModal from '../components/checkout/CheckoutInstallNoticeModal.vue';
+import CheckoutShippingGuideModal from '../components/checkout/CheckoutShippingGuideModal.vue';
 import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import {
   completeCheckout,
   getCheckoutSeedItems,
-  startKakaoCheckout,
+  startExternalCheckout,
   useCommerceCart,
 } from '../composables/useCommerceCart';
+import { useFeedback } from '../composables/useFeedback';
 import { ROUTE_PATHS } from '../constants/routes';
 import {
   buildDeliveryGroups,
@@ -23,6 +27,7 @@ const route = useRoute();
 const router = useRouter();
 const accountStore = useAccountStore();
 const { refreshCart } = useCommerceCart();
+const { showError } = useFeedback();
 const scheduleTimeOptions = ['오전', '오후'];
 
 const orderItems = ref([]);
@@ -43,11 +48,12 @@ const scheduleMonth = ref('');
 const scheduleDay = ref('');
 const scheduleTime = ref('');
 const pointAmount = ref('0');
-const paymentMethod = ref('kakaopay');
+const paymentMethod = ref('bank');
 const finalAgreement = ref(false);
 const isSubmitting = ref(false);
 const checkoutAddressGuide = ref('');
 const isGuestCheckout = computed(() => !accountStore.accessToken);
+const EXTERNAL_PAYMENT_METHODS = ['kakaopay', 'tosspay'];
 
 const BASE_PAYMENT_METHODS = [
   { id: 'kakaopay', label: '카카오페이' },
@@ -73,6 +79,7 @@ async function syncOrderItems() {
 
 onMounted(async () => {
   await syncOrderItems();
+  paymentMethod.value = defaultPaymentMethod.value;
   prefillCheckoutFormFromAccount();
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 });
@@ -105,6 +112,7 @@ const paymentMethods = computed(() => BASE_PAYMENT_METHODS.map((method) => {
     helperText: '',
   };
 }));
+const defaultPaymentMethod = computed(() => (isGuestCheckout.value ? 'bank' : 'kakaopay'));
 
 watch(paymentMethods, (methods) => {
   const currentMethod = methods.find((method) => method.id === paymentMethod.value);
@@ -113,7 +121,7 @@ watch(paymentMethods, (methods) => {
     return;
   }
 
-  paymentMethod.value = methods.find((method) => !method.disabled)?.id ?? 'bank';
+  paymentMethod.value = defaultPaymentMethod.value;
 }, { immediate: true });
 
 const deliveryGroups = computed(() => buildDeliveryGroups(orderItems.value));
@@ -144,7 +152,11 @@ const selectedPaymentMethod = computed(
 );
 const paymentMethodNotice = computed(() => '');
 const submitButtonLabel = computed(() => (
-  paymentMethod.value === 'kakaopay' ? '카카오페이로 이동' : '주문 접수하기'
+  paymentMethod.value === 'kakaopay'
+    ? '카카오페이로 이동'
+    : paymentMethod.value === 'tosspay'
+      ? '토스페이로 이동'
+      : '주문 접수하기'
 ));
 const availableScheduleDates = computed(() => {
   const dates = [];
@@ -351,7 +363,7 @@ async function submitOrder() {
   const validationMessage = validateCheckout();
 
   if (validationMessage) {
-    window.alert(validationMessage);
+    showError(validationMessage);
     return;
   }
 
@@ -385,8 +397,8 @@ async function submitOrder() {
       finalTotal: finalTotal.value,
     };
 
-    if (paymentMethod.value === 'kakaopay') {
-      const paymentRedirect = await startKakaoCheckout(checkoutPayload);
+    if (EXTERNAL_PAYMENT_METHODS.includes(paymentMethod.value)) {
+      const paymentRedirect = await startExternalCheckout(checkoutPayload);
       window.location.assign(paymentRedirect.redirectUrl);
       return;
     }
@@ -401,7 +413,7 @@ async function submitOrder() {
       },
     });
   } catch (error) {
-    window.alert(error?.message ?? '주문 처리 중 오류가 발생했습니다.');
+    showError(error?.message ?? '주문 처리 중 오류가 발생했습니다.');
   } finally {
     isSubmitting.value = false;
   }
@@ -449,68 +461,6 @@ async function submitOrder() {
                 :open-shipping-guide="openShippingGuide"
               />
 
-              <template v-if="false" v-for="entry in group.items" :key="entry.key">
-                <article
-                  v-if="entry.showShippingInfoBefore"
-                  class="checkout-shipping-summary-row"
-                >
-                  <div class="checkout-shipping-summary-row__spacer" aria-hidden="true"></div>
-                  <div class="checkout-shipping-summary-row__spacer" aria-hidden="true"></div>
-                  <div class="checkout-shipping-summary-row__spacer" aria-hidden="true"></div>
-                  <div class="checkout-shipping-summary-row__content">
-                    <button
-                      class="checkout-shipping-trigger"
-                      type="button"
-                      @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
-                    >
-                      {{ entry.deliveryGuide.shippingText }}
-                    </button>
-                    <p>{{ entry.deliveryGuide.shippingSubText }}</p>
-                  </div>
-                </article>
-
-                <article
-                  class="checkout-item"
-                >
-                  <div class="checkout-item__info">
-                    <RouterLink :to="entry.item.detailPath" class="checkout-item__thumb">
-                      <img :src="entry.item.image" :alt="entry.item.name" />
-                    </RouterLink>
-                    <div class="checkout-item__copy">
-                      <div class="checkout-item__meta">
-                        <strong>{{ entry.item.brand }}</strong>
-                        <span>{{ entry.item.seller }}</span>
-                      </div>
-                      <h2>
-                        <RouterLink :to="entry.item.detailPath">{{ entry.item.name }}</RouterLink>
-                      </h2>
-                      <p>{{ entry.item.option }}</p>
-                    </div>
-                  </div>
-
-                  <div class="checkout-item__qty">{{ entry.item.quantity }}</div>
-
-                  <div class="checkout-item__price">
-                    <strong>{{ formatPrice(entry.item.price * entry.item.quantity) }}</strong>
-                    <span v-if="(entry.item.originalPrice ?? entry.item.price) > entry.item.price">
-                      {{ formatPrice((entry.item.originalPrice ?? entry.item.price) * entry.item.quantity) }}
-                    </span>
-                  </div>
-
-                  <div class="checkout-item__shipping">
-                    <template v-if="entry.showShippingInfo">
-                      <button
-                        class="checkout-shipping-trigger"
-                        type="button"
-                        @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
-                      >
-                        {{ entry.deliveryGuide.shippingText }}
-                      </button>
-                      <p>{{ entry.deliveryGuide.shippingSubText }}</p>
-                    </template>
-                  </div>
-                </article>
-              </template>
             </template>
 
             <div class="checkout-total-strip">
@@ -795,79 +745,35 @@ async function submitOrder() {
             </section>
           </section>
 
-          <aside class="checkout-final-card">
-            <h2>최종 결제금액</h2>
-            <div class="checkout-final-card__rows">
-              <div><span>총 상품금액</span><strong>{{ formatPrice(productTotal) }}</strong></div>
-              <div><span>총 배송비</span><strong>{{ formatPrice(shippingTotal) }}</strong></div>
-              <div><span>총 할인금액</span><strong>{{ formatPrice(catalogDiscountTotal + couponDiscount) }}</strong></div>
-              <div><span>포인트 사용금액</span><strong>{{ formatPrice(pointApplied) }}</strong></div>
-            </div>
-
-          <div class="checkout-final-card__total">
-            <span>최종결제금액</span>
-            <strong>{{ formatPrice(finalTotal) }}</strong>
-          </div>
-
-            <label class="checkout-check checkout-check--final">
-              <input v-model="finalAgreement" type="checkbox" />
-              <span>필수 약관을 모두 확인했고 결제에 동의합니다.</span>
-            </label>
-
-            <button
-              class="checkout-pay-button"
-              type="button"
-              :disabled="isSubmitting"
-              @click="submitOrder"
-            >
-              {{ isSubmitting ? '주문 처리 중...' : submitButtonLabel }}
-            </button>
-
-            <ul class="checkout-final-card__notes">
-              <li>{{ isGuestCheckout ? '비회원 주문은 완료 화면에서 주문번호를 먼저 확인해 주세요.' : '영수증과 주문 내역은 주문 완료 후 마이페이지에서 다시 확인할 수 있습니다.' }}</li>
-              <li>배송 일정은 상품 준비 상태와 배송 환경에 따라 조정될 수 있습니다.</li>
-              <li>배송지 변경은 상품 준비 상태에 따라 제한될 수 있습니다.</li>
-              <li v-if="isGuestCheckout">비회원 주문은 완료 화면에 표시되는 주문번호를 꼭 저장해 주세요.</li>
-            </ul>
-          </aside>
+          <CheckoutFinalCard
+            v-model:final-agreement="finalAgreement"
+            :catalog-discount-total="catalogDiscountTotal"
+            :coupon-discount="couponDiscount"
+            :final-total="finalTotal"
+            :format-price="formatPrice"
+            :is-guest-checkout="isGuestCheckout"
+            :is-submitting="isSubmitting"
+            :point-applied="pointApplied"
+            :product-total="productTotal"
+            :shipping-total="shippingTotal"
+            :submit-button-label="submitButtonLabel"
+            @submit="submitOrder"
+          />
         </div>
       </div>
     </main>
 
-    <Teleport to="body">
-      <div v-if="showInstallNoticeModal" class="checkout-modal-overlay" @click.self="closeInstallNoticeModal">
-        <section class="checkout-modal" role="dialog" aria-modal="true" aria-label="설치 안내">
-          <button class="checkout-modal__close" type="button" aria-label="닫기" @click="closeInstallNoticeModal">×</button>
-          <h2>필수 설치 공간 및 현장 추가비용 안내</h2>
-          <div class="checkout-modal__divider"></div>
-          <p>설치 상품은 엘리베이터, 진입 가능 여부, 계단 폭, 현장 여건에 따라 추가 운반비가 달라질 수 있으며, 결제 단계에서 모두 확정되기 어려울 수 있습니다.</p>
-          <ul>
-            <li>현장 구조와 진입 동선에 따라 결제 단계에서 예상하지 못한 추가 운반비가 현장에서 별도 안내될 수 있습니다.</li>
-            <li>현장 상황에 따라 사다리차, 추가 인력, 분해 및 재조립 비용이 발생할 수 있습니다.</li>
-            <li>설치 전 안내된 조건과 실제 현장 상황이 다르면 배송 일정이 조정될 수 있습니다.</li>
-            <li>필수 안내를 확인한 뒤에만 설치 상품 주문을 진행해 주세요.</li>
-          </ul>
-          <button class="checkout-modal__confirm" type="button" @click="confirmInstallNotice">확인</button>
-        </section>
-      </div>
-    </Teleport>
-
-    <Teleport to="body">
-      <div v-if="showShippingGuideModal" class="checkout-modal-overlay" @click.self="closeShippingGuideModal">
-        <section class="checkout-modal" role="dialog" aria-modal="true" aria-label="배송 안내">
-          <button class="checkout-modal__close" type="button" aria-label="닫기" @click="closeShippingGuideModal">×</button>
-          <h2>{{ shippingGuideTitle }}</h2>
-          <div class="checkout-modal__divider"></div>
-          <p>{{ shippingGuideBody }}</p>
-          <ul>
-            <li>배송 일정과 추가 비용은 주문서작성 단계에서 주소와 설치 환경을 기준으로 다시 계산됩니다.</li>
-            <li>상품과 현장 조건에 따라 결제 단계에서 확정되지 않은 추가 비용이 배송 연락 또는 현장 확인 과정에서 별도 안내될 수 있습니다.</li>
-            <li>대형 가구와 설치 상품은 현장 진입 동선, 사다리차 여부, 추가 인력 필요 여부에 따라 추가금이 발생할 수 있습니다.</li>
-          </ul>
-          <button class="checkout-modal__confirm" type="button" @click="closeShippingGuideModal">확인</button>
-        </section>
-      </div>
-    </Teleport>
+    <CheckoutInstallNoticeModal
+      :open="showInstallNoticeModal"
+      @close="closeInstallNoticeModal"
+      @confirm="confirmInstallNotice"
+    />
+    <CheckoutShippingGuideModal
+      :body="shippingGuideBody"
+      :open="showShippingGuideModal"
+      :title="shippingGuideTitle"
+      @close="closeShippingGuideModal"
+    />
   </SiteChrome>
 </template>
 
@@ -920,8 +826,7 @@ async function submitOrder() {
 }
 
 .checkout-section__title-row h1,
-.checkout-block__head h2,
-.checkout-final-card h2 {
+.checkout-block__head h2 {
   margin: 0;
   color: #111111;
   font-weight: 700;
@@ -933,8 +838,7 @@ async function submitOrder() {
   line-height: 1.2;
 }
 
-.checkout-block__head h2,
-.checkout-final-card h2 {
+.checkout-block__head h2 {
   font-size: 24px;
   line-height: 1.25;
 }
@@ -964,7 +868,6 @@ async function submitOrder() {
 }
 
 .checkout-board__head,
-.checkout-shipping-summary-row,
 .checkout-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 128px 168px 188px;
@@ -996,39 +899,9 @@ async function submitOrder() {
   font-size: 14px;
 }
 
-.checkout-shipping-summary-row {
-  min-height: 0;
-  height: 0;
-  overflow: visible;
-  position: relative;
-  border: 0;
-  pointer-events: none;
-}
-
-.checkout-shipping-summary-row__spacer {
-  min-height: 0;
-}
-
-.checkout-shipping-summary-row__content {
-  grid-column: 4;
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  text-align: center;
-  justify-self: stretch;
-  position: relative;
-  z-index: 2;
-  padding: 16px 0;
-  background: #ffffff;
-  transform: translateY(-50%);
-  pointer-events: auto;
-}
-
 .checkout-board__bundle span,
 .checkout-item__copy p,
-.checkout-shipping-summary-row__content p,
-.checkout-item__shipping p,
-.checkout-final-card__notes li {
+.checkout-item__shipping p {
   color: #6b7280;
   font-size: 13px;
   line-height: 1.6;
@@ -1089,11 +962,6 @@ async function submitOrder() {
   white-space: pre-line;
 }
 
-.checkout-shipping-summary-row__content p {
-  margin: 0;
-  white-space: pre-line;
-}
-
 .checkout-item__qty {
   font-size: 16px;
   font-weight: 600;
@@ -1101,8 +969,7 @@ async function submitOrder() {
 
 .checkout-item__price strong,
 .checkout-total-strip strong,
-.checkout-kv-list strong,
-.checkout-final-card strong {
+.checkout-kv-list strong {
   color: #111111;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -1551,154 +1418,9 @@ async function submitOrder() {
   opacity: 0.54;
 }
 
-.checkout-final-card {
-  display: grid;
-  gap: 20px;
-  padding: 22px 20px 24px;
-  border: 1px solid #e5e7eb;
-  border-top: 2px solid #111111;
-  position: sticky;
-  top: var(--hs-sticky-offset, 96px);
-}
-
-.checkout-final-card__rows {
-  display: grid;
-  gap: 12px;
-}
-
-.checkout-final-card__rows div,
-.checkout-final-card__total {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.checkout-final-card__rows span,
-.checkout-final-card__total span {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.checkout-final-card__rows strong {
-  font-size: 16px;
-}
-
-.checkout-final-card__total {
-  padding-top: 18px;
-  border-top: 1px solid #eceff3;
-}
-
-.checkout-final-card__total strong {
-  font-size: 30px;
-}
-
-.checkout-check--final {
-  align-items: flex-start;
-}
-
-.checkout-pay-button {
-  min-height: 54px;
-  border: 0;
-  border-radius: 999px;
-  background: #111827;
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.checkout-pay-button:disabled {
-  cursor: default;
-  opacity: 0.68;
-}
-
-.checkout-final-card__notes {
-  margin: 0;
-  padding-left: 16px;
-  display: grid;
-  gap: 8px;
-}
-
-.checkout-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 120;
-  background: rgba(0, 0, 0, 0.58);
-  display: grid;
-  place-items: center;
-}
-
-.checkout-modal {
-  position: relative;
-  width: min(530px, calc(100vw - 48px));
-  background: #ffffff;
-  padding: 26px 32px 30px;
-  box-sizing: border-box;
-}
-
-.checkout-modal h2 {
-  margin: 0;
-  color: #111111;
-  font-size: 24px;
-  letter-spacing: -0.04em;
-}
-
-.checkout-modal__close {
-  position: absolute;
-  top: 18px;
-  right: 22px;
-  border: 0;
-  background: transparent;
-  color: #111111;
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.checkout-modal__divider {
-  height: 2px;
-  margin: 18px 0;
-  background: #111111;
-}
-
-.checkout-modal p,
-.checkout-modal li {
-  margin: 0;
-  color: #777777;
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.checkout-modal ul {
-  margin: 18px 0 24px;
-  padding-left: 18px;
-  display: grid;
-  gap: 10px;
-}
-
-.checkout-modal__confirm {
-  width: 100%;
-  max-width: 265px;
-  height: 48px;
-  margin: 0 auto;
-  display: block;
-  border: 0;
-  border-radius: 999px;
-  background: #111111;
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 @media (max-width: 1120px) {
   .checkout-layout {
     grid-template-columns: 1fr;
-  }
-
-  .checkout-final-card {
-    position: static;
   }
 }
 

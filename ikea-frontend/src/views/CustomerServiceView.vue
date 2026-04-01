@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import AdminPagination from '../components/admin/AdminPagination.vue';
 import CommonStatePanel from '../components/common/CommonStatePanel.vue';
+import CustomerQnaThreadList from '../components/customer-service/CustomerQnaThreadList.vue';
 import CustomerServiceShell from '../components/customer-service/CustomerServiceShell.vue';
 import { useCustomerServiceBoard } from '../composables/useCustomerServiceBoard';
 import {
@@ -13,11 +14,13 @@ import {
 const router = useRouter();
 const {
   activeFaqCategory,
+  canBrowseQnaRows,
   changeNoticePage,
   changeQnaPage,
   currentSection,
   faqCategories,
   filteredFaqRows,
+  filteredQnaCount,
   isNoticeLoading,
   isQnaLoading,
   noticeLoadError,
@@ -32,6 +35,7 @@ const {
   qnaLoadError,
   qnaSubmitted,
   qnaTotalPages,
+  qnaViewerMode,
   selectFaqCategory,
   toggleFaq,
 } = useCustomerServiceBoard();
@@ -48,8 +52,53 @@ const pageTitle = computed(() => {
   return '공지사항';
 });
 
+const qnaFeedbackMessage = computed(() => {
+  if (!qnaSubmitted.value) {
+    return '';
+  }
+
+  return qnaViewerMode.value === 'guest'
+    ? '문의가 접수되었습니다. 비회원 문의 조회 화면에서 등록 내역을 확인할 수 있습니다.'
+    : '문의가 등록되었습니다. 운영 답변이 등록되면 이 목록에서 바로 확인할 수 있습니다.';
+});
+
+const qnaNoteMessage = computed(() => {
+  if (qnaViewerMode.value === 'guest') {
+    return '비회원 문의는 공개 목록이 아니라 조회 화면에서 이름과 이메일 또는 휴대전화번호로 확인합니다.';
+  }
+
+  if (qnaViewerMode.value === 'admin') {
+    return '관리자 계정은 전체 문의와 답변 상태를 확인할 수 있습니다.';
+  }
+
+  return '로그인한 계정 기준으로 본인 문의만 확인할 수 있습니다.';
+});
+
+const qnaSearchPlaceholder = computed(() => (
+  qnaViewerMode.value === 'admin' ? '전체 문의 검색' : '내 문의 검색'
+));
+
+const qnaEmptyDescription = computed(() => (
+  qnaViewerMode.value === 'admin'
+    ? '아직 등록된 문의가 없습니다.'
+    : '작성한 문의와 답변이 이 영역에 표시됩니다.'
+));
+
 function openQnaWrite() {
   router.push(ROUTE_PATHS.customerServiceQnaWrite);
+}
+
+function openQnaLookup() {
+  router.push(ROUTE_PATHS.customerServiceQnaLookup);
+}
+
+function openQnaLogin() {
+  router.push({
+    path: ROUTE_PATHS.memberLogin,
+    query: {
+      redirect: ROUTE_PATHS.customerServiceQna,
+    },
+  });
 }
 </script>
 
@@ -137,44 +186,36 @@ function openQnaWrite() {
     </template>
 
     <template v-else>
-      <div v-if="qnaSubmitted" class="cs-feedback">
-        문의가 등록되었습니다. 운영 답변이 등록되면 이 목록에서 바로 확인할 수 있습니다.
+      <div v-if="qnaFeedbackMessage" class="cs-feedback">
+        {{ qnaFeedbackMessage }}
       </div>
 
       <div class="cs-qna-actions">
         <div class="cs-qna-actions__buttons">
           <button type="button" @click="openQnaWrite">문의 작성</button>
+          <button v-if="qnaViewerMode === 'guest'" type="button" class="is-secondary" @click="openQnaLookup">
+            비회원 문의 조회
+          </button>
+          <button v-if="qnaViewerMode === 'guest'" type="button" class="is-light" @click="openQnaLogin">
+            로그인 후 내 문의 보기
+          </button>
         </div>
       </div>
 
       <div class="cs-qna-note">
-        회원과 비회원 모두 문의 목록을 볼 수 있습니다. 공개 게시판이므로 이메일, 전화번호, 상세 주소 등 개인정보는 본문에 작성하지 마세요.
+        {{ qnaNoteMessage }}
       </div>
 
-      <div class="cs-toolbar cs-toolbar--qna">
-        <div class="cs-search">
-          <input v-model="qnaKeyword" type="text" placeholder="문의 검색" />
-        </div>
-        <p class="cs-toolbar__hint">입력과 동시에 결과가 바로 반영됩니다.</p>
-      </div>
-
-      <div class="cs-board">
-        <div class="cs-board__head cs-board__head--qna">
-          <span>번호</span>
-          <span>문의 제목</span>
-          <span>답변 상태</span>
-          <span>등록일</span>
-        </div>
-        <div v-if="pagedQnaRows.length" class="cs-board__body">
-          <div v-for="row in pagedQnaRows" :key="row.id" class="cs-board__row cs-board__row--qna">
-            <span>{{ row.id }}</span>
-            <strong>{{ row.title }}</strong>
-            <span>{{ row.status }}</span>
-            <span>{{ row.date }}</span>
+      <template v-if="canBrowseQnaRows">
+        <div class="cs-toolbar cs-toolbar--qna">
+          <div class="cs-search">
+            <input v-model="qnaKeyword" type="text" :placeholder="qnaSearchPlaceholder" />
           </div>
+          <p class="cs-toolbar__hint">입력과 동시에 결과가 바로 반영됩니다.</p>
         </div>
+
         <CommonStatePanel
-          v-else-if="isQnaLoading"
+          v-if="isQnaLoading"
           tone="loading"
           title="문의 목록을 불러오는 중입니다."
           compact
@@ -186,19 +227,29 @@ function openQnaWrite() {
           :description="qnaLoadError"
           compact
         />
-        <CommonStatePanel
-          v-else
-          title="등록된 문의가 없습니다."
-          description="새 문의를 등록하면 공개 목록에 바로 표시됩니다."
-          compact
-        />
-      </div>
 
-      <AdminPagination
-        v-if="pagedQnaRows.length"
-        :current-page="qnaPage"
-        :page-count="qnaTotalPages"
-        @update:current-page="changeQnaPage"
+        <template v-else>
+          <CustomerQnaThreadList
+            :items="pagedQnaRows"
+            :empty-description="qnaEmptyDescription"
+            :show-writer="qnaViewerMode === 'admin'"
+          />
+
+          <AdminPagination
+            v-if="filteredQnaCount"
+            :current-page="qnaPage"
+            :page-count="qnaTotalPages"
+            @update:current-page="changeQnaPage"
+          />
+        </template>
+      </template>
+
+      <CommonStatePanel
+        v-else
+        layout="boxed"
+        align="left"
+        title="비회원 문의 조회를 이용해 주세요."
+        description="문의 작성 후 이름과 이메일 또는 휴대전화번호로 등록 내역과 답변 상태를 확인할 수 있습니다."
       />
     </template>
   </CustomerServiceShell>
@@ -254,6 +305,17 @@ function openQnaWrite() {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.cs-qna-actions__buttons button.is-secondary {
+  background: #ffffff;
+  color: #111111;
+}
+
+.cs-qna-actions__buttons button.is-light {
+  border-color: #d9d9d9;
+  background: #ffffff;
+  color: #444444;
 }
 
 .cs-qna-note {

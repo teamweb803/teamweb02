@@ -75,6 +75,16 @@ function resolveRedirectPath(redirectPath) {
   return ROUTE_PATHS.home;
 }
 
+function createLoginErrorMessage(error) {
+  if (Number(error?.status ?? 0) === 0) {
+    return '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+  }
+
+  const message = String(error?.message ?? '').trim();
+
+  return message || '로그인에 실패했습니다.';
+}
+
 export function useAccountSession() {
   const router = useRouter();
   const route = useRoute();
@@ -165,7 +175,7 @@ export function useAccountSession() {
       router.push(resolveRedirectPath(redirectPath));
       return response;
     } catch (error) {
-      loginError.value = error?.message ?? '로그인에 실패했습니다.';
+      loginError.value = createLoginErrorMessage(error);
       throw error;
     } finally {
       loginSubmitting.value = false;

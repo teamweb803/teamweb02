@@ -4,7 +4,6 @@ import { adminMemberSeed, adminOrderSeed } from '../data/adminManagementSeed';
 import { adminNoticeSeed } from '../data/adminNoticeSeed';
 import {
   getFallbackCatalogCategories,
-  getFallbackCatalogProducts,
 } from './catalogFallbackService';
 
 export function getAdminProductCount() {
@@ -170,16 +169,6 @@ export function deleteAdminNotice(noticeId) {
 
 export function getFallbackAdminCategories() {
   return getFallbackCatalogCategories();
-}
-
-export function getFallbackAdminProducts() {
-  return getFallbackCatalogProducts().map((product) => ({
-    ...product,
-    productId: String(product.id),
-    imgPath: product.image,
-    categoryName: product.categoryLabel,
-    createdAt: product.createdAt ?? null,
-  }));
 }
 
 export function getFallbackAdminReviewItems() {

@@ -1,5 +1,5 @@
 import { normalizeProductCollection } from '../mappers/catalogMapper';
-import { getFallbackProductList, getProductList } from './productService';
+import { getProductList } from './productService';
 import { getAdminProductStock, updateAdminProductStock } from './productStockService';
 
 const ADMIN_SAFE_STOCK_STORAGE_KEY = 'homio-admin-inventory-safe-stock';
@@ -74,12 +74,8 @@ function writeStoredSafeStockMap(safeStockMap) {
 }
 
 async function loadCatalogProducts() {
-  try {
-    const response = await getProductList();
-    return normalizeProductCollection(response, getFallbackProductList());
-  } catch {
-    return normalizeProductCollection(getFallbackProductList());
-  }
+  const response = await getProductList();
+  return normalizeProductCollection(response, []);
 }
 
 async function loadAdminStock(productId) {

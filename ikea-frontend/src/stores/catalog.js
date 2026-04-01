@@ -110,10 +110,6 @@ export const useCatalogStore = defineStore('catalog', {
         this.productsLoadedFromApi = false;
       }
     },
-    refreshFromFallbackProducts() {
-      this.products = normalizeProductCollection(getFallbackProductList());
-      this.productsLoadedFromApi = false;
-    },
     async ensureCatalogLoaded({ force = false } = {}) {
       const tasks = [];
 

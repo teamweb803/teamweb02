@@ -169,16 +169,19 @@ function buildRecentOrders(orders = [], findProductById) {
     return sourceItems.map((orderItem, itemIndex) => {
       const productId = normalizeIdentifier(orderItem.productId ?? order.productId);
       const product = typeof findProductById === 'function' ? findProductById(productId) : null;
-      const priceValue = (
-        orderItem.totalPrice
-        ?? orderItem.orderPrice
-        ?? order.totalPrice
-        ?? order.finalPrice
+      const quantity = Number(orderItem.quantity ?? 1) || 1;
+      const unitPrice = (
+        orderItem.orderPrice
         ?? orderItem.price
         ?? product?.price
+        ?? null
+      );
+      const priceValue = (
+        orderItem.totalPrice
+        ?? (unitPrice === null ? null : Number(unitPrice) * quantity)
+        ?? (sourceItems.length === 1 ? order.totalPrice ?? order.finalPrice : null)
         ?? 0
       );
-      const firstItem = orderItem;
 
       return {
         id: normalizeIdentifier(
@@ -189,17 +192,16 @@ function buildRecentOrders(orders = [], findProductById) {
         orderItemId: normalizeIdentifier(orderItem.orderItemId),
         orderNumber,
         date: orderDate,
-      title: firstItem.productName ?? product?.name ?? '주문 상품',
+        title: orderItem.productName ?? product?.name ?? '주문 상품',
         status: normalizeOrderStatusLabel(orderStatusCode),
         statusCode: orderStatusCode,
         option: buildOrderOption(product, orderItem, order),
         image: orderItem.imgPath ?? product?.image ?? '',
-        title: orderItem.productName ?? product?.name ?? '二쇰Ц ?곹뭹',
         price: formatPriceLabel(priceValue),
         productId: productId || normalizeIdentifier(product?.id),
-        quantity: Number(orderItem.quantity ?? 1) || 1,
+        quantity,
         canWriteReview: orderStatusCode === 'COMPLETED',
-    };
+      };
     });
   }).slice(0, 5);
 }

@@ -141,8 +141,8 @@ watch(
 
 .my-review-dialog__panel {
   width: min(560px, 100%);
-  background: #ffffff;
-  border: 1px solid #e5e5e5;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-soft);
 }
 
 .my-review-dialog__head,
@@ -159,12 +159,12 @@ watch(
   gap: 16px;
   padding-top: 22px;
   padding-bottom: 18px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .my-review-dialog__head h3 {
   margin: 0;
-  color: #111111;
+  color: var(--text-strong);
   font-size: 24px;
   font-weight: 700;
 }
@@ -172,7 +172,7 @@ watch(
 .my-review-dialog__close {
   border: 0;
   background: transparent;
-  color: #111111;
+  color: var(--text-strong);
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
@@ -196,12 +196,12 @@ watch(
   width: 96px;
   height: 96px;
   object-fit: cover;
-  background: #f5f5f5;
+  background: var(--surface-soft);
 }
 
 .my-review-dialog__product strong {
   display: block;
-  color: #111111;
+  color: var(--text-strong);
   font-size: 18px;
   line-height: 1.45;
 }
@@ -210,7 +210,7 @@ watch(
 .my-review-dialog__product span,
 .my-review-dialog__meta span {
   margin: 6px 0 0;
-  color: #666666;
+  color: var(--text-muted-strong);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -221,7 +221,7 @@ watch(
 }
 
 .my-review-dialog__field > span {
-  color: #111111;
+  color: var(--text-strong);
   font-size: 14px;
   font-weight: 700;
 }
@@ -234,25 +234,27 @@ watch(
 
 .my-review-dialog__rating button {
   min-width: 68px;
-  height: 40px;
+  height: var(--action-height);
   padding: 0 14px;
-  border: 1px solid #d9d9d9;
-  background: #ffffff;
-  color: #111111;
+  border: 1px solid var(--border-default);
+  background: var(--surface-strong);
+  color: var(--text-strong);
   font-size: 13px;
 }
 
 .my-review-dialog__rating button.is-active {
-  border-color: #111111;
-  background: #111111;
-  color: #ffffff;
+  border-color: var(--border-strong);
+  background: var(--text-strong);
+  color: var(--surface-strong);
 }
 
 .my-review-dialog__field textarea {
   min-height: 180px;
   resize: vertical;
   padding: 14px 16px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border-default);
+  background: var(--surface-strong);
+  color: var(--text-strong);
   font: inherit;
   line-height: 1.7;
   box-sizing: border-box;
@@ -272,11 +274,11 @@ watch(
 }
 
 .my-review-dialog__status--error {
-  color: #c62828;
+  color: var(--status-danger);
 }
 
 .my-review-dialog__status--success {
-  color: #0f6b3b;
+  color: var(--status-success);
 }
 
 .my-review-dialog__actions {
@@ -290,21 +292,21 @@ watch(
 .my-review-dialog__secondary,
 .my-review-dialog__primary {
   min-width: 120px;
-  height: 46px;
+  height: var(--control-height);
   padding: 0 18px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border-default);
   font-size: 14px;
 }
 
 .my-review-dialog__secondary {
-  background: #ffffff;
-  color: #111111;
+  background: var(--surface-strong);
+  color: var(--text-strong);
 }
 
 .my-review-dialog__primary {
-  border-color: #111111;
-  background: #111111;
-  color: #ffffff;
+  border-color: var(--border-strong);
+  background: var(--text-strong);
+  color: var(--surface-strong);
 }
 
 .my-review-dialog__primary:disabled {

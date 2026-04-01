@@ -2,7 +2,6 @@ import { computed, reactive, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { lookupGuestOrders } from '../services/customerSupportService';
 import {
-  buildGuestOrderLookupQuery,
   resolveGuestLookupMode,
   validateGuestOrderLookupForm,
 } from '../utils/guestOrderLookup';
@@ -19,6 +18,7 @@ export function useGuestOrderLookup() {
   const resultTone = shallowRef('neutral');
   const searchedOrders = shallowRef([]);
   const isSubmitting = shallowRef(false);
+  const isHydratingFromQuery = shallowRef(false);
 
   const validationMessage = computed(() => validateGuestOrderLookupForm(form, { allowPartial: true }));
   const statusMessage = computed(() => validationMessage.value || resultMessage.value);
@@ -33,6 +33,7 @@ export function useGuestOrderLookup() {
   });
 
   function hydrateFromRouteQuery(query) {
+    isHydratingFromQuery.value = true;
     form.buyerName = String(query.name ?? '').trim();
     form.inquiryType = resolveGuestLookupMode(query.mode);
     form.orderNumber = String(query.orderNumber ?? '').trim();
@@ -40,6 +41,7 @@ export function useGuestOrderLookup() {
     resultMessage.value = '';
     resultTone.value = 'neutral';
     searchedOrders.value = [];
+    isHydratingFromQuery.value = false;
   }
 
   async function submitLookup() {
@@ -63,7 +65,11 @@ export function useGuestOrderLookup() {
     resultTone.value = 'neutral';
 
     try {
-      searchedOrders.value = await lookupGuestOrders(buildGuestOrderLookupQuery(form));
+      searchedOrders.value = await lookupGuestOrders({
+        buyerName: String(form.buyerName ?? '').trim(),
+        orderNumber: String(form.orderNumber ?? '').trim(),
+        phoneNumber: String(form.phoneNumber ?? '').trim(),
+      });
       resultTone.value = searchedOrders.value.length ? 'success' : 'neutral';
       resultMessage.value = searchedOrders.value.length
         ? `${searchedOrders.value.length}건의 주문을 찾았습니다.`
@@ -77,22 +83,30 @@ export function useGuestOrderLookup() {
     }
   }
 
-  hydrateFromRouteQuery(route.query);
-
   watch(
     () => route.query,
     (query) => {
       hydrateFromRouteQuery(query);
+
+      if (canSubmit.value) {
+        void submitLookup();
+      }
     },
+    { immediate: true },
   );
 
   watch(
     () => [form.buyerName, form.inquiryType, form.orderNumber, form.phoneNumber],
     () => {
+      if (isHydratingFromQuery.value) {
+        return;
+      }
+
       searchedOrders.value = [];
       resultMessage.value = '';
       resultTone.value = 'neutral';
     },
+    { flush: 'sync' },
   );
 
   return {

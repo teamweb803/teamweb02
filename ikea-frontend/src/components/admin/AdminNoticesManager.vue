@@ -9,7 +9,6 @@ import {
   deleteAdminNotice,
   getAdminNoticeDetail,
   getAdminNoticeList,
-  getFallbackAdminNotices,
   updateAdminNotice,
 } from '../../services/adminService';
 import {
@@ -18,6 +17,7 @@ import {
   normalizeArrayPayload,
   normalizeObjectPayload,
 } from '../../mappers/adminManagementMapper';
+import { useFeedback } from '../../composables/useFeedback';
 import { useAccountStore } from '../../stores/account';
 
 const accountStore = useAccountStore();
@@ -27,11 +27,13 @@ const notices = shallowRef([]);
 const selectedNoticeId = shallowRef('');
 const selectedFiles = shallowRef([]);
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isSubmitting = shallowRef(false);
 const isDeleting = shallowRef(false);
 const currentPage = shallowRef(1);
 const pageSize = 5;
+const { requestConfirm } = useFeedback();
 
 const formState = reactive({
   title: '',
@@ -39,9 +41,6 @@ const formState = reactive({
   content: '',
 });
 
-const selectedNotice = computed(
-  () => notices.value.find((notice) => notice.noticeId === selectedNoticeId.value) ?? null,
-);
 const formModeLabel = computed(() => (selectedNoticeId.value ? '공지 수정' : '공지 등록'));
 const showCreateShortcut = computed(() => Boolean(selectedNoticeId.value));
 const submitButtonLabel = computed(() => {
@@ -118,31 +117,24 @@ function syncSelectedNotice(preferredNoticeId = selectedNoticeId.value) {
 async function loadNotices(options = {}) {
   const {
     preferredNoticeId = selectedNoticeId.value,
-    fallbackOnError = true,
   } = options;
   isLoading.value = true;
-  let didLoadFromServer = true;
+  loadErrorMessage.value = '';
 
   try {
     const payload = await getAdminNoticeList();
-    applyNotices(normalizeArrayPayload(payload, getFallbackAdminNotices()));
+    applyNotices(normalizeArrayPayload(payload, []));
   } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyNotices(getFallbackAdminNotices());
-    }
+    applyNotices([]);
+    loadErrorMessage.value = '공지 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    return false;
   } finally {
     isLoading.value = false;
   }
 
-  if (!didLoadFromServer && !fallbackOnError) {
-    return false;
-  }
-
   syncSelectedNotice(preferredNoticeId);
 
-  return didLoadFromServer;
+  return true;
 }
 
 function handleFileChange(event) {
@@ -171,14 +163,13 @@ async function submitNotice() {
       await updateAdminNotice(noticeId, payload);
       const didLoadFromServer = await loadNotices({
         preferredNoticeId: noticeId,
-        fallbackOnError: false,
       });
       statusMessage.value = didLoadFromServer
         ? '공지 내용을 수정했습니다.'
         : '공지 수정은 완료됐지만 목록 재조회는 실패했습니다.';
     } else {
       await createAdminNotice(payload);
-      const didLoadFromServer = await loadNotices({ fallbackOnError: false });
+      const didLoadFromServer = await loadNotices();
       statusMessage.value = didLoadFromServer
         ? '새 공지를 등록했습니다.'
         : '공지 등록은 완료됐지만 목록 재조회는 실패했습니다.';
@@ -200,7 +191,12 @@ async function submitNotice() {
 }
 
 async function removeNotice(notice) {
-  const confirmed = window.confirm(`"${notice.title}" 공지를 삭제할까요?`);
+  const confirmed = await requestConfirm({
+    title: '공지 삭제',
+    message: `"${notice.title}" 공지를 삭제할까요?`,
+    confirmLabel: '삭제',
+  });
+
   if (!confirmed) {
     return;
   }
@@ -210,7 +206,7 @@ async function removeNotice(notice) {
 
   try {
     await deleteAdminNotice(notice.noticeId);
-    const didLoadFromServer = await loadNotices({ fallbackOnError: false });
+    const didLoadFromServer = await loadNotices();
     statusMessage.value = didLoadFromServer
       ? '공지를 삭제했습니다.'
       : '공지 삭제는 완료됐지만 목록 재조회는 실패했습니다.';
@@ -275,8 +271,9 @@ onMounted(async () => {
 
         <CommonStatePanel
           v-if="!notices.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '공지 목록을 불러오는 중입니다.' : '등록된 공지가 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '공지 목록을 불러오는 중입니다.' : loadErrorMessage ? '공지 목록을 불러오지 못했습니다.' : '등록된 공지가 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>

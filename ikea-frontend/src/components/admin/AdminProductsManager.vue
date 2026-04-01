@@ -1,6 +1,10 @@
 <script setup>
 import { computed, onMounted, reactive, shallowRef, watch } from 'vue';
 import { useCatalogStore } from '../../stores/catalog';
+import AdminProductBasicSection from './AdminProductBasicSection.vue';
+import AdminProductDetailSection from './AdminProductDetailSection.vue';
+import AdminProductImagesSection from './AdminProductImagesSection.vue';
+import AdminProductPreviewSection from './AdminProductPreviewSection.vue';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
 import CommonStatePanel from '../common/CommonStatePanel.vue';
@@ -8,7 +12,6 @@ import {
   createAdminProduct,
   deleteAdminProduct,
   getFallbackAdminCategories,
-  getFallbackAdminProducts,
   getProductCatalog,
   updateAdminProduct,
 } from '../../services/adminService';
@@ -21,11 +24,6 @@ import {
 } from '../../mappers/adminManagementMapper';
 import { buildProductDetailPath } from '../../constants/routes';
 import {
-  calculateDiscountRate,
-  removeAdminProductDraft,
-  upsertAdminProductDraft,
-} from '../../services/adminProductDraftService';
-import {
   ADMIN_PRODUCT_BADGE_OPTIONS,
   buildProductDeliveryMessage,
   buildProductOptionSummary,
@@ -35,6 +33,7 @@ import {
   getProductAttributeFieldDefinitions,
   pickProductAttributes,
 } from '../../constants/productAttributeConfig';
+import { useFeedback } from '../../composables/useFeedback';
 
 const categories = getFallbackAdminCategories();
 const catalogStore = useCatalogStore();
@@ -49,7 +48,19 @@ const selectedMainFiles = shallowRef([]);
 const selectedGalleryFiles = shallowRef([]);
 const selectedDimensionFiles = shallowRef([]);
 const statusMessage = shallowRef('');
-const deletedProductIds = shallowRef(new Set());
+const loadErrorMessage = shallowRef('');
+const { requestConfirm } = useFeedback();
+
+function calculateDiscountRate(price, originalPrice) {
+  const resolvedPrice = Number(price ?? 0);
+  const resolvedOriginalPrice = Number(originalPrice ?? 0);
+
+  if (!resolvedPrice || !resolvedOriginalPrice || resolvedOriginalPrice <= resolvedPrice) {
+    return 0;
+  }
+
+  return Math.round(((resolvedOriginalPrice - resolvedPrice) / resolvedOriginalPrice) * 100);
+}
 
 const formState = reactive({
   name: '',
@@ -144,45 +155,11 @@ const previewQuickFacts = computed(() => buildProductQuickFacts(buildPreviewProd
 const previewOptionCopy = computed(() => buildProductOptionSummary(buildPreviewProduct()));
 const previewDeliveryCopy = computed(() => buildProductDeliveryMessage(buildPreviewProduct()));
 
-function splitMultilineText(value) {
-  return String(value ?? '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
 function formatMultilineText(lines = []) {
   return lines
     .map((line) => String(line ?? '').trim())
     .filter(Boolean)
     .join('\n');
-}
-
-function parseMeasurementsText(value) {
-  return String(value ?? '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const separator = line.includes(':') ? ':' : (line.includes('|') ? '|' : '');
-
-      if (!separator) {
-        return null;
-      }
-
-      const [label, ...rest] = line.split(separator);
-      const resolvedValue = rest.join(separator).trim();
-
-      if (!label.trim() || !resolvedValue) {
-        return null;
-      }
-
-      return {
-        label: label.trim(),
-        value: resolvedValue,
-      };
-    })
-    .filter(Boolean);
 }
 
 function formatMeasurementsText(measurements = []) {
@@ -313,8 +290,7 @@ function beginEditMode(product) {
 function applyProducts(items) {
   const normalizedItems = items
     .map((item) => normalizeAdminProduct(item, categories))
-    .filter((item) => item.productId)
-    .filter((item) => !deletedProductIds.value.has(String(item.productId)));
+    .filter((item) => item.productId);
 
   products.value = normalizedItems;
 
@@ -329,12 +305,16 @@ function applyProducts(items) {
 
 async function loadProducts() {
   isLoading.value = true;
+  loadErrorMessage.value = '';
 
   try {
     const payload = await getProductCatalog();
-    applyProducts(normalizeArrayPayload(payload, getFallbackAdminProducts()));
+    applyProducts(normalizeArrayPayload(payload, []));
+    return true;
   } catch {
-    applyProducts(getFallbackAdminProducts());
+    applyProducts([]);
+    loadErrorMessage.value = '상품 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    return false;
   } finally {
     isLoading.value = false;
   }
@@ -372,144 +352,12 @@ function buildPreviewProduct() {
   };
 }
 
-function createLocalProductId() {
-  const digits = String(Date.now()).slice(-7);
-  return `9${digits}`;
+function updateFormField({ field, value }) {
+  formState[field] = value;
 }
 
-function buildFeatureTags(subtypeLabel, attributeValues) {
-  return Array.from(
-    new Set([
-      subtypeLabel,
-      attributeValues.color,
-      attributeValues.material,
-      attributeValues.size,
-      attributeValues.firmness,
-      attributeValues.function,
-      attributeValues.warmth,
-      attributeValues.seatCount,
-      attributeValues.shape,
-      attributeValues.installation,
-      attributeValues.configuration,
-      attributeValues.use,
-    ].filter(Boolean)),
-  ).slice(0, 3);
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve) => {
-    if (!(file instanceof File)) {
-      resolve('');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-    reader.onerror = () => resolve('');
-    reader.readAsDataURL(file);
-  });
-}
-
-async function resolveImageSource(files, fallback = '') {
-  if (!files.length) {
-    return fallback;
-  }
-
-  return readFileAsDataUrl(files[0]);
-}
-
-async function resolveImageGallery(files, fallback = []) {
-  if (!files.length) {
-    return fallback;
-  }
-
-  const images = await Promise.all(files.map((file) => readFileAsDataUrl(file)));
-  return images.filter(Boolean);
-}
-
-async function buildDetailDraft(existingProduct = selectedProduct.value) {
-  const existingDetail = resolveDetailDraft(existingProduct ?? {});
-  const heroHook = formState.heroHook.trim();
-  const description = splitMultilineText(formState.descriptionText);
-  const highlights = splitMultilineText(formState.highlightsText);
-  const measurements = parseMeasurementsText(formState.measurementsText);
-  const fallbackGallery = existingDetail.galleryImages ?? [existingProduct?.image, existingProduct?.altImage].filter(Boolean);
-
-  const mainImage = await resolveImageSource(
-    selectedMainFiles.value,
-    existingProduct?.image ?? fallbackGallery[0] ?? '',
-  );
-  const galleryImages = await resolveImageGallery(
-    selectedGalleryFiles.value,
-    fallbackGallery,
-  );
-  const dimensionImage = await resolveImageSource(
-    selectedDimensionFiles.value,
-    existingDetail.dimensionImage ?? '',
-  );
-
-  return {
-    heroHook,
-    description,
-    highlights,
-    measurements,
-    galleryImages: galleryImages.length ? galleryImages : [mainImage].filter(Boolean),
-    dimensionImage,
-  };
-}
-
-async function buildCatalogProductDraft(existingProduct = selectedProduct.value) {
-  const selectedCategoryValue = selectedCategory.value ?? categories[0];
-  const subtypeOption = selectedSubtypeOption.value;
-  const productId = existingProduct?.productId ?? activeProductId.value ?? createLocalProductId();
-  const detailDraft = await buildDetailDraft(existingProduct);
-  const attributeValues = Object.fromEntries(
-    visibleAttributeFields.value
-      .map((field) => [field.id, String(formState.attributes[field.id] ?? '').trim()])
-      .filter(([, value]) => value),
-  );
-  const typeLabel = subtypeOption?.label ?? formState.label;
-  const image = detailDraft.galleryImages[0] ?? existingProduct?.image ?? '';
-  const altImage = detailDraft.galleryImages[1] ?? existingProduct?.altImage ?? image;
-
-  return {
-    ...existingProduct,
-    id: String(productId),
-    productId: String(productId),
-    name: formState.name.trim(),
-    brand: formState.brand.trim() || 'HOMiO',
-    badge: formState.badge,
-    label: typeLabel,
-    typeSlug: subtypeOption?.slug ?? formState.typeSlug,
-    price: Number(formState.price || 0),
-    originalPrice: formState.originalPrice ? Number(formState.originalPrice) : null,
-    discountRate: calculateDiscountRate(formState.price, formState.originalPrice),
-    categoryId: String(selectedCategoryValue?.backendCategoryId ?? formState.categoryId),
-    categoryName: selectedCategoryValue?.label ?? '',
-    categoryLabel: selectedCategoryValue?.label ?? '',
-    categorySlug: selectedCategoryValue?.slug ?? '',
-    image,
-    altImage,
-    imgPath: image,
-    description: detailDraft.heroHook,
-    features: buildFeatureTags(typeLabel, attributeValues),
-    createdAt: existingProduct?.createdAt ?? new Date().toISOString(),
-    reviews: existingProduct?.reviews ?? 0,
-    rating: existingProduct?.rating ?? 0,
-    attributes: attributeValues,
-    color: attributeValues.color ?? '',
-    material: attributeValues.material ?? '',
-    size: attributeValues.size ?? '',
-    firmness: attributeValues.firmness ?? '',
-    function: attributeValues.function ?? '',
-    warmth: attributeValues.warmth ?? '',
-    seatCount: attributeValues.seatCount ?? '',
-    shape: attributeValues.shape ?? '',
-    installation: attributeValues.installation ?? '',
-    configuration: attributeValues.configuration ?? '',
-    use: attributeValues.use ?? '',
-    detailDraft,
-  };
+function updateAttributeField({ fieldId, value }) {
+  formState.attributes[fieldId] = value;
 }
 
 async function submitProduct() {
@@ -519,42 +367,48 @@ async function submitProduct() {
   }
 
   isSubmitting.value = true;
-
-  const draftProduct = await buildCatalogProductDraft(selectedProduct.value);
   const payload = {
-    name: draftProduct.name,
-    price: draftProduct.price,
-    categoryId: draftProduct.categoryId,
+    name: formState.name.trim(),
+    price: Number(formState.price || 0),
+    categoryId: Number(formState.categoryId),
     files: [
       ...selectedMainFiles.value,
       ...selectedGalleryFiles.value,
       ...selectedDimensionFiles.value,
     ],
   };
-
-  deletedProductIds.value.delete(String(draftProduct.productId));
+  const isEditMode = Boolean(activeProductId.value);
 
   try {
-    if (activeProductId.value) {
+    if (isEditMode) {
       await updateAdminProduct(activeProductId.value, payload);
-      statusMessage.value = '상품 정보를 수정했습니다.';
     } else {
       await createAdminProduct(payload);
-      statusMessage.value = '새 상품을 등록했습니다.';
     }
-  } catch {
-    statusMessage.value = '서버 연결 전 단계라 현재 내용은 프론트에서 먼저 반영됩니다.';
-  } finally {
-    upsertAdminProductDraft(draftProduct);
-    catalogStore.refreshFromFallbackProducts();
-    applyProducts(getFallbackAdminProducts());
-    isSubmitting.value = false;
+
+    const didLoadFromServer = await loadProducts();
+    await catalogStore.loadProducts().catch(() => {});
+    statusMessage.value = didLoadFromServer
+      ? (isEditMode ? '상품 정보를 수정했습니다.' : '새 상품을 등록했습니다.')
+      : (isEditMode
+        ? '상품 수정은 완료됐지만 목록 재조회는 실패했습니다.'
+        : '상품 등록은 완료됐지만 목록 재조회는 실패했습니다.');
     beginCreateMode({ clearStatus: false });
+  } catch {
+    statusMessage.value = isEditMode
+      ? '상품 수정에 실패했습니다. 서버 상태를 확인해 주세요.'
+      : '상품 등록에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } finally {
+    isSubmitting.value = false;
   }
 }
 
 async function removeProduct(product) {
-  const confirmed = window.confirm(`"${product.name}" 상품을 삭제할까요?`);
+  const confirmed = await requestConfirm({
+    title: '상품 삭제',
+    message: `"${product.name}" 상품을 삭제할까요?`,
+    confirmLabel: '삭제',
+  });
 
   if (!confirmed) {
     return;
@@ -562,21 +416,17 @@ async function removeProduct(product) {
 
   try {
     await deleteAdminProduct(product.productId);
-    statusMessage.value = '상품을 삭제했습니다.';
-  } catch {
-    statusMessage.value = '서버 연결 전 단계라 현재 세션과 로컬 초안에서 먼저 숨깁니다.';
-  } finally {
-    deletedProductIds.value = new Set([
-      ...deletedProductIds.value,
-      String(product.productId),
-    ]);
-    removeAdminProductDraft(product.productId, { markDeleted: true });
-    catalogStore.refreshFromFallbackProducts();
-    applyProducts(getFallbackAdminProducts());
+    const didLoadFromServer = await loadProducts();
+    await catalogStore.loadProducts().catch(() => {});
+    statusMessage.value = didLoadFromServer
+      ? '상품을 삭제했습니다.'
+      : '상품 삭제는 완료됐지만 목록 재조회는 실패했습니다.';
 
     if (activeProductId.value === product.productId) {
       beginCreateMode({ clearStatus: false });
     }
+  } catch {
+    statusMessage.value = '상품 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
   }
 }
 
@@ -665,8 +515,9 @@ onMounted(async () => {
 
         <CommonStatePanel
           v-if="!pagedProducts.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '상품 목록을 불러오는 중입니다.' : '표시할 상품이 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '상품 목록을 불러오는 중입니다.' : loadErrorMessage ? '상품 목록을 불러오지 못했습니다.' : '표시할 상품이 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>
@@ -682,237 +533,36 @@ onMounted(async () => {
       </template>
 
       <form class="admin-products-manager__form" @submit.prevent="submitProduct">
-        <section class="admin-products-manager__section">
-          <header class="admin-products-manager__section-head">
-            <h3>기본 정보</h3>
-          </header>
+        <AdminProductBasicSection
+          :form-state="formState"
+          :categories="categories"
+          :subtype-options="subtypeOptions"
+          :badge-options="badgeOptions"
+          :visible-attribute-fields="visibleAttributeFields"
+          :discount-rate-preview="discountRatePreview"
+          @update-field="updateFormField"
+          @update-attribute="updateAttributeField"
+        />
 
-          <div class="admin-products-manager__form-grid">
-            <label class="admin-products-manager__field-row">
-              <span>상품명</span>
-              <div class="admin-products-manager__field-control">
-                <input v-model.trim="formState.name" type="text" maxlength="80" />
-              </div>
-            </label>
+        <AdminProductDetailSection :form-state="formState" @update-field="updateFormField" />
 
-            <label class="admin-products-manager__field-row">
-              <span>브랜드</span>
-              <div class="admin-products-manager__field-control">
-                <input v-model.trim="formState.brand" type="text" maxlength="30" />
-              </div>
-            </label>
+        <AdminProductImagesSection
+          :selected-main-files="selectedMainFiles"
+          :selected-gallery-files="selectedGalleryFiles"
+          :selected-dimension-files="selectedDimensionFiles"
+          :selected-product="selectedProduct"
+          :existing-gallery-count="existingGalleryCount"
+          :has-existing-dimension-image="hasExistingDimensionImage"
+          @main-file-change="handleMainFileChange"
+          @gallery-file-change="handleGalleryFileChange"
+          @dimension-file-change="handleDimensionFileChange"
+        />
 
-            <label class="admin-products-manager__field-row">
-              <span>가격</span>
-              <div class="admin-products-manager__field-control">
-                <input v-model.number="formState.price" type="number" min="0" step="100" />
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>정가</span>
-              <div class="admin-products-manager__field-control">
-                <input v-model.number="formState.originalPrice" type="number" min="0" step="100" />
-              </div>
-            </label>
-
-            <div class="admin-products-manager__field-row admin-products-manager__field-row--note">
-              <span>할인 계산</span>
-              <div class="admin-products-manager__field-control">
-                <div class="admin-products-manager__discount-preview">
-                  <strong v-if="discountRatePreview">할인율 {{ discountRatePreview }}%</strong>
-                  <strong v-else>할인 적용 없음</strong>
-                  <p>
-                    {{
-                      discountRatePreview
-                        ? '정가가 가격보다 높아 할인중 필터에 자동 반영됩니다.'
-                        : '정가가 가격보다 높을 때만 할인중으로 처리됩니다.'
-                    }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <label class="admin-products-manager__field-row">
-              <span>카테고리</span>
-              <div class="admin-products-manager__field-control">
-                <select v-model="formState.categoryId">
-                  <option
-                    v-for="category in categories"
-                    :key="category.backendCategoryId"
-                    :value="String(category.backendCategoryId)"
-                  >
-                    {{ category.label }}
-                  </option>
-                </select>
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>대표 분류</span>
-              <div class="admin-products-manager__field-control">
-                <select v-model="formState.typeSlug">
-                  <option
-                    v-for="option in subtypeOptions"
-                    :key="option.slug"
-                    :value="option.slug"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>배지</span>
-              <div class="admin-products-manager__field-control">
-                <select v-model="formState.badge">
-                  <option
-                    v-for="option in badgeOptions"
-                    :key="option.value || 'none'"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-              </div>
-            </label>
-
-            <label
-              v-for="field in visibleAttributeFields"
-              :key="field.id"
-              class="admin-products-manager__field-row"
-            >
-              <span>{{ field.label }}</span>
-              <div class="admin-products-manager__field-control">
-                <input
-                  v-model.trim="formState.attributes[field.id]"
-                  type="text"
-                  :placeholder="field.placeholder"
-                />
-              </div>
-            </label>
-          </div>
-        </section>
-
-        <section class="admin-products-manager__section">
-          <header class="admin-products-manager__section-head">
-            <h3>상세 콘텐츠</h3>
-          </header>
-
-          <div class="admin-products-manager__form-grid">
-            <label class="admin-products-manager__field-row">
-              <span>상단 소개</span>
-              <div class="admin-products-manager__field-control">
-                <textarea v-model.trim="formState.heroHook" rows="3" />
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>상세 설명</span>
-              <div class="admin-products-manager__field-control">
-                <textarea
-                  v-model.trim="formState.descriptionText"
-                  rows="6"
-                  placeholder="한 줄에 한 문단씩 입력"
-                />
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>핵심 포인트</span>
-              <div class="admin-products-manager__field-control">
-                <textarea
-                  v-model.trim="formState.highlightsText"
-                  rows="5"
-                  placeholder="한 줄에 한 항목씩 입력"
-                />
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>치수 정보</span>
-              <div class="admin-products-manager__field-control">
-                <textarea
-                  v-model.trim="formState.measurementsText"
-                  rows="5"
-                  placeholder="예: 폭: 140 cm"
-                />
-              </div>
-            </label>
-          </div>
-        </section>
-
-        <section class="admin-products-manager__section">
-          <header class="admin-products-manager__section-head">
-            <h3>이미지 자료</h3>
-          </header>
-
-          <div class="admin-products-manager__form-grid">
-            <label class="admin-products-manager__field-row">
-              <span>대표 이미지</span>
-              <div class="admin-products-manager__field-control">
-                <input type="file" accept="image/*" @change="handleMainFileChange" />
-                <small>{{ selectedMainFiles[0]?.name || selectedProduct?.image || '선택된 파일 없음' }}</small>
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>갤러리 이미지</span>
-              <div class="admin-products-manager__field-control">
-                <input type="file" accept="image/*" multiple @change="handleGalleryFileChange" />
-                <small>
-                  {{
-                    selectedGalleryFiles.length
-                      ? `${selectedGalleryFiles.length}개 선택`
-                      : existingGalleryCount
-                        ? `기존 ${existingGalleryCount}개 사용`
-                        : '선택된 파일 없음'
-                  }}
-                </small>
-              </div>
-            </label>
-
-            <label class="admin-products-manager__field-row">
-              <span>치수 이미지</span>
-              <div class="admin-products-manager__field-control">
-                <input type="file" accept="image/*" @change="handleDimensionFileChange" />
-                <small>
-                  {{
-                    selectedDimensionFiles[0]?.name
-                      || (hasExistingDimensionImage ? '기존 이미지 사용' : '선택된 파일 없음')
-                  }}
-                </small>
-              </div>
-            </label>
-          </div>
-        </section>
-
-        <section class="admin-products-manager__section">
-          <header class="admin-products-manager__section-head">
-            <h3>상세 상단 미리보기</h3>
-          </header>
-
-          <div class="admin-products-manager__preview">
-            <div class="admin-products-manager__preview-facts">
-              <article v-for="fact in previewQuickFacts" :key="fact.label">
-                <span>{{ fact.label }}</span>
-                <strong>{{ fact.value }}</strong>
-              </article>
-            </div>
-
-            <div class="admin-products-manager__preview-copy">
-              <article>
-                <span>구매 옵션 문구</span>
-                <strong>{{ previewOptionCopy || '-' }}</strong>
-              </article>
-              <article>
-                <span>배송 문구</span>
-                <strong>{{ previewDeliveryCopy }}</strong>
-              </article>
-            </div>
-          </div>
-        </section>
+        <AdminProductPreviewSection
+          :preview-quick-facts="previewQuickFacts"
+          :preview-option-copy="previewOptionCopy"
+          :preview-delivery-copy="previewDeliveryCopy"
+        />
 
         <div class="admin-products-manager__form-actions">
           <button type="button" class="admin-products-manager__secondary" @click="beginCreateMode">
@@ -937,14 +587,14 @@ onMounted(async () => {
 
 .admin-products-manager__search {
   width: 320px;
-  height: 44px;
+  height: var(--control-height-compact);
   padding: 0 14px;
-  border: 1px solid #d9d9d9;
-  background: #ffffff;
+  border: 1px solid var(--border-default);
+  background: var(--surface-strong);
 }
 
 .admin-products-manager__table {
-  border-bottom: 1px solid #ededed;
+  border-bottom: 1px solid var(--border-muted);
 }
 
 .admin-products-manager__head,
@@ -957,17 +607,17 @@ onMounted(async () => {
 
 .admin-products-manager__head {
   padding: 0 0 14px;
-  color: #666666;
+  color: var(--text-muted-strong);
   font-size: 13px;
 }
 
 .admin-products-manager__row {
   padding: 16px 0;
-  border-top: 1px solid #efefef;
+  border-top: 1px solid var(--border-muted);
 }
 
 .admin-products-manager__row.is-active {
-  background: #f7f9fb;
+  background: var(--surface-soft);
 }
 
 .admin-products-manager__product {
@@ -980,14 +630,14 @@ onMounted(async () => {
 .admin-products-manager__product img {
   width: 76px;
   height: 76px;
-  border: 1px solid #ececec;
+  border: 1px solid var(--border-subtle);
   object-fit: cover;
-  background: #f7f9fb;
+  background: var(--surface-soft);
 }
 
 .admin-products-manager__product strong {
   display: block;
-  color: #111111;
+  color: var(--text-strong);
   font-size: 15px;
   line-height: 1.4;
 }
@@ -995,7 +645,7 @@ onMounted(async () => {
 .admin-products-manager__product span {
   display: block;
   margin-top: 6px;
-  color: #777777;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -1025,19 +675,19 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: var(--action-height);
   padding: 0 16px;
-  border: 1px solid #d9d9d9;
-  background: #ffffff;
-  color: #111111;
+  border: 1px solid var(--border-default);
+  background: var(--surface-strong);
+  color: var(--text-strong);
   text-decoration: none;
   cursor: pointer;
 }
 
 .admin-products-manager__primary {
-  border-color: #111111;
-  background: #111111;
-  color: #ffffff;
+  border-color: var(--border-strong);
+  background: var(--text-strong);
+  color: var(--surface-strong);
 }
 
 .admin-products-manager__form {
@@ -1045,155 +695,11 @@ onMounted(async () => {
   gap: 24px;
 }
 
-.admin-products-manager__section {
-  display: grid;
-  gap: 16px;
-}
-
-.admin-products-manager__section-head {
-  padding-bottom: 14px;
-  border-bottom: 1px solid #ececec;
-}
-
-.admin-products-manager__section-head h3 {
-  margin: 0;
-  color: #111111;
-  font-size: 20px;
-  line-height: 1.3;
-}
-
-.admin-products-manager__form-grid {
-  display: grid;
-  gap: 14px;
-}
-
-.admin-products-manager__field-row {
-  display: grid;
-  grid-template-columns: 140px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-
-.admin-products-manager__field-row:has(input[type='file']) {
-  align-items: center;
-}
-
-.admin-products-manager__field-row:has(input[type='file']) > span {
-  padding-top: 0;
-  align-self: center;
-}
-
-.admin-products-manager__field-row > span {
-  padding-top: 12px;
-  color: #555555;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.admin-products-manager__field-row--note > span {
-  padding-top: 2px;
-}
-
-.admin-products-manager__field-control {
-  display: grid;
-  gap: 8px;
-}
-
-.admin-products-manager__field-control:has(input[type='file']) {
-  min-height: 72px;
-  align-content: center;
-  align-items: center;
-}
-
-.admin-products-manager__field-control input,
-.admin-products-manager__field-control select,
-.admin-products-manager__field-control textarea {
-  width: 100%;
-  min-height: 46px;
-  padding: 0 14px;
-  border: 1px solid #d9d9d9;
-  background: #ffffff;
-  font: inherit;
-}
-
-.admin-products-manager__field-control input[type='file'] {
-  display: block;
-  min-height: 46px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
-.admin-products-manager__field-control textarea {
-  min-height: 140px;
-  padding: 12px 14px;
-  resize: vertical;
-}
-
 .admin-products-manager__field-control small,
 .admin-products-manager__status {
-  color: #666666;
+  color: var(--text-muted-strong);
   font-size: 13px;
   line-height: 1.6;
-}
-
-.admin-products-manager__discount-preview {
-  display: grid;
-  gap: 6px;
-  padding: 14px 16px;
-  border: 1px solid #e6e6e6;
-  background: #f8fafc;
-}
-
-.admin-products-manager__discount-preview strong {
-  color: #111111;
-  font-size: 15px;
-}
-
-.admin-products-manager__discount-preview p {
-  margin: 0;
-  color: #666666;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.admin-products-manager__preview {
-  display: grid;
-  gap: 18px;
-}
-
-.admin-products-manager__preview-facts {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.admin-products-manager__preview-facts article,
-.admin-products-manager__preview-copy article {
-  padding: 18px;
-  border: 1px solid #e6e6e6;
-  background: #ffffff;
-}
-
-.admin-products-manager__preview-facts span,
-.admin-products-manager__preview-copy span {
-  display: block;
-  color: #777777;
-  font-size: 13px;
-}
-
-.admin-products-manager__preview-facts strong,
-.admin-products-manager__preview-copy strong {
-  display: block;
-  margin-top: 10px;
-  color: #111111;
-  font-size: 20px;
-  line-height: 1.35;
-}
-
-.admin-products-manager__preview-copy {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
 }
 
 .admin-products-manager__form-actions {
@@ -1204,32 +710,19 @@ onMounted(async () => {
 
 .admin-products-manager__empty {
   padding-top: 16px;
-  color: #666666;
+  color: var(--text-muted-strong);
   font-size: 14px;
   line-height: 1.6;
 }
 
 @media (max-width: 1180px) {
   .admin-products-manager__head,
-  .admin-products-manager__row,
-  .admin-products-manager__preview-facts,
-  .admin-products-manager__preview-copy {
+  .admin-products-manager__row {
     grid-template-columns: 1fr;
   }
 
   .admin-products-manager__head {
     display: none;
-  }
-}
-
-@media (max-width: 860px) {
-  .admin-products-manager__field-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .admin-products-manager__field-row > span {
-    padding-top: 0;
   }
 }
 

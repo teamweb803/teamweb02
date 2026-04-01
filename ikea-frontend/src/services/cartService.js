@@ -3,18 +3,83 @@ import {
   createCommerceCartSeed,
   createCommerceRecommendations,
 } from '../data/commerceSeed';
+import { useAccountStore } from '../stores/account';
 
-export function getMyCart() {
-  return httpRequester.get('/cart');
+function resolveCurrentMemberId() {
+  const accountStore = useAccountStore();
+  accountStore.hydrate();
+
+  if (
+    accountStore.memberId === null
+    || accountStore.memberId === undefined
+    || accountStore.memberId === ''
+  ) {
+    return null;
+  }
+
+  return accountStore.memberId;
+}
+
+function shouldFallbackCartRequest(error) {
+  return [400, 404, 405].includes(Number(error?.status ?? 0));
+}
+
+async function runCartRequestWithFallback(requestFactories = []) {
+  let lastError = null;
+
+  for (let index = 0; index < requestFactories.length; index += 1) {
+    const requestFactory = requestFactories[index];
+
+    try {
+      return await requestFactory();
+    } catch (error) {
+      lastError = error;
+
+      if (!shouldFallbackCartRequest(error) || index === requestFactories.length - 1) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Cart request failed.');
+}
+
+function buildLegacyMemberCartPath(suffix = '') {
+  const memberId = resolveCurrentMemberId();
+  return memberId === null ? '' : `/cart/${memberId}${suffix}`;
+}
+
+export async function getMyCart() {
+  const legacyPath = buildLegacyMemberCartPath();
+  const requestFactories = [
+    () => httpRequester.get('/cart/me'),
+    () => httpRequester.get('/cart'),
+  ];
+
+  if (legacyPath) {
+    requestFactories.push(() => httpRequester.get(legacyPath));
+  }
+
+  return runCartRequestWithFallback(requestFactories);
 }
 
 export function getMemberCart() {
   return getMyCart();
 }
 
-export function addCartItem(memberIdOrCartRequest, maybeCartRequest) {
+export async function addCartItem(memberIdOrCartRequest, maybeCartRequest) {
   const cartRequest = maybeCartRequest === undefined ? memberIdOrCartRequest : maybeCartRequest;
-  return httpRequester.post('/cart', cartRequest);
+  const legacyPath = buildLegacyMemberCartPath();
+  const requestFactories = [
+    () => httpRequester.post('/cart/me', cartRequest),
+    () => httpRequester.post('/cart', cartRequest),
+  ];
+
+  if (legacyPath) {
+    requestFactories.push(() => httpRequester.post(legacyPath, cartRequest));
+  }
+
+  return runCartRequestWithFallback(requestFactories);
 }
 
 export function updateCartItemQuantity(cartItemId, quantity) {
@@ -29,8 +94,18 @@ export function deleteCartItem(cartItemId) {
   return httpRequester.delete(`/cart/${cartItemId}`);
 }
 
-export function clearMyCart() {
-  return httpRequester.delete('/cart/clear');
+export async function clearMyCart() {
+  const legacyPath = buildLegacyMemberCartPath('/clear');
+  const requestFactories = [
+    () => httpRequester.delete('/cart/me/clear'),
+    () => httpRequester.delete('/cart/clear'),
+  ];
+
+  if (legacyPath) {
+    requestFactories.push(() => httpRequester.delete(legacyPath));
+  }
+
+  return runCartRequestWithFallback(requestFactories);
 }
 
 export function clearMemberCart() {

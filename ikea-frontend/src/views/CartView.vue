@@ -1,18 +1,31 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import CartDeliveryGroupCards from '../components/cart/CartDeliveryGroupCards.vue';
 import CartDeliveryGroupTable from '../components/cart/CartDeliveryGroupTable.vue';
+import CartRecommendationsSection from '../components/cart/CartRecommendationsSection.vue';
+import CartShippingGuideModal from '../components/cart/CartShippingGuideModal.vue';
+import CartSummarySection from '../components/cart/CartSummarySection.vue';
+import GuestCheckoutPromptDialog from '../components/common/GuestCheckoutPromptDialog.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { useCommerceCart } from '../composables/useCommerceCart';
 import { useCartViewState } from '../composables/useCartViewState';
 import { ROUTE_PATHS } from '../constants/routes';
 import { buildDeliveryGroups } from '../services/commerceShippingService';
+import { useAccountStore } from '../stores/account';
+import { hasAuthenticatedSession } from '../utils/accessControl';
 
 const router = useRouter();
+const accountStore = useAccountStore();
 const noticeVisible = ref(true);
 const showShippingGuideModal = ref(false);
 const shippingGuideTitle = ref('');
 const shippingGuideBody = ref('');
+const isGuestCheckoutPromptOpen = ref(false);
+const pendingCheckoutIntent = ref({
+  mode: 'all',
+  itemId: '',
+});
 
 const {
   cartItems,
@@ -26,6 +39,7 @@ const {
 } = useCommerceCart();
 
 onMounted(() => {
+  accountStore.hydrate();
   void refreshCart({ force: true }).catch(() => {});
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 });
@@ -46,23 +60,6 @@ const canCheckoutAll = computed(() => hasSelectableItems.value);
 const soldOutItemCount = computed(() => cartItems.value.filter((item) => item.isSoldOut).length);
 const deliveryGroups = computed(() => buildDeliveryGroups(cartItems.value));
 
-function _formatPriceLegacy(value) {
-  return `${Number(value ?? 0).toLocaleString('ko-KR')}원`;
-}
-
-function _goToCheckoutLegacy(mode = 'all', itemId = '') {
-  const query = { mode };
-
-  if (itemId) {
-    query.itemId = itemId;
-  }
-
-  router.push({
-    path: ROUTE_PATHS.orderCheckout,
-    query,
-  });
-}
-
 function openShippingGuide(title, body) {
   shippingGuideTitle.value = title || '배송 안내';
   shippingGuideBody.value = body || '결제 단계에서 배송 일정과 추가 비용을 다시 확인할 수 있습니다.';
@@ -71,6 +68,42 @@ function openShippingGuide(title, body) {
 
 function closeShippingGuide() {
   showShippingGuideModal.value = false;
+}
+
+function openGuestCheckoutPrompt(mode = 'all', itemId = '') {
+  pendingCheckoutIntent.value = {
+    mode,
+    itemId: String(itemId ?? ''),
+  };
+  isGuestCheckoutPromptOpen.value = true;
+}
+
+function closeGuestCheckoutPrompt() {
+  isGuestCheckoutPromptOpen.value = false;
+  pendingCheckoutIntent.value = {
+    mode: 'all',
+    itemId: '',
+  };
+}
+
+function moveToMemberLogin() {
+  closeGuestCheckoutPrompt();
+  router.push(ROUTE_PATHS.memberLogin);
+}
+
+function handleCheckoutAction(mode = 'all', itemId = '') {
+  if (!hasAuthenticatedSession(accountStore)) {
+    openGuestCheckoutPrompt(mode, itemId);
+    return;
+  }
+
+  goToCheckout(mode, itemId);
+}
+
+function continueGuestCheckout() {
+  const { mode, itemId } = pendingCheckoutIntent.value;
+  closeGuestCheckoutPrompt();
+  goToCheckout(mode, itemId);
 }
 </script>
 
@@ -130,102 +163,24 @@ function closeShippingGuide() {
                 </div>
 
                 <CartDeliveryGroupTable
+                  class="cart-delivery-group-table"
                   :group="group"
                   :format-price="formatPrice"
-                  :go-to-checkout="goToCheckout"
+                  :go-to-checkout="handleCheckoutAction"
+                  :open-shipping-guide="openShippingGuide"
+                  :remove-item="removeItem"
+                  :update-quantity="updateQuantity"
+                />
+                <CartDeliveryGroupCards
+                  class="cart-delivery-group-cards"
+                  :group="group"
+                  :format-price="formatPrice"
+                  :go-to-checkout="handleCheckoutAction"
                   :open-shipping-guide="openShippingGuide"
                   :remove-item="removeItem"
                   :update-quantity="updateQuantity"
                 />
 
-                <template v-if="false" v-for="entry in group.items" :key="entry.key">
-                  <article
-                    v-if="entry.showShippingInfoBefore"
-                    class="cart-shipping-summary-row"
-                  >
-                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
-                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
-                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
-                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
-                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
-                    <div class="cart-shipping-summary-row__content">
-                      <button
-                        class="cart-shipping-trigger"
-                        type="button"
-                        @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
-                      >
-                        {{ entry.deliveryGuide.shippingText }}
-                      </button>
-                      <p>{{ entry.deliveryGuide.shippingSubText }}</p>
-                    </div>
-                    <div class="cart-shipping-summary-row__spacer" aria-hidden="true"></div>
-                  </article>
-
-                  <article
-                    class="cart-item"
-                    :class="{ 'is-soldout': entry.item.isSoldOut }"
-                  >
-                  <div class="cart-item__select">
-                    <label class="cart-check">
-                      <input v-model="entry.item.selected" type="checkbox" :disabled="entry.item.isSoldOut" />
-                    </label>
-                  </div>
-
-                  <RouterLink :to="entry.item.detailPath" class="cart-item__thumb-link">
-                    <img :src="entry.item.image" :alt="entry.item.name" />
-                  </RouterLink>
-
-                  <div class="cart-item__copy">
-                    <div class="cart-item__brand-line">
-                      <strong>{{ entry.item.brand }}</strong>
-                      <span>{{ entry.item.seller }}</span>
-                    </div>
-
-                    <h2>
-                      <RouterLink :to="entry.item.detailPath" class="cart-item__title-link">
-                        {{ entry.item.name }}
-                      </RouterLink>
-                    </h2>
-                    <p>{{ entry.item.option }}</p>
-                    <p v-if="entry.item.isSoldOut" class="cart-item__soldout">품절 상품입니다. 재입고 전까지 주문할 수 없습니다.</p>
-                  </div>
-
-                  <div class="cart-item__qty">
-                    <div class="qty-stepper">
-                      <button type="button" aria-label="수량 감소" :disabled="entry.item.isSoldOut" @click="updateQuantity(entry.item.id, -1)">-</button>
-                      <span>{{ entry.item.quantity }}</span>
-                      <button type="button" aria-label="수량 증가" :disabled="entry.item.isSoldOut" @click="updateQuantity(entry.item.id, 1)">+</button>
-                    </div>
-                  </div>
-
-                  <div class="cart-item__price">
-                    <strong>{{ formatPrice(entry.item.price * entry.item.quantity) }}</strong>
-                    <span v-if="(entry.item.originalPrice ?? entry.item.price) > entry.item.price">
-                      {{ formatPrice((entry.item.originalPrice ?? entry.item.price) * entry.item.quantity) }}
-                    </span>
-                  </div>
-
-                  <div class="cart-item__shipping">
-                    <template v-if="entry.showShippingInfo">
-                      <button
-                        class="cart-shipping-trigger"
-                        type="button"
-                        @click="openShippingGuide(entry.deliveryGuide.modalTitle, entry.deliveryGuide.modalBody)"
-                      >
-                        {{ entry.deliveryGuide.shippingText }}
-                      </button>
-                      <p>{{ entry.deliveryGuide.shippingSubText }}</p>
-                    </template>
-                  </div>
-
-                  <div class="cart-item__actions">
-                    <button class="cart-item__order-btn" type="button" :disabled="entry.item.isSoldOut" @click="goToCheckout('single', entry.item.productId)">
-                      {{ entry.item.isSoldOut ? '품절' : '바로주문' }}
-                    </button>
-                    <button class="cart-item__remove-btn" type="button" @click="removeItem(entry.item.id)">삭제</button>
-                  </div>
-                  </article>
-                </template>
               </template>
             </template>
 
@@ -294,7 +249,7 @@ function closeShippingGuide() {
                 </div>
 
                 <div class="cart-item__actions">
-                  <button class="cart-item__order-btn" type="button" :disabled="item.isSoldOut" @click="goToCheckout('single', item.productId)">
+                  <button class="cart-item__order-btn" type="button" :disabled="item.isSoldOut" @click="handleCheckoutAction('single', item.productId)">
                     {{ item.isSoldOut ? '품절' : '바로주문' }}
                   </button>
                   <button class="cart-item__remove-btn" type="button" @click="removeItem(item.id)">삭제</button>
@@ -315,78 +270,22 @@ function closeShippingGuide() {
             <li>선택 주문과 전체 주문은 현재 장바구니 상태를 기준으로 결제 페이지에 반영됩니다.</li>
           </ul>
 
-          <section class="cart-summary">
-            <div class="cart-summary__totals">
-              <article>
-                <p>총 상품금액</p>
-                <strong>{{ formatPrice(productTotal) }}</strong>
-              </article>
-              <span class="cart-summary__symbol">−</span>
-              <article>
-                <p>총 할인금액</p>
-                <strong>{{ formatPrice(discountTotal) }}</strong>
-              </article>
-              <span class="cart-summary__symbol">+</span>
-              <article>
-                <p>총 배송비</p>
-                <strong>{{ formatPrice(shippingTotal) }}</strong>
-              </article>
-              <span class="cart-summary__symbol">=</span>
-              <article class="is-accent">
-                <p>총 결제예정금액</p>
-                <strong>{{ formatPrice(finalTotal) }}</strong>
-              </article>
-            </div>
-
-            <div class="cart-summary__detail">
-              <div>
-                <p>상품금액</p>
-                <strong>{{ formatPrice(productTotal) }}</strong>
-              </div>
-              <div>
-                <p>상품할인</p>
-                <strong>{{ formatPrice(discountTotal) }}</strong>
-              </div>
-              <div>
-                <p>배송비</p>
-                <strong>{{ formatPrice(shippingTotal) }}</strong>
-              </div>
-            </div>
-
-            <div class="cart-summary__notes">
-              <p>* 배송비가 미정인 상품은 결제 단계에서 지역과 설치 조건에 따라 다시 계산됩니다.</p>
-              <p>* 현재 합계는 선택된 상품 기준이며, 실제 주문 시점의 혜택 적용 여부에 따라 달라질 수 있습니다.</p>
-            </div>
-
-            <div class="cart-summary__buttons">
-              <button type="button" :disabled="!canCheckoutSelected" @click="goToCheckout('selected')">선택 상품 주문</button>
-              <button class="is-dark" type="button" :disabled="!canCheckoutAll" @click="goToCheckout('all')">전체 상품 주문</button>
-            </div>
-          </section>
+          <CartSummarySection
+            :can-checkout-all="canCheckoutAll"
+            :can-checkout-selected="canCheckoutSelected"
+            :discount-total="discountTotal"
+            :final-total="finalTotal"
+            :format-price="formatPrice"
+            :product-total="productTotal"
+            :shipping-total="shippingTotal"
+            @checkout="handleCheckoutAction"
+          />
         </section>
 
-        <section class="cart-recommend">
-          <div class="cart-recommend__head">
-            <h2>장바구니와 함께 보면 좋은 상품</h2>
-          </div>
-
-          <div class="cart-recommend__grid">
-            <article v-for="item in recommendProducts" :key="item.id" class="recommend-card">
-              <RouterLink :to="item.detailPath" class="recommend-card__link">
-                <div class="recommend-card__image-wrap">
-                  <span class="recommend-card__badge">{{ item.badge }}</span>
-                  <img :src="item.image" :alt="item.title" />
-                </div>
-                <p>{{ item.brand }}</p>
-                <h3>{{ item.title }}</h3>
-                <div class="recommend-card__price">
-                  <span v-if="item.originalPrice > item.price">{{ formatPrice(item.originalPrice) }}</span>
-                  <strong>{{ formatPrice(item.price) }}</strong>
-                </div>
-              </RouterLink>
-            </article>
-          </div>
-        </section>
+        <CartRecommendationsSection
+          :format-price="formatPrice"
+          :items="recommendProducts"
+        />
 
         <section class="cart-guide">
           <h2>장바구니 이용안내</h2>
@@ -399,21 +298,18 @@ function closeShippingGuide() {
       </div>
     </main>
 
-    <Teleport to="body">
-      <div v-if="showShippingGuideModal" class="cart-modal-overlay" @click.self="closeShippingGuide">
-        <section class="cart-modal" role="dialog" aria-modal="true" aria-label="배송 안내">
-          <button class="cart-modal__close" type="button" aria-label="닫기" @click="closeShippingGuide">×</button>
-          <h2>{{ shippingGuideTitle }}</h2>
-          <div class="cart-modal__divider"></div>
-          <p>{{ shippingGuideBody }}</p>
-          <ul>
-            <li>배송 일정과 추가 비용은 주문서작성 단계에서 주소와 설치 환경을 기준으로 다시 계산됩니다.</li>
-            <li>대형 가구와 설치 상품은 현장 여건에 따라 추가 안내가 발생할 수 있습니다.</li>
-          </ul>
-          <button class="cart-modal__confirm" type="button" @click="closeShippingGuide">확인</button>
-        </section>
-      </div>
-    </Teleport>
+    <CartShippingGuideModal
+      :body="shippingGuideBody"
+      :open="showShippingGuideModal"
+      :title="shippingGuideTitle"
+      @close="closeShippingGuide"
+    />
+    <GuestCheckoutPromptDialog
+      :open="isGuestCheckoutPromptOpen"
+      @close="closeGuestCheckoutPrompt"
+      @guest-order="continueGuestCheckout"
+      @member-order="moveToMemberLogin"
+    />
   </SiteChrome>
 </template>
 
@@ -452,14 +348,12 @@ function closeShippingGuide() {
 }
 
 .cart-section,
-.cart-recommend,
 .cart-guide {
   display: grid;
   gap: 22px;
 }
 
 .cart-section__title-row h1,
-.cart-recommend h2,
 .cart-guide h2 {
   margin: 0;
   color: #111111;
@@ -472,7 +366,6 @@ function closeShippingGuide() {
   font-weight: 700;
 }
 
-.cart-recommend h2,
 .cart-guide h2 {
   font-size: 28px;
   line-height: 1.25;
@@ -503,9 +396,12 @@ function closeShippingGuide() {
   border-top: 2px solid #111111;
 }
 
+.cart-delivery-group-cards {
+  display: none;
+}
+
 .cart-table__head,
 .cart-delivery-row,
-.cart-shipping-summary-row,
 .cart-item {
   display: grid;
   grid-template-columns: 56px 136px minmax(0, 1fr) 132px 160px 188px 124px;
@@ -533,42 +429,6 @@ function closeShippingGuide() {
 .cart-delivery-row {
   min-height: 72px;
   border-bottom: 1px solid #d8dde5;
-}
-
-.cart-shipping-summary-row {
-  min-height: 0;
-  height: 0;
-  overflow: visible;
-  position: relative;
-  border: 0;
-  pointer-events: none;
-}
-
-.cart-shipping-summary-row__spacer {
-  min-height: 0;
-}
-
-.cart-shipping-summary-row__content {
-  grid-column: 6;
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  text-align: center;
-  justify-self: stretch;
-  position: relative;
-  z-index: 2;
-  padding: 16px 0;
-  background: #ffffff;
-  transform: translateY(-50%);
-  pointer-events: auto;
-}
-
-.cart-shipping-summary-row__content p {
-  margin: 0;
-  color: #6b7280;
-  white-space: pre-line;
-  font-size: 13px;
-  line-height: 1.55;
 }
 
 .cart-delivery-row__copy {
@@ -771,26 +631,21 @@ function closeShippingGuide() {
   justify-items: stretch;
 }
 
-.cart-item__order-btn,
-.cart-summary__buttons button,
-.cart-modal__confirm {
+.cart-item__order-btn {
   min-height: 46px;
   border-radius: 999px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.cart-item__order-btn,
-.cart-summary__buttons .is-dark,
-.cart-modal__confirm {
+.cart-item__order-btn {
   width: 100%;
   border: 1px solid #111827;
   background: #111827;
   color: #ffffff;
 }
 
-.cart-item__order-btn:disabled,
-.cart-summary__buttons button:disabled {
+.cart-item__order-btn:disabled {
   border-color: #d8dde5;
   background: #eef1f4;
   color: #8a93a0;
@@ -805,10 +660,6 @@ function closeShippingGuide() {
   background: #ffffff;
   color: #374151;
   cursor: pointer;
-}
-
-.cart-summary__buttons button:not(.is-dark) {
-  border-radius: 999px;
 }
 
 .cart-item__remove-btn {
@@ -840,239 +691,6 @@ function closeShippingGuide() {
   line-height: 1.6;
 }
 
-.cart-summary {
-  display: grid;
-  gap: 24px;
-  padding-top: 28px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.cart-summary__totals {
-  display: grid;
-  grid-template-columns: repeat(7, auto);
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.cart-summary__totals article {
-  display: grid;
-  gap: 8px;
-  text-align: center;
-}
-
-.cart-summary__totals p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.cart-summary__totals strong {
-  font-size: 34px;
-  letter-spacing: -0.04em;
-  color: #111827;
-}
-
-.cart-summary__symbol {
-  color: #9ca3af;
-  font-size: 30px;
-}
-
-.cart-summary__detail {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.cart-summary__detail div {
-  min-height: 120px;
-  padding: 20px 22px;
-  border: 1px solid #e5e7eb;
-  display: grid;
-  gap: 12px;
-  align-content: start;
-}
-
-.cart-summary__detail p,
-.cart-summary__notes p {
-  margin: 0;
-  color: #6b7280;
-}
-
-.cart-summary__detail strong {
-  font-size: 26px;
-  letter-spacing: -0.04em;
-}
-
-.cart-summary__notes {
-  display: grid;
-  gap: 8px;
-}
-
-.cart-summary__buttons {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 16px;
-}
-
-.cart-summary__buttons button {
-  flex: 0 0 248px;
-  width: 248px;
-  min-width: 248px;
-  min-height: 46px;
-  white-space: nowrap;
-  font-size: 16px;
-}
-
-.cart-summary__buttons button:not(.is-dark) {
-  min-height: 46px;
-  padding: 0 20px;
-  border: 1px solid #d8dde5;
-  background: #ffffff;
-  color: #374151;
-}
-
-.cart-summary__buttons button:disabled {
-  border-color: #d8dde5;
-  background: #eef1f4;
-  color: #8a93a0;
-}
-
-.cart-summary__buttons .is-dark {
-  width: 248px;
-}
-
-.cart-recommend__grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
-}
-
-.recommend-card__link {
-  display: grid;
-  gap: 14px;
-  color: inherit;
-}
-
-.recommend-card__image-wrap {
-  position: relative;
-  min-height: 220px;
-  border: 1px solid #eceff3;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.recommend-card__image-wrap img {
-  width: 86%;
-  height: auto;
-  object-fit: contain;
-}
-
-.recommend-card__badge {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #364152;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.recommend-card p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.recommend-card h3 {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.45;
-  letter-spacing: -0.03em;
-}
-
-.recommend-card__price {
-  display: grid;
-  gap: 4px;
-}
-
-.recommend-card__price span {
-  color: #9ca3af;
-  font-size: 13px;
-  text-decoration: line-through;
-}
-
-.recommend-card__price strong {
-  font-size: 18px;
-  letter-spacing: -0.03em;
-}
-
-.cart-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(17, 24, 39, 0.45);
-}
-
-.cart-modal {
-  position: relative;
-  width: min(520px, 100%);
-  padding: 28px;
-  background: #ffffff;
-  border: 1px solid #d9e2ec;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
-  display: grid;
-  gap: 18px;
-}
-
-.cart-modal h2 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.3;
-  letter-spacing: -0.03em;
-}
-
-.cart-modal p,
-.cart-modal li {
-  margin: 0;
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.cart-modal ul {
-  margin: 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 8px;
-}
-
-.cart-modal__divider {
-  height: 1px;
-  background: #e5e7eb;
-}
-
-.cart-modal__close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  background: transparent;
-  color: #6b7280;
-  font-size: 26px;
-  cursor: pointer;
-}
-
 @media (max-width: 1180px) {
   .cart-table__head,
   .cart-delivery-row,
@@ -1085,9 +703,6 @@ function closeShippingGuide() {
     height: 96px;
   }
 
-  .cart-recommend__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 820px) {
@@ -1098,6 +713,14 @@ function closeShippingGuide() {
 
   .cart-table__head {
     display: none;
+  }
+
+  .cart-delivery-group-table {
+    display: none;
+  }
+
+  .cart-delivery-group-cards {
+    display: block;
   }
 
   .cart-delivery-row,
@@ -1129,18 +752,5 @@ function closeShippingGuide() {
     text-align: left;
   }
 
-  .cart-summary__totals {
-    grid-template-columns: 1fr;
-    justify-items: start;
-  }
-
-  .cart-summary__detail,
-  .cart-recommend__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cart-summary__buttons {
-    flex-direction: column;
-  }
 }
 </style>

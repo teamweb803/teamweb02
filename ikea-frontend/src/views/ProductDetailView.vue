@@ -1,9 +1,12 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import GuestCheckoutPromptDialog from '../components/common/GuestCheckoutPromptDialog.vue';
+import WishlistToggleButton from '../components/common/WishlistToggleButton.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import ProductCartAddedDialog from '../components/product/ProductCartAddedDialog.vue';
 import ProductDimensionDiagram from '../components/product/ProductDimensionDiagram.vue';
+import { useFeedback } from '../composables/useFeedback';
 import { useProductGallery } from '../composables/useProductGallery';
 import {
   buildProductDeliveryMessage,
@@ -15,24 +18,33 @@ import {
   buildProductDetailPath,
 } from '../constants/routes';
 import { storeToRefs } from 'pinia';
+import { useAccountStore } from '../stores/account';
 import { useCartStore } from '../stores/cart';
 import { useCatalogStore } from '../stores/catalog';
+import { useWishlistStore } from '../stores/wishlist';
 import {
   decorateStorefrontItems,
   resolveStorefrontAvailability,
 } from '../services/storefrontStockService';
+import { hasAuthenticatedSession } from '../utils/accessControl';
 
 const route = useRoute();
 const router = useRouter();
+const accountStore = useAccountStore();
 const cartStore = useCartStore();
 const catalogStore = useCatalogStore();
+const wishlistStore = useWishlistStore();
+const { showError } = useFeedback();
 const { products: catalogProducts } = storeToRefs(catalogStore);
 
 const quantity = ref(1);
 const isCartDialogOpen = ref(false);
+const isGuestCheckoutPromptOpen = ref(false);
 
 onMounted(() => {
+  accountStore.hydrate();
   void catalogStore.ensureCatalogLoaded();
+  wishlistStore.ensureHydrated();
 });
 
 const currentProduct = computed(() => (
@@ -64,6 +76,7 @@ const reviewCountLabel = computed(() => (
 ));
 
 const totalPrice = computed(() => currentProduct.value.price * quantity.value);
+const isCurrentProductWishlisted = computed(() => wishlistStore.isProductWishlisted(currentProduct.value?.id));
 
 const summaryFacts = computed(() => {
   const facts = detailContent.value.quickFacts ?? [];
@@ -113,6 +126,7 @@ watch(
   () => {
     quantity.value = 1;
     isCartDialogOpen.value = false;
+    isGuestCheckoutPromptOpen.value = false;
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   },
   { immediate: true },
@@ -146,7 +160,7 @@ async function syncCurrentProductToCart() {
       quantity: quantity.value,
     });
   } catch (error) {
-    window.alert(error?.message ?? '장바구니 처리 중 오류가 발생했습니다.');
+    showError(error?.message ?? '장바구니 처리 중 오류가 발생했습니다.');
     return null;
   }
 }
@@ -183,6 +197,39 @@ async function goToCheckout() {
       mode: 'single',
       itemId: cartItem?.productId ?? String(currentProduct.value?.id ?? ''),
     },
+  });
+}
+
+function openGuestCheckoutPrompt() {
+  isGuestCheckoutPromptOpen.value = true;
+}
+
+function closeGuestCheckoutPrompt() {
+  isGuestCheckoutPromptOpen.value = false;
+}
+
+function moveToMemberLogin() {
+  closeGuestCheckoutPrompt();
+  router.push(ROUTE_PATHS.memberLogin);
+}
+
+async function handleBuyNow() {
+  if (!hasAuthenticatedSession(accountStore)) {
+    openGuestCheckoutPrompt();
+    return;
+  }
+
+  await goToCheckout();
+}
+
+async function continueGuestCheckout() {
+  closeGuestCheckoutPrompt();
+  await goToCheckout();
+}
+
+function toggleCurrentProductWishlist() {
+  wishlistStore.toggleProduct(currentProduct.value, {
+    redirectPath: route.fullPath,
   });
 }
 
@@ -328,10 +375,16 @@ function handleDialogProductSelect(productId) {
             </div>
 
             <div class="detail-purchase-panel__actions">
+              <WishlistToggleButton
+                class="detail-purchase-panel__wish"
+                variant="panel"
+                :active="isCurrentProductWishlisted"
+                @toggle="toggleCurrentProductWishlist"
+              />
               <button class="detail-purchase-panel__cart" type="button" :disabled="isSoldOut" @click="openCartDialog">
                 {{ isSoldOut ? '품절' : '장바구니' }}
               </button>
-              <button class="detail-purchase-panel__buy" type="button" :disabled="isSoldOut" @click="goToCheckout">
+              <button class="detail-purchase-panel__buy" type="button" :disabled="isSoldOut" @click="handleBuyNow">
                 {{ isSoldOut ? '품절' : '바로구매' }}
               </button>
             </div>
@@ -487,6 +540,12 @@ function handleDialogProductSelect(productId) {
       @close="closeCartDialog"
       @view-cart="viewCartFromDialog"
       @select-product="handleDialogProductSelect"
+    />
+    <GuestCheckoutPromptDialog
+      :open="isGuestCheckoutPromptOpen"
+      @close="closeGuestCheckoutPrompt"
+      @guest-order="continueGuestCheckout"
+      @member-order="moveToMemberLogin"
     />
   </SiteChrome>
 </template>

@@ -9,6 +9,7 @@ export function useAdminDashboard() {
   const {
     dashboard,
     isDashboardLoading,
+    loadErrorMessage,
   } = storeToRefs(adminDashboardStore);
   const {
     memberName,
@@ -32,6 +33,7 @@ export function useAdminDashboard() {
   return {
     dashboard,
     isDashboardLoading,
+    loadErrorMessage,
     operatorLabel,
     removeMember,
   };

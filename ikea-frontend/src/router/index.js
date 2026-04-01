@@ -26,7 +26,9 @@ const CartView = () => import('../views/CartView.vue');
 const CheckoutView = () => import('../views/CheckoutView.vue');
 const OrderCompleteView = () => import('../views/OrderCompleteView.vue');
 const KakaoPaymentView = () => import('../views/KakaoPaymentView.vue');
+const TossPaymentView = () => import('../views/TossPaymentView.vue');
 const CustomerServiceView = () => import('../views/CustomerServiceView.vue');
+const CustomerServiceQnaLookupView = () => import('../views/CustomerServiceQnaLookupView.vue');
 const CustomerServiceQnaWriteView = () => import('../views/CustomerServiceQnaWriteView.vue');
 const CustomerServiceNoticeDetailView = () => import('../views/CustomerServiceNoticeDetailView.vue');
 const GuestOrderLookupView = () => import('../views/GuestOrderLookupView.vue');
@@ -181,6 +183,18 @@ const router = createRouter({
       props: { status: 'fail' },
     },
     {
+      path: ROUTE_PATHS.paymentTossSuccess,
+      name: 'payment-toss-success',
+      component: TossPaymentView,
+      props: { status: 'success' },
+    },
+    {
+      path: ROUTE_PATHS.paymentTossFail,
+      name: 'payment-toss-fail',
+      component: TossPaymentView,
+      props: { status: 'fail' },
+    },
+    {
       path: `${ROUTE_PATHS.customerServiceNotice}/:noticeId`,
       name: 'customer-service-notice-detail',
       component: CustomerServiceNoticeDetailView,
@@ -194,6 +208,11 @@ const router = createRouter({
       path: ROUTE_PATHS.customerServiceFaq,
       name: 'customer-service-faq',
       component: CustomerServiceView,
+    },
+    {
+      path: ROUTE_PATHS.customerServiceQnaLookup,
+      name: 'customer-service-qna-lookup',
+      component: CustomerServiceQnaLookupView,
     },
     {
       path: ROUTE_PATHS.customerServiceQnaWrite,

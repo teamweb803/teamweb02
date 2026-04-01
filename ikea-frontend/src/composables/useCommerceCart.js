@@ -1,9 +1,11 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useFeedback } from './useFeedback';
 import { useCartStore } from '../stores/cart';
 
 export function useCommerceCart() {
   const cartStore = useCartStore();
+  const { showError } = useFeedback();
   cartStore.refreshAvailability();
   void cartStore.ensureCartLoaded().catch(() => {});
   const {
@@ -25,7 +27,7 @@ export function useCommerceCart() {
     try {
       return await cartStore.updateQuantity(itemId, delta);
     } catch (error) {
-      window.alert(error?.message ?? '장바구니 수량을 변경하지 못했습니다.');
+      showError(error?.message ?? '장바구니 수량을 변경하지 못했습니다.');
       return null;
     }
   }
@@ -34,7 +36,7 @@ export function useCommerceCart() {
     try {
       return await cartStore.removeItem(itemId);
     } catch (error) {
-      window.alert(error?.message ?? '장바구니 상품을 삭제하지 못했습니다.');
+      showError(error?.message ?? '장바구니 상품을 삭제하지 못했습니다.');
       return null;
     }
   }
@@ -43,7 +45,7 @@ export function useCommerceCart() {
     try {
       return await cartStore.removeSelected();
     } catch (error) {
-      window.alert(error?.message ?? '선택한 상품을 삭제하지 못했습니다.');
+      showError(error?.message ?? '선택한 상품을 삭제하지 못했습니다.');
       return null;
     }
   }
@@ -80,8 +82,16 @@ export function startKakaoCheckout(payload) {
   return useCartStore().startKakaoCheckout(payload);
 }
 
+export function startExternalCheckout(payload) {
+  return useCartStore().startExternalCheckout(payload);
+}
+
 export function confirmPendingKakaoPayment(pgToken) {
   return useCartStore().confirmPendingKakaoPayment(pgToken);
+}
+
+export function confirmPendingTossPayment(payload) {
+  return useCartStore().confirmPendingTossPayment(payload);
 }
 
 export function cancelPendingPaymentFlow() {

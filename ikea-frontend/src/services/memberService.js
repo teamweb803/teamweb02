@@ -5,11 +5,31 @@ function resolveCurrentMemberId() {
   const accountStore = useAccountStore();
   accountStore.hydrate();
 
-  if (accountStore.memberId === null || accountStore.memberId === undefined || accountStore.memberId === '') {
-    throw new Error('Current memberId is unavailable.');
+  if (
+    accountStore.memberId === null
+    || accountStore.memberId === undefined
+    || accountStore.memberId === ''
+  ) {
+    return null;
   }
 
   return accountStore.memberId;
+}
+
+function shouldFallbackMemberRequest(error) {
+  return [400, 404, 405].includes(Number(error?.status ?? 0));
+}
+
+async function runMemberRequestWithFallback(primaryRequest, fallbackRequest) {
+  try {
+    return await primaryRequest();
+  } catch (error) {
+    if (!fallbackRequest || !shouldFallbackMemberRequest(error)) {
+      throw error;
+    }
+
+    return fallbackRequest();
+  }
 }
 
 export function joinMember(memberJoinRequest) {
@@ -28,8 +48,15 @@ export function getCurrentMember() {
   return httpRequester.get('/member/me');
 }
 
-export function updateCurrentMember(memberUpdateRequest, memberId = resolveCurrentMemberId()) {
-  return httpRequester.put(`/member/${memberId}`, memberUpdateRequest);
+export function updateCurrentMember(memberUpdateRequest) {
+  const memberId = resolveCurrentMemberId();
+
+  return runMemberRequestWithFallback(
+    () => httpRequester.put('/member/me', memberUpdateRequest),
+    memberId === null
+      ? null
+      : () => httpRequester.put(`/member/${memberId}`, memberUpdateRequest),
+  );
 }
 
 export function updateMember(memberIdOrMemberUpdateRequest, maybeMemberUpdateRequest) {
@@ -40,10 +67,19 @@ export function updateMember(memberIdOrMemberUpdateRequest, maybeMemberUpdateReq
   return httpRequester.put(`/member/${memberIdOrMemberUpdateRequest}`, maybeMemberUpdateRequest);
 }
 
-export function deleteCurrentMember(memberId = resolveCurrentMemberId()) {
-  return httpRequester.delete(`/member/${memberId}`);
+export function deleteCurrentMember() {
+  const memberId = resolveCurrentMemberId();
+
+  return runMemberRequestWithFallback(
+    () => httpRequester.delete('/member/me'),
+    memberId === null ? null : () => httpRequester.delete(`/member/${memberId}`),
+  );
 }
 
 export function deleteMember(memberId = resolveCurrentMemberId()) {
+  if (memberId === null || memberId === undefined || memberId === '') {
+    return deleteCurrentMember();
+  }
+
   return httpRequester.delete(`/member/${memberId}`);
 }

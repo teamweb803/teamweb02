@@ -5,7 +5,6 @@ import AdminPanel from './AdminPanel.vue';
 import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
   getAdminOrders,
-  getFallbackAdminOrders,
   updateAdminOrderStatus,
 } from '../../services/adminService';
 import {
@@ -35,6 +34,7 @@ const selectedOrderId = shallowRef('');
 const statusFilter = shallowRef('ALL');
 const statusDraft = shallowRef('ORDERED');
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isSubmitting = shallowRef(false);
 const currentPage = shallowRef(1);
@@ -85,25 +85,22 @@ function applyOrders(items) {
   }
 }
 
-async function loadOrders(options = {}) {
-  const { fallbackOnError = true } = options;
+async function loadOrders() {
   isLoading.value = true;
-  let didLoadFromServer = true;
+  loadErrorMessage.value = '';
 
   try {
     const payload = await getAdminOrders();
-    applyOrders(normalizeArrayPayload(payload, getFallbackAdminOrders()));
+    applyOrders(normalizeArrayPayload(payload, []));
   } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyOrders(getFallbackAdminOrders());
-    }
+    applyOrders([]);
+    loadErrorMessage.value = '주문 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    return false;
   } finally {
     isLoading.value = false;
   }
 
-  return didLoadFromServer;
+  return true;
 }
 
 function selectOrder(order) {
@@ -122,7 +119,7 @@ async function submitStatusChange() {
 
   try {
     await updateAdminOrderStatus(orderId, statusDraft.value);
-    const didLoadFromServer = await loadOrders({ fallbackOnError: false });
+    const didLoadFromServer = await loadOrders();
     statusMessage.value = didLoadFromServer
       ? '주문 상태를 저장했습니다.'
       : '주문 상태는 저장됐지만 목록 재조회는 실패했습니다.';
@@ -198,8 +195,9 @@ onMounted(loadOrders);
 
         <CommonStatePanel
           v-if="!filteredOrders.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '주문 목록을 불러오는 중입니다.' : '선택한 상태의 주문이 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '주문 목록을 불러오는 중입니다.' : loadErrorMessage ? '주문 목록을 불러오지 못했습니다.' : '선택한 상태의 주문이 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>
@@ -272,7 +270,9 @@ onMounted(loadOrders);
 
       <CommonStatePanel
         v-else
-        title="주문을 선택하면 상세 정보가 표시됩니다."
+        :tone="loadErrorMessage ? 'error' : 'neutral'"
+        :title="loadErrorMessage ? '주문 상세를 표시할 수 없습니다.' : '주문을 선택하면 상세 정보가 표시됩니다.'"
+        :description="loadErrorMessage"
         align="left"
         compact
       />

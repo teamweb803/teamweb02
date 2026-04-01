@@ -7,14 +7,13 @@ import {
 } from '../data/catalog';
 import { getProductDetailContent } from '../data/productDetailContent';
 import { buildProductQuickFacts } from '../constants/productAttributeConfig';
-import { mergeCatalogProductsWithAdminDrafts } from './adminProductDraftService';
 
 export function getFallbackCatalogCategories() {
   return backendCategories;
 }
 
 export function getFallbackCatalogProducts() {
-  return mergeCatalogProductsWithAdminDrafts(catalogProducts);
+  return catalogProducts;
 }
 
 export function getFallbackCategoryRouteMap() {

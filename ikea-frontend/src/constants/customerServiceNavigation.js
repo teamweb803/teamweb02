@@ -11,7 +11,12 @@ export const CUSTOMER_SERVICE_NAV_ITEMS = [
     id: 'qna',
     label: 'QnA',
     to: ROUTE_PATHS.customerServiceQna,
-    routeNames: ['customer-service-qna', 'customer-service-qna-write', 'guest-order-lookup'],
+    routeNames: [
+      'customer-service-qna',
+      'customer-service-qna-lookup',
+      'customer-service-qna-write',
+      'guest-order-lookup',
+    ],
   },
   {
     id: 'notice',

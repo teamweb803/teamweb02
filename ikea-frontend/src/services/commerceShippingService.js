@@ -54,23 +54,7 @@ function createGeneralDeliveryGuide(generalSubtotal) {
 }
 
 function resolveGeneralShippingMergeStartIndex(items = []) {
-  let runningGeneralSubtotal = 0;
-
-  for (let index = 0; index < items.length; index += 1) {
-    const item = items[index];
-
-    if (item?.isSoldOut) {
-      continue;
-    }
-
-    runningGeneralSubtotal += normalizeNumber(item?.price) * normalizeNumber(item?.quantity, 1);
-
-    if (runningGeneralSubtotal >= GENERAL_DELIVERY_THRESHOLD) {
-      return Math.max(0, index - 1);
-    }
-  }
-
-  return Math.max(0, items.length - 1);
+  return items.length > 0 ? 0 : -1;
 }
 
 function createDeliveryGroup(groupKey, items, generalSubtotal) {

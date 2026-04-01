@@ -7,20 +7,13 @@ import {
   getAdminQnas,
   getAdminReviews,
   getFallbackAdminCategories,
-  getFallbackAdminMembers,
-  getFallbackAdminOrders,
-  getFallbackAdminProducts,
-  getFallbackAdminQnaThreads,
-  getFallbackAdminReviewItems,
   getProductCatalog,
 } from '../services/adminService';
 import {
   buildAdminDashboard,
-  createFallbackQnas,
-  createFallbackReviews,
 } from '../mappers/adminDashboardMapper';
 
-function normalizeArrayPayload(payload, fallback) {
+function normalizeArrayPayload(payload, fallback = []) {
   if (Array.isArray(payload)) {
     return payload;
   }
@@ -41,27 +34,30 @@ function normalizeArrayPayload(payload, fallback) {
 }
 
 function normalizeMembers(payload) {
-  return normalizeArrayPayload(payload, getFallbackAdminMembers()).map((item) => ({
+  return normalizeArrayPayload(payload).map((item) => ({
     ...item,
     password: undefined,
   }));
 }
 
-function createFallbackDashboard() {
+function createEmptyDashboard() {
   return buildAdminDashboard({
     categories: getFallbackAdminCategories(),
-    products: getFallbackAdminProducts(),
-    orders: getFallbackAdminOrders(),
-    members: getFallbackAdminMembers(),
-    reviews: createFallbackReviews(getFallbackAdminReviewItems()),
-    qnas: createFallbackQnas(getFallbackAdminQnaThreads()),
+    products: [],
+    orders: [],
+    members: [],
+    reviews: [],
+    qnas: [],
+    productCount: 0,
+    orderCount: 0,
   });
 }
 
 export const useAdminDashboardStore = defineStore('adminDashboard', {
   state: () => ({
-    dashboard: createFallbackDashboard(),
+    dashboard: createEmptyDashboard(),
     isDashboardLoading: false,
+    loadErrorMessage: '',
     loaded: false,
   }),
   actions: {
@@ -92,6 +88,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
     },
     async loadDashboard() {
       this.isDashboardLoading = true;
+      this.loadErrorMessage = '';
 
       try {
         const [
@@ -113,26 +110,40 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
         ]);
 
         const products = productsResult.status === 'fulfilled'
-          ? normalizeArrayPayload(productsResult.value, getFallbackAdminProducts())
-          : getFallbackAdminProducts();
+          ? normalizeArrayPayload(productsResult.value)
+          : [];
         const orders = ordersResult.status === 'fulfilled'
-          ? normalizeArrayPayload(ordersResult.value, getFallbackAdminOrders())
-          : getFallbackAdminOrders();
+          ? normalizeArrayPayload(ordersResult.value)
+          : [];
         const members = membersResult.status === 'fulfilled'
           ? normalizeMembers(membersResult.value)
-          : getFallbackAdminMembers();
+          : [];
         const reviews = reviewsResult.status === 'fulfilled'
-          ? normalizeArrayPayload(reviewsResult.value, createFallbackReviews(getFallbackAdminReviewItems()))
-          : createFallbackReviews(getFallbackAdminReviewItems());
+          ? normalizeArrayPayload(reviewsResult.value)
+          : [];
         const qnas = qnasResult.status === 'fulfilled'
-          ? normalizeArrayPayload(qnasResult.value, createFallbackQnas(getFallbackAdminQnaThreads()))
-          : createFallbackQnas(getFallbackAdminQnaThreads());
+          ? normalizeArrayPayload(qnasResult.value)
+          : [];
         const productCount = productCountResult.status === 'fulfilled'
           ? Number(productCountResult.value)
-          : products.length;
+          : 0;
         const orderCount = orderCountResult.status === 'fulfilled'
           ? Number(orderCountResult.value)
-          : orders.length;
+          : 0;
+
+        const hasRejectedRequest = [
+          productCountResult,
+          orderCountResult,
+          productsResult,
+          ordersResult,
+          membersResult,
+          reviewsResult,
+          qnasResult,
+        ].some((result) => result.status === 'rejected');
+
+        if (hasRejectedRequest) {
+          this.loadErrorMessage = '일부 관리자 통계를 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+        }
 
         this.dashboard = buildAdminDashboard({
           categories: getFallbackAdminCategories(),
@@ -145,7 +156,8 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
           orderCount,
         });
       } catch {
-        this.dashboard = createFallbackDashboard();
+        this.dashboard = createEmptyDashboard();
+        this.loadErrorMessage = '관리자 대시보드를 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
       } finally {
         this.isDashboardLoading = false;
         this.loaded = true;

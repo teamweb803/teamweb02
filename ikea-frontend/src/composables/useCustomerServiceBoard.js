@@ -8,11 +8,16 @@ import {
 import { resolveCustomerServiceSection } from '../constants/customerServiceNavigation';
 import { getCustomerSupportQnaRows } from '../services/customerSupportService';
 import { getCustomerNoticeRows } from '../services/noticeService';
+import { useAccountStore } from '../stores/account';
+import { hasAdminAccess, hasAuthenticatedSession } from '../utils/accessControl';
 
 const BOARD_PAGE_SIZE = 6;
 
 export function useCustomerServiceBoard() {
   const route = useRoute();
+  const accountStore = useAccountStore();
+
+  accountStore.hydrate();
 
   const noticeKeyword = ref('');
   const activeFaqCategory = ref(CUSTOMER_SERVICE_FAQ_CATEGORIES[0]);
@@ -32,6 +37,14 @@ export function useCustomerServiceBoard() {
   const qnaSubmitted = computed(
     () => currentSection.value === 'qna' && route.query.submitted === '1',
   );
+  const qnaViewerMode = computed(() => {
+    if (!hasAuthenticatedSession(accountStore)) {
+      return 'guest';
+    }
+
+    return hasAdminAccess(accountStore) ? 'admin' : 'member';
+  });
+  const canBrowseQnaRows = computed(() => qnaViewerMode.value !== 'guest');
 
   const filteredNotices = computed(() => {
     const keyword = noticeKeyword.value.trim();
@@ -62,15 +75,25 @@ export function useCustomerServiceBoard() {
   });
 
   const filteredQnaRows = computed(() => {
-    const keyword = qnaKeyword.value.trim();
+    const keyword = qnaKeyword.value.trim().toLowerCase();
 
     if (!keyword) {
       return qnaRows.value;
     }
 
-    return qnaRows.value.filter((row) => row.title.includes(keyword));
+    return qnaRows.value.filter((row) => (
+      [
+        row.title,
+        row.questionContent,
+        row.answerContent,
+        row.writer,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    ));
   });
 
+  const filteredQnaCount = computed(() => filteredQnaRows.value.length);
   const qnaTotalPages = computed(() =>
     Math.max(1, Math.ceil(filteredQnaRows.value.length / BOARD_PAGE_SIZE)),
   );
@@ -97,6 +120,13 @@ export function useCustomerServiceBoard() {
   }
 
   async function loadQnaRows() {
+    if (!canBrowseQnaRows.value) {
+      qnaRows.value = [];
+      qnaLoadError.value = '';
+      isQnaLoading.value = false;
+      return;
+    }
+
     isQnaLoading.value = true;
     qnaLoadError.value = '';
 
@@ -161,13 +191,24 @@ export function useCustomerServiceBoard() {
     }
   });
 
+  watch(
+    () => [accountStore.accessToken, accountStore.role],
+    () => {
+      if (currentSection.value === 'qna') {
+        void loadQnaRows();
+      }
+    },
+  );
+
   return {
     activeFaqCategory,
+    canBrowseQnaRows,
     changeNoticePage,
     changeQnaPage,
     currentSection,
     faqCategories: CUSTOMER_SERVICE_FAQ_CATEGORIES,
     filteredFaqRows,
+    filteredQnaCount,
     isNoticeLoading,
     isQnaLoading,
     noticeLoadError,
@@ -182,6 +223,7 @@ export function useCustomerServiceBoard() {
     qnaLoadError,
     qnaSubmitted,
     qnaTotalPages,
+    qnaViewerMode,
     selectFaqCategory,
     toggleFaq,
   };
