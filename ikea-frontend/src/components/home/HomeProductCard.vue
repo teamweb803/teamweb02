@@ -1,4 +1,6 @@
 <script setup>
+import WishlistToggleButton from '../common/WishlistToggleButton.vue';
+
 const props = defineProps({
   item: {
     type: Object,
@@ -12,19 +14,35 @@ const props = defineProps({
     type: String,
     default: 'lazy',
   },
+  showWishlist: {
+    type: Boolean,
+    default: false,
+  },
+  isWishlisted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(['activate']);
+const emit = defineEmits(['activate', 'toggle-wishlist']);
 
 function handleActivate() {
   emit('activate', props.item);
 }
 
 function handleKeydown(event) {
+  if (event.target !== event.currentTarget) {
+    return;
+  }
+
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
     handleActivate();
   }
+}
+
+function handleWishlistToggle() {
+  emit('toggle-wishlist', props.item);
 }
 </script>
 
@@ -39,6 +57,12 @@ function handleKeydown(event) {
   >
     <div class="hs-product-card__image-wrap">
       <img :src="item.image" :alt="item.title" :loading="imageLoading" decoding="async" />
+      <WishlistToggleButton
+        v-if="showWishlist"
+        class="hs-product-card__wishlist"
+        :active="isWishlisted"
+        @toggle="handleWishlistToggle"
+      />
       <span
         v-if="item.isSoldOut"
         class="hs-product-card__badge hs-product-card__badge--soldout"
@@ -99,6 +123,13 @@ function handleKeydown(event) {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.hs-product-card__wishlist {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 1;
 }
 
 .hs-product-card__badge {

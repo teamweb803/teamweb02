@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, shallowRef } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import HomeCategorySection from '../components/home/HomeCategorySection.vue';
 import HomeEditorialSection from '../components/home/HomeEditorialSection.vue';
 import HomeHeroSection from '../components/home/HomeHeroSection.vue';
@@ -18,10 +18,13 @@ import {
 import { decorateStorefrontItems } from '../services/storefrontStockService';
 import { useCatalogStore } from '../stores/catalog';
 import { useHomeStore } from '../stores/home';
+import { useWishlistStore } from '../stores/wishlist';
 
+const route = useRoute();
 const router = useRouter();
 const catalogStore = useCatalogStore();
 const homeStore = useHomeStore();
+const wishlistStore = useWishlistStore();
 const {
   categoryDealCollections,
   categoryDealFilters,
@@ -232,9 +235,13 @@ const decoratedPickSection = computed(() => ({
     derivedPickItems.value.length ? derivedPickItems.value : pickSection.value?.items ?? [],
   ),
 }));
+const weeklyMorePath = computed(() => buildProductCategoryPath('sofa'));
+const activeCategoryMorePath = computed(() => buildProductCategoryPath(activeCategoryDealKey.value));
+const activeNewItemMorePath = computed(() => buildProductCategoryPath(activeNewItemKey.value));
 
 onMounted(() => {
   void catalogStore.ensureCatalogLoaded();
+  wishlistStore.ensureHydrated();
 });
 
 function handleShortcutClick(item) {
@@ -265,6 +272,16 @@ function handleProductCardClick(item) {
   }
 }
 
+function isProductWishlisted(productId) {
+  return wishlistStore.isProductWishlisted(productId);
+}
+
+function toggleProductWishlist(product) {
+  wishlistStore.toggleProduct(product, {
+    redirectPath: route.fullPath,
+  });
+}
+
 function handleCategoryDealFilterChange(filterId) {
   activeCategoryDealKey.value = filterId;
 }
@@ -279,21 +296,6 @@ function handleFeaturedClick(featured) {
   }
 }
 
-function handleSectionMoreClick(target) {
-  if (target === 'weekly') {
-    router.push(buildProductCategoryPath('sofa'));
-    return;
-  }
-
-  if (target === 'category') {
-    router.push(buildProductCategoryPath(activeCategoryDealKey.value));
-    return;
-  }
-
-  if (target === 'new') {
-    router.push(buildProductCategoryPath(activeNewItemKey.value));
-  }
-}
 </script>
 
 <template>
@@ -322,9 +324,10 @@ function handleSectionMoreClick(target) {
         title="이번 주 추천 상품"
         subtitle="지금 바로 두고 싶은 상품을 먼저 골라보세요."
         :items="decoratedWeeklyDeals"
-        more-target="weekly"
-        @more-click="handleSectionMoreClick"
+        :more-to="weeklyMorePath"
+        :is-product-wishlisted="isProductWishlisted"
         @product-activate="handleProductCardClick"
+        @toggle-wishlist="toggleProductWishlist"
       />
 
       <HomeEditorialSection
@@ -341,11 +344,12 @@ function handleSectionMoreClick(target) {
         :active-filter-id="activeCategoryDealKey"
         :banner="activeCategoryDealBanner"
         :items="visibleCategoryDeals"
-        more-target="category"
+        :more-to="activeCategoryMorePath"
+        :is-product-wishlisted="isProductWishlisted"
         @banner-activate="handleFeaturedClick(activeCategoryDealBanner)"
         @filter-change="handleCategoryDealFilterChange"
-        @more-click="handleSectionMoreClick"
         @product-activate="handleProductCardClick"
+        @toggle-wishlist="toggleProductWishlist"
       />
 
       <HomeProductGridSection
@@ -355,11 +359,12 @@ function handleSectionMoreClick(target) {
         :items="visibleNewItems"
         :filters="newItemFilters"
         :active-filter-id="activeNewItemKey"
-        more-target="new"
+        :more-to="activeNewItemMorePath"
+        :is-product-wishlisted="isProductWishlisted"
         badge-variant="yellow"
         @filter-change="handleNewItemFilterChange"
-        @more-click="handleSectionMoreClick"
         @product-activate="handleProductCardClick"
+        @toggle-wishlist="toggleProductWishlist"
       />
 
       <HomePickSection

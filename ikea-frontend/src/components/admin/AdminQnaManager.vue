@@ -8,7 +8,6 @@ import {
   createAdminQnaAnswer,
   deleteAdminQnaAnswer,
   getAdminQnas,
-  getFallbackAdminQnaThreads,
   updateAdminQnaAnswer,
 } from '../../services/adminService';
 import {
@@ -16,6 +15,7 @@ import {
   normalizeAdminQnaThreads,
   normalizeArrayPayload,
 } from '../../mappers/adminManagementMapper';
+import { useFeedback } from '../../composables/useFeedback';
 import { useAccountStore } from '../../stores/account';
 
 const accountStore = useAccountStore();
@@ -26,10 +26,12 @@ const selectedThreadId = shallowRef('');
 const searchKeyword = shallowRef('');
 const statusFilter = shallowRef('ALL');
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isSubmitting = shallowRef(false);
 const currentPage = shallowRef(1);
 const pageSize = 5;
+const { requestConfirm } = useFeedback();
 
 const answerForm = reactive({
   writer: '',
@@ -113,31 +115,24 @@ function applyThreads(items) {
 async function loadThreads(options = {}) {
   const {
     preferredThreadId = selectedThreadId.value,
-    fallbackOnError = true,
   } = options;
   isLoading.value = true;
-  let didLoadFromServer = true;
+  loadErrorMessage.value = '';
 
   try {
     const payload = await getAdminQnas();
-    applyThreads(normalizeArrayPayload(payload, getFallbackAdminQnaThreads()));
+    applyThreads(normalizeArrayPayload(payload, []));
   } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyThreads(getFallbackAdminQnaThreads());
-    }
+    applyThreads([]);
+    loadErrorMessage.value = '문의 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    return false;
   } finally {
     isLoading.value = false;
   }
 
-  if (!didLoadFromServer && !fallbackOnError) {
-    return false;
-  }
-
   syncSelectedThread(preferredThreadId);
 
-  return didLoadFromServer;
+  return true;
 }
 
 function selectThread(thread) {
@@ -170,7 +165,6 @@ async function submitAnswer() {
       await updateAdminQnaAnswer(answerId, payload);
       const didLoadFromServer = await loadThreads({
         preferredThreadId: threadId,
-        fallbackOnError: false,
       });
       statusMessage.value = didLoadFromServer
         ? '답변을 수정했습니다.'
@@ -179,7 +173,6 @@ async function submitAnswer() {
       await createAdminQnaAnswer(questionId, payload);
       const didLoadFromServer = await loadThreads({
         preferredThreadId: threadId,
-        fallbackOnError: false,
       });
       statusMessage.value = didLoadFromServer
         ? '답변을 등록했습니다.'
@@ -199,7 +192,12 @@ async function removeAnswer() {
     return;
   }
 
-  const confirmed = window.confirm('현재 답변을 삭제할까요?');
+  const confirmed = await requestConfirm({
+    title: '답변 삭제',
+    message: '현재 답변을 삭제할까요?',
+    confirmLabel: '삭제',
+  });
+
   if (!confirmed) {
     return;
   }
@@ -213,7 +211,6 @@ async function removeAnswer() {
     await deleteAdminQnaAnswer(answerId);
     const didLoadFromServer = await loadThreads({
       preferredThreadId: threadId,
-      fallbackOnError: false,
     });
     statusMessage.value = didLoadFromServer
       ? '답변을 삭제했습니다.'
@@ -292,8 +289,9 @@ onMounted(loadThreads);
 
         <CommonStatePanel
           v-if="!filteredThreads.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '문의 목록을 불러오는 중입니다.' : '표시할 문의가 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '문의 목록을 불러오는 중입니다.' : loadErrorMessage ? '문의 목록을 불러오지 못했습니다.' : '표시할 문의가 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>
@@ -345,7 +343,9 @@ onMounted(loadThreads);
 
       <CommonStatePanel
         v-else
-        title="문의를 선택하면 상세 내용이 표시됩니다."
+        :tone="loadErrorMessage ? 'error' : 'neutral'"
+        :title="loadErrorMessage ? '문의 상세를 표시할 수 없습니다.' : '문의를 선택하면 상세 내용이 표시됩니다.'"
+        :description="loadErrorMessage"
         align="left"
         compact
       />

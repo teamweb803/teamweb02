@@ -29,6 +29,8 @@ export function useKakaoPaymentRedirect(status = 'success') {
   }
 
   function buildDefaultActions(isRetryVisible = false) {
+    const pendingPayment = getPendingPayment();
+    const isGuestOrder = Boolean(pendingPayment?.orderSnapshot?.isGuestOrder);
     const nextActions = [];
 
     if (isRetryVisible) {
@@ -40,8 +42,8 @@ export function useKakaoPaymentRedirect(status = 'success') {
     }
 
     nextActions.push({
-      label: '마이페이지로 이동',
-      to: ROUTE_PATHS.memberMyPage,
+      label: isGuestOrder ? '장바구니로 이동' : '마이페이지로 이동',
+      to: isGuestOrder ? ROUTE_PATHS.cart : ROUTE_PATHS.memberMyPage,
       variant: isRetryVisible ? 'secondary' : 'primary',
     });
     nextActions.push({
@@ -85,7 +87,7 @@ export function useKakaoPaymentRedirect(status = 'success') {
           path: ROUTE_PATHS.orderComplete,
           query: {
             orderNumber: completedOrder.orderNumber,
-            orderType: 'member',
+            orderType: completedOrder.isGuestOrder ? 'guest' : 'member',
           },
         });
       } catch (error) {

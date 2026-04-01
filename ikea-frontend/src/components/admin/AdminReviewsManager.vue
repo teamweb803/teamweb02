@@ -5,7 +5,6 @@ import AdminPanel from './AdminPanel.vue';
 import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
   getAdminReviews,
-  getFallbackAdminReviewItems,
   removeAdminReview,
 } from '../../services/adminService';
 import {
@@ -13,15 +12,17 @@ import {
   normalizeAdminReview,
   normalizeArrayPayload,
 } from '../../mappers/adminManagementMapper';
-import { createFallbackReviews } from '../../mappers/adminDashboardMapper';
+import { useFeedback } from '../../composables/useFeedback';
 
 const reviews = shallowRef([]);
 const searchKeyword = shallowRef('');
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isRemoving = shallowRef(false);
 const currentPage = shallowRef(1);
 const pageSize = 5;
+const { requestConfirm } = useFeedback();
 
 const filteredReviews = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase();
@@ -55,29 +56,31 @@ function applyReviews(items) {
     .filter((item) => item.reviewId);
 }
 
-async function loadReviews(options = {}) {
-  const { fallbackOnError = true } = options;
+async function loadReviews() {
   isLoading.value = true;
-  let didLoadFromServer = true;
+  loadErrorMessage.value = '';
 
   try {
     const payload = await getAdminReviews();
-    applyReviews(normalizeArrayPayload(payload, createFallbackReviews(getFallbackAdminReviewItems())));
+    applyReviews(normalizeArrayPayload(payload, []));
   } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyReviews(createFallbackReviews(getFallbackAdminReviewItems()));
-    }
+    applyReviews([]);
+    loadErrorMessage.value = '리뷰 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    return false;
   } finally {
     isLoading.value = false;
   }
 
-  return didLoadFromServer;
+  return true;
 }
 
 async function removeReviewItem(review) {
-  const confirmed = window.confirm('리뷰를 삭제할까요?');
+  const confirmed = await requestConfirm({
+    title: '리뷰 삭제',
+    message: '리뷰를 삭제할까요?',
+    confirmLabel: '삭제',
+  });
+
   if (!confirmed) {
     return;
   }
@@ -87,7 +90,7 @@ async function removeReviewItem(review) {
 
   try {
     await removeAdminReview(review.reviewId);
-    const didLoadFromServer = await loadReviews({ fallbackOnError: false });
+    const didLoadFromServer = await loadReviews();
     statusMessage.value = didLoadFromServer
       ? '리뷰를 삭제했습니다.'
       : '리뷰는 삭제됐지만 목록 재조회는 실패했습니다.';
@@ -151,8 +154,9 @@ onMounted(loadReviews);
 
         <CommonStatePanel
           v-if="!filteredReviews.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '리뷰 목록을 불러오는 중입니다.' : '표시할 리뷰가 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '리뷰 목록을 불러오는 중입니다.' : loadErrorMessage ? '리뷰 목록을 불러오지 못했습니다.' : '표시할 리뷰가 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>

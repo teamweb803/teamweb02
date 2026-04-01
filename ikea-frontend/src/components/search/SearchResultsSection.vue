@@ -1,10 +1,8 @@
 <script setup>
-import { useRouter } from 'vue-router';
-import { buildProductDetailPath } from '../../constants/routes';
 import { resolveStorefrontAvailability } from '../../services/storefrontStockService';
 import HomeProductCard from '../home/HomeProductCard.vue';
 
-const props = defineProps({
+defineProps({
   keyword: {
     type: String,
     default: '',
@@ -13,9 +11,13 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  isProductWishlisted: {
+    type: Function,
+    default: () => false,
+  },
 });
 
-const router = useRouter();
+const emit = defineEmits(['product-activate', 'toggle-wishlist']);
 
 function mapSearchCard(product) {
   const availability = resolveStorefrontAvailability(product);
@@ -40,9 +42,6 @@ function mapSearchCard(product) {
   };
 }
 
-function openProduct(product) {
-  router.push(buildProductDetailPath(product.id));
-}
 </script>
 
 <template>
@@ -67,7 +66,10 @@ function openProduct(product) {
         v-for="product in results"
         :key="product.id"
         :item="mapSearchCard(product)"
-        @activate="openProduct(product)"
+        :show-wishlist="true"
+        :is-wishlisted="isProductWishlisted(product.id)"
+        @activate="emit('product-activate', product)"
+        @toggle-wishlist="emit('toggle-wishlist', product)"
       />
     </div>
 

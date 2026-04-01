@@ -17,12 +17,25 @@ import {
 } from '../services/cartService';
 import {
   buildCompletedOrderSnapshot,
-  cloneCartItems,
   getCheckoutItems,
   removeCheckoutItems,
 } from '../mappers/commerceMapper';
-import { cancelMemberOrder, createMyOrder, getOrderDetail } from '../services/orderService';
-import { confirmKakaoPayment, readyKakaoPayment } from '../services/paymentService';
+import {
+  buildGuestOrderRequest,
+  buildMemberOrderRequest,
+} from '../mappers/orderRequestMapper';
+import {
+  cancelMemberOrder,
+  createGuestOrder,
+  createMyOrder,
+  getOrderDetail,
+} from '../services/orderService';
+import {
+  confirmKakaoPayment,
+  confirmTossPayment,
+  readyKakaoPayment,
+  readyTossPayment,
+} from '../services/paymentService';
 import {
   decorateStorefrontItems,
   primeStorefrontInventory,
@@ -31,7 +44,9 @@ import {
 
 const STORAGE_KEY = COMMERCE_SESSION_KEYS.cart;
 const ORDER_COMPLETION_KEY = COMMERCE_SESSION_KEYS.orderCompletion;
+const GUEST_ORDER_HISTORY_KEY = COMMERCE_SESSION_KEYS.guestOrderHistory;
 const PENDING_PAYMENT_KEY = COMMERCE_SESSION_KEYS.pendingPayment;
+const GUEST_ORDER_HISTORY_LIMIT = 20;
 
 function canUseStorage() {
   return typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';
@@ -44,6 +59,13 @@ function normalizeIdentifier(value) {
 function normalizeInteger(value, fallback = 0) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function buildOrderItemSignature(items = []) {
+  return items
+    .map((item) => `${normalizeIdentifier(item.productId)}:${Math.max(1, normalizeInteger(item.quantity, 1))}`)
+    .sort()
+    .join('|');
 }
 
 function unwrapArrayPayload(payload) {
@@ -70,21 +92,6 @@ function unwrapArrayPayload(payload) {
 
 function unwrapObjectPayload(payload) {
   return payload?.data ?? payload ?? {};
-}
-
-function buildDeliveryAddress(payload = {}) {
-  const zoneCode = normalizeIdentifier(payload.zoneCode);
-  const addressMain = normalizeIdentifier(payload.addressMain);
-  const addressDetail = normalizeIdentifier(payload.addressDetail);
-
-  return [
-    zoneCode ? `(${zoneCode})` : '',
-    addressMain,
-    addressDetail,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
 }
 
 function resolveOrderId(payload) {
@@ -353,6 +360,33 @@ function writeStoredCompletedOrder(orderSnapshot) {
   window.sessionStorage.setItem(ORDER_COMPLETION_KEY, JSON.stringify(orderSnapshot));
 }
 
+function readStoredGuestOrderHistory() {
+  if (!canUseStorage()) {
+    return [];
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(GUEST_ORDER_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredGuestOrderHistory(orderSnapshots) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  if (!Array.isArray(orderSnapshots) || !orderSnapshots.length) {
+    window.sessionStorage.removeItem(GUEST_ORDER_HISTORY_KEY);
+    return;
+  }
+
+  window.sessionStorage.setItem(GUEST_ORDER_HISTORY_KEY, JSON.stringify(orderSnapshots));
+}
+
 function readStoredPendingPayment() {
   if (!canUseStorage()) {
     return null;
@@ -399,6 +433,11 @@ function normalizePaymentMethodCode(value) {
     default:
       return '';
   }
+}
+
+function isExternalCheckoutPaymentMethod(paymentMethod = '') {
+  const normalizedPaymentMethod = normalizePaymentMethodCode(paymentMethod);
+  return normalizedPaymentMethod === 'kakaopay' || normalizedPaymentMethod === 'tosspay';
 }
 
 function resolvePaymentMethodLabel(paymentMethodCode, fallbackLabel = '') {
@@ -492,6 +531,7 @@ export const useCartStore = defineStore('cart', () => {
 
   const cartItems = ref(accountStore.accessToken ? [] : readStoredCart());
   const completedOrder = ref(readStoredCompletedOrder());
+  const guestCompletedOrders = ref(readStoredGuestOrderHistory());
   const pendingPayment = ref(readStoredPendingPayment());
   const remoteHydrated = ref(false);
   let pendingRemoteSync = null;
@@ -524,6 +564,14 @@ export const useCartStore = defineStore('cart', () => {
     completedOrder,
     (orderSnapshot) => {
       writeStoredCompletedOrder(orderSnapshot);
+    },
+    { deep: true },
+  );
+
+  watch(
+    guestCompletedOrders,
+    (orderSnapshots) => {
+      writeStoredGuestOrderHistory(orderSnapshots);
     },
     { deep: true },
   );
@@ -743,7 +791,79 @@ export const useCartStore = defineStore('cart', () => {
     return getCheckoutItems(cartItems.value, mode, itemId);
   }
 
+  function isFullCartCheckout(payload = {}) {
+    const checkoutSignature = buildOrderItemSignature(payload.orderItems ?? []);
+    const currentCartSignature = buildOrderItemSignature(
+      cartItems.value.filter((item) => !item.isSoldOut),
+    );
+
+    return Boolean(checkoutSignature) && checkoutSignature === currentCartSignature;
+  }
+
+  function ensureSupportedMemberCheckoutScope(payload = {}) {
+    if (String(payload.mode ?? 'all') === 'all') {
+      return;
+    }
+
+    if (isFullCartCheckout(payload)) {
+      return;
+    }
+
+    throw new Error('현재 선택 주문/바로주문은 백엔드 지원이 없어 전체 주문만 가능합니다.');
+  }
+
+  function storeGuestCompletedOrder(orderSnapshot) {
+    const orderNumber = normalizeIdentifier(orderSnapshot?.orderNumber);
+
+    if (!orderNumber) {
+      return;
+    }
+
+    guestCompletedOrders.value = [
+      orderSnapshot,
+      ...guestCompletedOrders.value.filter(
+        (storedOrder) => normalizeIdentifier(storedOrder?.orderNumber) !== orderNumber,
+      ),
+    ].slice(0, GUEST_ORDER_HISTORY_LIMIT);
+  }
+
+  function buildPendingPaymentSnapshot(orderSnapshot, provider, payload = {}, orderId = null) {
+    return {
+      provider,
+      orderId,
+      orderNumber: normalizeIdentifier(orderSnapshot.orderNumber),
+      tid: '',
+      redirectUrl: '',
+      amount: Number(orderSnapshot.finalTotal ?? 0),
+      requestedAt: new Date().toISOString(),
+      checkoutContext: {
+        mode: String(payload.mode ?? 'all'),
+        itemId: String(payload.itemId ?? ''),
+      },
+      orderSnapshot: {
+        ...orderSnapshot,
+        paymentMethod: provider,
+        paymentMethodLabel: resolvePaymentMethodLabel(provider, orderSnapshot.paymentMethodLabel),
+        status: 'payment-pending',
+        statusCode: 'READY',
+        statusLabel: '결제 진행 중',
+        virtualAccount: null,
+      },
+    };
+  }
+
+  function resolveReadyRedirectUrl(readyResponse = {}) {
+    return normalizeIdentifier(
+      readyResponse?.redirectUrl
+      ?? readyResponse?.checkoutUrl
+      ?? readyResponse?.nextRedirectPcUrl
+      ?? readyResponse?.nextRedirectMobileUrl,
+    );
+  }
+
   async function createMemberCompletedOrderSnapshot(payload) {
+    ensureSupportedMemberCheckoutScope(payload);
+
     const orderSnapshot = {
       ...buildCompletedOrderSnapshot(payload, {
         virtualAccountBanks: VIRTUAL_ACCOUNT_BANKS,
@@ -751,9 +871,7 @@ export const useCartStore = defineStore('cart', () => {
       }),
       isGuestOrder: false,
     };
-    const createResponse = await createMyOrder({
-      address: buildDeliveryAddress(payload),
-    });
+    const createResponse = await createMyOrder(buildMemberOrderRequest(payload));
     const createdOrderId = resolveOrderId(createResponse);
     let orderDetailResponse = null;
 
@@ -784,8 +902,90 @@ export const useCartStore = defineStore('cart', () => {
     };
   }
 
+  async function createGuestCompletedOrderSnapshot(payload) {
+    const orderSnapshot = {
+      ...buildCompletedOrderSnapshot(payload, {
+        virtualAccountBanks: VIRTUAL_ACCOUNT_BANKS,
+        virtualAccountDueDays: VIRTUAL_ACCOUNT_DUE_DAYS,
+      }),
+      isGuestOrder: true,
+    };
+    const createResponse = await createGuestOrder(buildGuestOrderRequest(payload));
+    const createdOrderId = resolveOrderId(createResponse);
+    const mergedSnapshot = {
+      ...mergeCompletedOrderSnapshot(orderSnapshot, createResponse),
+      isGuestOrder: true,
+    };
+
+    if (createdOrderId !== null && mergedSnapshot.orderId === undefined) {
+      mergedSnapshot.orderId = createdOrderId;
+    }
+
+    return {
+      createdOrderId,
+      orderSnapshot: mergedSnapshot,
+    };
+  }
+
+  function resolvePendingOrderId(orderSnapshot = {}, createdOrderId = null) {
+    if (createdOrderId !== null) {
+      return createdOrderId;
+    }
+
+    const orderId = normalizeInteger(orderSnapshot.orderId, 0);
+    return orderId > 0 ? orderId : null;
+  }
+
+  async function createCheckoutPendingOrderSnapshot(payload) {
+    if (isLoggedIn()) {
+      return createMemberCompletedOrderSnapshot(payload);
+    }
+
+    return createGuestCompletedOrderSnapshot(payload);
+  }
+
+  async function finalizeConfirmedPayment(pendingPaymentSnapshot, paymentResponse) {
+    const isGuestOrder = Boolean(pendingPaymentSnapshot?.orderSnapshot?.isGuestOrder);
+    let baseSnapshot = pendingPaymentSnapshot?.orderSnapshot ?? {};
+
+    if (!isGuestOrder && pendingPaymentSnapshot?.orderId !== null && pendingPaymentSnapshot?.orderId !== undefined) {
+      const orderDetailResponse = await getOrderDetail(pendingPaymentSnapshot.orderId)
+        .catch(() => ({ orderId: pendingPaymentSnapshot.orderId }));
+
+      baseSnapshot = mergeCompletedOrderSnapshot(baseSnapshot, orderDetailResponse);
+    }
+
+    const mergedSnapshot = {
+      ...mergePaymentSnapshot(baseSnapshot, paymentResponse),
+      isGuestOrder,
+    };
+
+    completedOrder.value = mergedSnapshot;
+    pendingPayment.value = null;
+
+    if (isGuestOrder) {
+      storeGuestCompletedOrder(mergedSnapshot);
+      cartItems.value = syncCartItemsWithAvailability(
+        removeCheckoutItems(
+          cartItems.value,
+          pendingPaymentSnapshot?.checkoutContext?.mode ?? 'all',
+          pendingPaymentSnapshot?.checkoutContext?.itemId ?? '',
+        ),
+      );
+      return mergedSnapshot;
+    }
+
+    await syncRemoteCart();
+    return mergedSnapshot;
+  }
+
   async function completeCheckout(payload) {
     const isGuestOrder = !isLoggedIn();
+
+    if (isExternalCheckoutPaymentMethod(payload.paymentMethod)) {
+      throw new Error(`${resolvePaymentMethodLabel(payload.paymentMethod, '외부 결제')} 흐름으로 다시 진행해 주세요.`);
+    }
+
     const orderSnapshot = {
       ...buildCompletedOrderSnapshot(payload, {
       virtualAccountBanks: VIRTUAL_ACCOUNT_BANKS,
@@ -796,6 +996,7 @@ export const useCartStore = defineStore('cart', () => {
 
     if (isGuestOrder) {
       completedOrder.value = orderSnapshot;
+      storeGuestCompletedOrder(orderSnapshot);
       cartItems.value = syncCartItemsWithAvailability(
         removeCheckoutItems(cartItems.value, payload.mode, payload.itemId),
       );
@@ -810,100 +1011,198 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   async function startKakaoCheckout(payload) {
-    if (!isLoggedIn()) {
-      throw new Error('로그인 후 카카오페이 결제를 진행할 수 있습니다.');
-    }
+    const checkoutPayload = {
+      ...payload,
+      paymentMethod: 'kakaopay',
+      paymentMethodLabel: '카카오페이',
+    };
+    const isGuestOrder = !isLoggedIn();
+    const { createdOrderId, orderSnapshot } = await createCheckoutPendingOrderSnapshot(checkoutPayload);
+    const pendingOrderId = resolvePendingOrderId(orderSnapshot, createdOrderId);
 
-    const { createdOrderId, orderSnapshot } = await createMemberCompletedOrderSnapshot(payload);
-
-    if (createdOrderId === null) {
+    if (pendingOrderId === null && !normalizeIdentifier(orderSnapshot.orderNumber)) {
       throw new Error('결제에 필요한 주문 정보를 확인하지 못했습니다.');
     }
 
-    pendingPayment.value = {
-      provider: 'kakaopay',
-      orderId: createdOrderId,
-      orderNumber: normalizeIdentifier(orderSnapshot.orderNumber),
-      tid: '',
-      redirectUrl: '',
-      requestedAt: new Date().toISOString(),
-      orderSnapshot: {
-        ...orderSnapshot,
-        paymentMethod: 'kakaopay',
-        paymentMethodLabel: '카카오페이',
-        status: 'payment-pending',
-        statusCode: 'READY',
-        statusLabel: '결제 진행 중',
-        virtualAccount: null,
-      },
-    };
-
-    const readyResponse = await readyKakaoPayment({
-      orderId: createdOrderId,
-    });
-    const redirectUrl = normalizeIdentifier(
-      readyResponse?.nextRedirectPcUrl ?? readyResponse?.nextRedirectMobileUrl,
+    pendingPayment.value = buildPendingPaymentSnapshot(
+      orderSnapshot,
+      'kakaopay',
+      checkoutPayload,
+      pendingOrderId,
     );
 
-    if (!redirectUrl) {
-      throw new Error(
-        `카카오페이 결제 창을 열지 못했습니다. 주문번호 ${pendingPayment.value.orderNumber || createdOrderId}를 확인해 주세요.`,
+    try {
+      const readyResponse = await readyKakaoPayment(
+        {
+          orderId: pendingOrderId,
+          orderNo: pendingPayment.value.orderNumber,
+          amount: pendingPayment.value.amount,
+        },
+        { isGuestOrder },
       );
+      const redirectUrl = resolveReadyRedirectUrl(readyResponse);
+
+      if (!redirectUrl) {
+        throw new Error(
+          `카카오페이 결제 창을 열지 못했습니다. 주문번호 ${pendingPayment.value.orderNumber || pendingOrderId}를 확인해 주세요.`,
+        );
+      }
+
+      pendingPayment.value = {
+        ...pendingPayment.value,
+        tid: normalizeIdentifier(readyResponse?.tid),
+        redirectUrl,
+      };
+      completedOrder.value = null;
+
+      if (!isGuestOrder) {
+        await syncRemoteCart();
+      }
+
+      return {
+        orderId: pendingOrderId,
+        orderNumber: pendingPayment.value.orderNumber,
+        redirectUrl,
+        tid: pendingPayment.value.tid,
+      };
+    } catch (error) {
+      pendingPayment.value = null;
+      throw error;
+    }
+  }
+
+  async function startTossCheckout(payload) {
+    const checkoutPayload = {
+      ...payload,
+      paymentMethod: 'tosspay',
+      paymentMethodLabel: '토스페이',
+    };
+    const isGuestOrder = !isLoggedIn();
+    const { createdOrderId, orderSnapshot } = await createCheckoutPendingOrderSnapshot(checkoutPayload);
+    const pendingOrderId = resolvePendingOrderId(orderSnapshot, createdOrderId);
+
+    pendingPayment.value = buildPendingPaymentSnapshot(
+      orderSnapshot,
+      'tosspay',
+      checkoutPayload,
+      pendingOrderId,
+    );
+
+    try {
+      const readyResponse = await readyTossPayment(
+        {
+          orderId: pendingOrderId,
+          orderNo: pendingPayment.value.orderNumber,
+          amount: pendingPayment.value.amount,
+        },
+        { isGuestOrder },
+      );
+      const redirectUrl = resolveReadyRedirectUrl(readyResponse);
+
+      if (!redirectUrl) {
+        throw new Error(
+          `토스페이 결제 창을 열지 못했습니다. 주문번호 ${pendingPayment.value.orderNumber || pendingOrderId || ''}를 확인해 주세요.`,
+        );
+      }
+
+      pendingPayment.value = {
+        ...pendingPayment.value,
+        redirectUrl,
+      };
+      completedOrder.value = null;
+
+      if (!isGuestOrder) {
+        await syncRemoteCart();
+      }
+
+      return {
+        orderId: pendingOrderId,
+        orderNumber: pendingPayment.value.orderNumber,
+        redirectUrl,
+      };
+    } catch (error) {
+      pendingPayment.value = null;
+      throw error;
+    }
+  }
+
+  async function startExternalCheckout(payload) {
+    const paymentMethod = normalizePaymentMethodCode(payload.paymentMethod);
+
+    if (paymentMethod === 'kakaopay') {
+      return startKakaoCheckout(payload);
     }
 
-    pendingPayment.value = {
-      ...pendingPayment.value,
-      tid: normalizeIdentifier(readyResponse?.tid),
-      redirectUrl,
-    };
-    completedOrder.value = null;
-    await syncRemoteCart();
+    if (paymentMethod === 'tosspay') {
+      return startTossCheckout(payload);
+    }
 
-    return {
-      orderId: createdOrderId,
-      orderNumber: pendingPayment.value.orderNumber,
-      redirectUrl,
-      tid: pendingPayment.value.tid,
-    };
+    throw new Error('외부 결제수단 정보를 다시 확인해 주세요.');
   }
 
   async function confirmPendingKakaoPayment(pgToken) {
     const pendingPaymentSnapshot = pendingPayment.value;
     const normalizedPgToken = normalizeIdentifier(pgToken);
+    const isGuestOrder = Boolean(pendingPaymentSnapshot?.orderSnapshot?.isGuestOrder);
 
-    if (!pendingPaymentSnapshot?.orderId || !pendingPaymentSnapshot?.tid || !normalizedPgToken) {
+    if (
+      pendingPaymentSnapshot?.provider !== 'kakaopay'
+      || (!pendingPaymentSnapshot?.orderId && !pendingPaymentSnapshot?.orderNumber)
+      || !pendingPaymentSnapshot?.tid
+      || !normalizedPgToken
+    ) {
       throw new Error('카카오페이 승인 정보를 다시 확인해 주세요.');
     }
 
-    const paymentResponse = await confirmKakaoPayment({
-      pgToken: normalizedPgToken,
-      tid: pendingPaymentSnapshot.tid,
-      orderId: pendingPaymentSnapshot.orderId,
-    });
-
-    let orderDetailResponse = null;
-
-    try {
-      orderDetailResponse = await getOrderDetail(pendingPaymentSnapshot.orderId);
-    } catch {
-      orderDetailResponse = { orderId: pendingPaymentSnapshot.orderId };
-    }
-
-    const mergedSnapshot = mergePaymentSnapshot(
-      mergeCompletedOrderSnapshot(
-        pendingPaymentSnapshot.orderSnapshot ?? {},
-        orderDetailResponse,
-      ),
-      paymentResponse,
+    const paymentResponse = await confirmKakaoPayment(
+      {
+        pgToken: normalizedPgToken,
+        tid: pendingPaymentSnapshot.tid,
+        orderId: pendingPaymentSnapshot.orderId,
+        orderNo: pendingPaymentSnapshot.orderNumber,
+        amount: pendingPaymentSnapshot.amount,
+      },
+      { isGuestOrder },
     );
 
-    completedOrder.value = {
-      ...mergedSnapshot,
-      isGuestOrder: false,
-    };
-    pendingPayment.value = null;
-    await syncRemoteCart();
-    return completedOrder.value;
+    return finalizeConfirmedPayment(pendingPaymentSnapshot, paymentResponse);
+  }
+
+  async function confirmPendingTossPayment(payload = {}) {
+    const pendingPaymentSnapshot = pendingPayment.value;
+    const isGuestOrder = Boolean(pendingPaymentSnapshot?.orderSnapshot?.isGuestOrder);
+    const paymentKey = normalizeIdentifier(payload.paymentKey);
+    const orderNo = normalizeIdentifier(
+      payload.orderNo
+      ?? payload.orderNumber
+      ?? pendingPaymentSnapshot?.orderNumber,
+    );
+    const amount = normalizeInteger(
+      payload.amount
+      ?? pendingPaymentSnapshot?.amount
+      ?? pendingPaymentSnapshot?.orderSnapshot?.finalTotal,
+      0,
+    );
+
+    if (
+      pendingPaymentSnapshot?.provider !== 'tosspay'
+      || !paymentKey
+      || !orderNo
+      || amount <= 0
+    ) {
+      throw new Error('토스페이 승인 정보를 다시 확인해 주세요.');
+    }
+
+    const paymentResponse = await confirmTossPayment(
+      {
+        paymentKey,
+        orderNo,
+        amount,
+      },
+      { isGuestOrder },
+    );
+
+    return finalizeConfirmedPayment(pendingPaymentSnapshot, paymentResponse);
   }
 
   async function cancelPendingPaymentFlow() {
@@ -913,7 +1212,11 @@ export const useCartStore = defineStore('cart', () => {
       return null;
     }
 
-    if (pendingPaymentSnapshot.orderId !== undefined && pendingPaymentSnapshot.orderId !== null) {
+    if (
+      !pendingPaymentSnapshot?.orderSnapshot?.isGuestOrder
+      && pendingPaymentSnapshot.orderId !== undefined
+      && pendingPaymentSnapshot.orderId !== null
+    ) {
       try {
         await cancelMemberOrder(pendingPaymentSnapshot.orderId);
       } catch {
@@ -923,7 +1226,11 @@ export const useCartStore = defineStore('cart', () => {
 
     pendingPayment.value = null;
     completedOrder.value = null;
-    await syncRemoteCart().catch(() => {});
+
+    if (!pendingPaymentSnapshot?.orderSnapshot?.isGuestOrder) {
+      await syncRemoteCart().catch(() => {});
+    }
+
     return pendingPaymentSnapshot;
   }
 
@@ -940,6 +1247,10 @@ export const useCartStore = defineStore('cart', () => {
     return completedOrder.value;
   }
 
+  function getGuestCompletedOrders() {
+    return guestCompletedOrders.value;
+  }
+
   function getPendingPayment() {
     return pendingPayment.value;
   }
@@ -953,10 +1264,12 @@ export const useCartStore = defineStore('cart', () => {
     cartItems,
     completedOrder,
     confirmPendingKakaoPayment,
+    confirmPendingTossPayment,
     recommendations,
     cancelPendingPaymentFlow,
     addCartItem,
     ensureCartLoaded,
+    getGuestCompletedOrders,
     getPendingPayment,
     selectedItems,
     completeCheckout,
@@ -967,6 +1280,7 @@ export const useCartStore = defineStore('cart', () => {
     resolveCheckoutItems,
     setAllSelected,
     setItemSelected,
+    startExternalCheckout,
     startKakaoCheckout,
     syncRemoteCart,
     updateQuantity,

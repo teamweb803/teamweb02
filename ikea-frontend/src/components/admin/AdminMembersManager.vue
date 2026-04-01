@@ -7,7 +7,6 @@ import {
   deleteAdminMember,
   getAdminMemberDetail,
   getAdminMembers,
-  getFallbackAdminMembers,
   updateAdminMemberRole,
 } from '../../services/adminService';
 import {
@@ -17,6 +16,7 @@ import {
   normalizeArrayPayload,
   normalizeObjectPayload,
 } from '../../mappers/adminManagementMapper';
+import { useFeedback } from '../../composables/useFeedback';
 
 const members = shallowRef([]);
 const selectedMemberId = shallowRef('');
@@ -25,11 +25,13 @@ const roleDraft = shallowRef('USER');
 const searchKeyword = shallowRef('');
 const currentPage = shallowRef(1);
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isDetailLoading = shallowRef(false);
 const isSaving = shallowRef(false);
 const pageSize = 5;
 let latestDetailRequestToken = 0;
+const { requestConfirm } = useFeedback();
 
 const filteredMembers = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase();
@@ -92,27 +94,20 @@ function setSelectedMember(member) {
 async function loadMembers(options = {}) {
   const {
     preferredMemberId = selectedMemberId.value,
-    fallbackOnError = true,
   } = options;
   isLoading.value = true;
+  loadErrorMessage.value = '';
   const previousSelectedMemberId = selectedMemberId.value;
-  let didLoadFromServer = true;
 
   try {
     const payload = await getAdminMembers();
-    applyMembers(normalizeArrayPayload(payload, getFallbackAdminMembers()));
+    applyMembers(normalizeArrayPayload(payload, []));
   } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyMembers(getFallbackAdminMembers());
-    }
+    applyMembers([]);
+    loadErrorMessage.value = '회원 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    return false;
   } finally {
     isLoading.value = false;
-  }
-
-  if (!didLoadFromServer && !fallbackOnError) {
-    return false;
   }
 
   syncSelectedMember(preferredMemberId);
@@ -121,7 +116,7 @@ async function loadMembers(options = {}) {
     await loadMemberDetail(selectedMemberId.value);
   }
 
-  return didLoadFromServer;
+  return true;
 }
 
 async function loadMemberDetail(memberId) {
@@ -167,7 +162,6 @@ async function submitRoleChange() {
     await updateAdminMemberRole(memberId, roleDraft.value);
     const didLoadFromServer = await loadMembers({
       preferredMemberId: memberId,
-      fallbackOnError: false,
     });
     statusMessage.value = didLoadFromServer
       ? '회원 권한을 변경했습니다.'
@@ -184,7 +178,12 @@ async function removeSelectedMember() {
     return;
   }
 
-  const confirmed = window.confirm(`"${selectedMember.value.name}" 회원을 삭제할까요?`);
+  const confirmed = await requestConfirm({
+    title: '회원 삭제',
+    message: `"${selectedMember.value.name}" 회원을 삭제할까요?`,
+    confirmLabel: '삭제',
+  });
+
   if (!confirmed) {
     return;
   }
@@ -195,7 +194,7 @@ async function removeSelectedMember() {
 
   try {
     await deleteAdminMember(memberId);
-    const didLoadFromServer = await loadMembers({ fallbackOnError: false });
+    const didLoadFromServer = await loadMembers();
     statusMessage.value = didLoadFromServer
       ? '회원을 삭제했습니다.'
       : '회원은 삭제됐지만 목록 재조회는 실패했습니다.';
@@ -264,8 +263,9 @@ onMounted(loadMembers);
 
         <CommonStatePanel
           v-if="!pagedMembers.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '회원 목록을 불러오는 중입니다.' : '표시할 회원이 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '회원 목록을 불러오는 중입니다.' : loadErrorMessage ? '회원 목록을 불러오지 못했습니다.' : '표시할 회원이 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>
@@ -337,7 +337,9 @@ onMounted(loadMembers);
 
       <CommonStatePanel
         v-else
-        title="회원을 선택하면 상세 정보가 표시됩니다."
+        :tone="loadErrorMessage ? 'error' : 'neutral'"
+        :title="loadErrorMessage ? '회원 상세를 표시할 수 없습니다.' : '회원을 선택하면 상세 정보가 표시됩니다.'"
+        :description="loadErrorMessage"
         align="left"
         compact
       />

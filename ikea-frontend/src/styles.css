@@ -6,18 +6,36 @@
   --surface: rgba(255, 255, 255, 0.96);
   --surface-strong: #ffffff;
   --surface-alt: #eaf2ff;
+  --surface-soft: #f7f9fb;
+  --surface-muted: #f8fafc;
   --line: rgba(15, 23, 42, 0.08);
   --text: #111827;
+  --text-strong: #111111;
+  --text-secondary: #555555;
+  --text-muted-strong: #666666;
   --muted: #667085;
+  --text-muted: #777777;
+  --text-faint: #888888;
   --accent: #0058a3;
   --accent-strong: #004f93;
   --accent-soft: #eaf2ff;
   --accent-secondary: #ffdb00;
   --accent-secondary-ink: #111827;
+  --status-danger: #c62828;
+  --status-success: #0f6b3b;
+  --border-strong: #111111;
+  --border-default: #d9d9d9;
+  --border-soft: #e6e6e6;
+  --border-subtle: #ececec;
+  --border-muted: #efefef;
   --shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
   --radius-xl: 8px;
   --radius-lg: 6px;
   --radius-md: 4px;
+  --radius-pill: 999px;
+  --control-height-compact: 44px;
+  --control-height: 46px;
+  --action-height: 40px;
   --display-font: 'Noto Sans KR', sans-serif;
   --body-font: 'Noto Sans KR', sans-serif;
 }
@@ -980,7 +998,7 @@ a {
   gap: 8px;
 }
 
-button:hover,
+button:hover:not(.wishlist-toggle-button),
 a.reference-card:hover,
 .theme-button:hover,
 .page-button:hover,
@@ -1341,8 +1359,7 @@ a.reference-card:hover,
 
 .detail-summary__tags,
 .detail-summary__benefits,
-.detail-section-nav,
-.detail-purchase-panel__actions {
+.detail-section-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -1520,13 +1537,36 @@ a.reference-card:hover,
   font-weight: 700;
 }
 
+.detail-purchase-panel__actions {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
 .detail-purchase-panel__actions button {
-  flex: 1 1 0;
   min-height: 52px;
   border-radius: 999px;
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.detail-purchase-panel__wish {
+  grid-column: 1;
+  grid-row: 1;
+  width: 56px;
+  height: 56px;
+}
+
+.detail-purchase-panel__cart,
+.detail-purchase-panel__buy {
+  width: 100%;
+}
+
+.detail-purchase-panel__cart {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .detail-purchase-panel__cart {
@@ -1536,6 +1576,8 @@ a.reference-card:hover,
 }
 
 .detail-purchase-panel__buy {
+  grid-column: 2;
+  grid-row: 2;
   border: 1px solid #111827;
   background: #111827;
   color: #ffffff;
@@ -1909,8 +1951,7 @@ a.reference-card:hover,
     font-size: 28px;
   }
 
-  .detail-section-nav,
-  .detail-purchase-panel__actions {
+  .detail-section-nav {
     flex-direction: column;
     align-items: stretch;
   }

@@ -9,6 +9,8 @@ const {
   adjustmentStatusMessage,
   adjustmentForm,
   filteredItems,
+  inventoryLoadErrorMessage,
+  isInventoryLoading,
   resolveStockStateKey,
   resolveStockStateLabel,
   safeStockForm,
@@ -122,7 +124,9 @@ watch(
 
         <CommonStatePanel
           v-if="!filteredItems.length"
-          title="선택한 조건에 맞는 재고 상품이 없습니다."
+          :tone="isInventoryLoading ? 'loading' : inventoryLoadErrorMessage ? 'error' : 'neutral'"
+          :title="isInventoryLoading ? '재고 목록을 불러오는 중입니다.' : inventoryLoadErrorMessage ? '재고 목록을 불러오지 못했습니다.' : '선택한 조건에 맞는 재고 상품이 없습니다.'"
+          :description="inventoryLoadErrorMessage"
           compact
         />
       </div>
@@ -192,7 +196,9 @@ watch(
 
       <CommonStatePanel
         v-else
-        title="조정할 재고 상품을 먼저 선택해 주세요."
+        :tone="inventoryLoadErrorMessage ? 'error' : 'neutral'"
+        :title="inventoryLoadErrorMessage ? '재고 상세를 표시할 수 없습니다.' : '조정할 재고 상품을 먼저 선택해 주세요.'"
+        :description="inventoryLoadErrorMessage"
         align="left"
         compact
       />

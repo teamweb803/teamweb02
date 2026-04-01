@@ -118,7 +118,7 @@ function formatRating(value) {
 .cart-added-dialog__panel {
   position: relative;
   width: min(720px, 100%);
-  border-radius: 24px;
+  border-radius: 0;
   background: #ffffff;
   padding: 34px 40px 40px;
   box-shadow: 0 26px 72px rgba(15, 23, 42, 0.18);

@@ -26,7 +26,7 @@ defineProps({
     type: String,
     default: '',
   },
-  moreTarget: {
+  moreTo: {
     type: String,
     default: '',
   },
@@ -34,16 +34,20 @@ defineProps({
     type: String,
     default: 'default',
   },
+  isProductWishlisted: {
+    type: Function,
+    default: () => false,
+  },
 });
 
-const emit = defineEmits(['filter-change', 'more-click', 'product-activate']);
+const emit = defineEmits(['filter-change', 'product-activate', 'toggle-wishlist']);
 </script>
 
 <template>
   <section :id="id" class="hs-section">
     <div class="hs-section__title-wrap">
       <h2>{{ title }}</h2>
-      <a v-if="moreTarget" href="/" @click.prevent="emit('more-click', moreTarget)">더보기</a>
+      <RouterLink v-if="moreTo" :to="moreTo">더보기</RouterLink>
     </div>
     <p v-if="subtitle" class="hs-section__subtitle">{{ subtitle }}</p>
     <div v-if="filters.length" class="hs-filter-row">
@@ -64,8 +68,11 @@ const emit = defineEmits(['filter-change', 'more-click', 'product-activate']);
         :key="item.id"
         :item="item"
         :badge-variant="badgeVariant"
+        :show-wishlist="true"
+        :is-wishlisted="isProductWishlisted(item.productId)"
         image-loading="lazy"
         @activate="emit('product-activate', $event)"
+        @toggle-wishlist="emit('toggle-wishlist', $event)"
       />
     </div>
   </section>

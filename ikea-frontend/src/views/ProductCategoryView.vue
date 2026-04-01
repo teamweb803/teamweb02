@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import CategoryFilterPanel from '../components/category/CategoryFilterPanel.vue';
+import CategoryProductSection from '../components/category/CategoryProductSection.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import {
   buildProductCategoryPath,
@@ -17,13 +19,16 @@ import {
 } from '../constants/categoryFilters';
 import { decorateStorefrontItems } from '../services/storefrontStockService';
 import { useCatalogStore } from '../stores/catalog';
+import { useWishlistStore } from '../stores/wishlist';
 
 const route = useRoute();
 const router = useRouter();
 const catalogStore = useCatalogStore();
+const wishlistStore = useWishlistStore();
 
 onMounted(() => {
   void catalogStore.ensureCatalogLoaded();
+  wishlistStore.ensureHydrated();
 });
 
 const selectedSort = ref('인기순');
@@ -262,6 +267,47 @@ function syncPriceInputs() {
   };
 }
 
+function updatePriceInput({ side, value }) {
+  priceInputs.value[side] = value;
+  handlePriceInput(side);
+}
+
+function commitPriceInput(side) {
+  handlePriceInput(side);
+}
+
+function updatePriceRange({ side, value }) {
+  priceRange.value[side] = Number(value);
+  handlePriceRangeInput(side);
+}
+
+function updateSort(value) {
+  selectedSort.value = value;
+}
+
+function updatePageSize(value) {
+  selectedPageSize.value = Number(value);
+}
+
+function clearPriceFilter() {
+  priceRange.value = { ...defaultPrice.value };
+  syncPriceInputs();
+}
+
+function clearGroupFilter(groupId) {
+  filterState.value[groupId] = [];
+}
+
+function isProductWishlisted(productId) {
+  return wishlistStore.isProductWishlisted(productId);
+}
+
+function toggleProductWishlist(product) {
+  wishlistStore.toggleProduct(product, {
+    redirectPath: route.fullPath,
+  });
+}
+
 watch(
   () => defaultPrice.value,
   (nextPrice) => {
@@ -329,195 +375,48 @@ watch(
         </section>
 
         <div class="hs-category-layout">
-          <aside class="hs-filter-panel">
-            <div class="hs-filter-panel__head">
-              <strong>필터</strong>
-              <button type="button" @click="resetFilters">초기화</button>
-            </div>
+          <CategoryFilterPanel
+            :open-groups="openGroups"
+            :price-filter-reset-key="priceFilterResetKey"
+            :price-inputs="priceInputs"
+            :default-price="defaultPrice"
+            :price-step="priceStep"
+            :price-range="priceRange"
+            :price-track-style="priceTrackStyle"
+            :price-min-label="priceMinLabel"
+            :price-max-label="priceMaxLabel"
+            :filter-groups="filterGroups"
+            :filter-state="filterState"
+            :format-price="formatPrice"
+            @reset-filters="resetFilters"
+            @toggle-group="toggleGroup"
+            @update-price-input="updatePriceInput"
+            @commit-price-input="commitPriceInput"
+            @update-price-range="updatePriceRange"
+            @toggle-filter="toggleFilter($event.groupId, $event.option)"
+          />
 
-            <div class="hs-filter-group">
-              <button class="hs-filter-group__toggle" type="button" @click="toggleGroup('price')">
-                <span>가격</span>
-                <span>{{ openGroups.price ? '−' : '+' }}</span>
-              </button>
-
-              <div v-if="openGroups.price" :key="priceFilterResetKey" class="hs-price-filter">
-                <div class="hs-price-filter__inputs">
-                  <label class="hs-price-input">
-                    <span>최소</span>
-                    <div class="hs-price-input__field">
-                      <input
-                        :value="priceInputs.min"
-                        type="text"
-                        inputmode="numeric"
-                        :min="defaultPrice.min"
-                        :max="defaultPrice.max"
-                        :step="priceStep"
-                        @input="priceInputs.min = $event.target.value; handlePriceInput('min')"
-                        @blur="handlePriceInput('min')"
-                      />
-                      <em>원</em>
-                    </div>
-                  </label>
-                  <span class="hs-price-filter__dash">~</span>
-                  <label class="hs-price-input">
-                    <span>최대</span>
-                    <div class="hs-price-input__field">
-                      <input
-                        :value="priceInputs.max"
-                        type="text"
-                        inputmode="numeric"
-                        :min="defaultPrice.min"
-                        :max="defaultPrice.max"
-                        :step="priceStep"
-                        @input="priceInputs.max = $event.target.value; handlePriceInput('max')"
-                        @blur="handlePriceInput('max')"
-                      />
-                      <em>원</em>
-                    </div>
-                  </label>
-                </div>
-                <div class="hs-price-filter__summary">
-                  <strong>{{ priceMinLabel }}</strong>
-                  <span>—</span>
-                  <strong>{{ priceMaxLabel }}</strong>
-                </div>
-                <div class="hs-price-filter__slider-wrap" :style="priceTrackStyle">
-                  <div class="hs-price-filter__track"></div>
-                  <input
-                    v-model="priceRange.min"
-                    :key="`${priceFilterResetKey}-min-range`"
-                    class="hs-price-filter__range hs-price-filter__range--min"
-                    type="range"
-                    :min="defaultPrice.min"
-                    :max="defaultPrice.max"
-                    :step="priceStep"
-                    @input="handlePriceRangeInput('min')"
-                  />
-                  <input
-                    v-model="priceRange.max"
-                    :key="`${priceFilterResetKey}-max-range`"
-                    class="hs-price-filter__range hs-price-filter__range--max"
-                    type="range"
-                    :min="defaultPrice.min"
-                    :max="defaultPrice.max"
-                    :step="priceStep"
-                    @input="handlePriceRangeInput('max')"
-                  />
-                </div>
-                <div class="hs-price-filter__labels">
-                  <span>{{ formatPrice(defaultPrice.min) }}</span>
-                  <span>{{ formatPrice(defaultPrice.max) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div v-for="group in filterGroups" :key="group.id" class="hs-filter-group">
-              <button class="hs-filter-group__toggle" type="button" @click="toggleGroup(group.id)">
-                <span>{{ group.title }}</span>
-                <span>{{ openGroups[group.id] ? '−' : '+' }}</span>
-              </button>
-
-              <div v-if="openGroups[group.id]" class="hs-filter-options">
-                <button
-                  v-for="option in group.options"
-                  :key="option"
-                  class="hs-filter-chip"
-                  :class="{ 'is-active': filterState[group.id].includes(option) }"
-                  type="button"
-                  @click="toggleFilter(group.id, option)"
-                >
-                  {{ option }}
-                </button>
-              </div>
-            </div>
-          </aside>
-
-          <section class="hs-product-section">
-            <div class="hs-toolbar">
-              <div class="hs-result-summary">
-                <strong>{{ filteredProducts.length }}개 상품</strong>
-                <span>{{ currentHeading }} · {{ selectedSort }}</span>
-              </div>
-
-              <div class="hs-toolbar__right">
-                <select v-model="selectedSort" aria-label="정렬 기준 선택">
-                  <option>인기순</option>
-                  <option>낮은가격순</option>
-                  <option>높은가격순</option>
-                  <option>리뷰많은순</option>
-                  <option>할인율순</option>
-                </select>
-                <select v-model="selectedPageSize" aria-label="페이지 크기 선택">
-                  <option :value="20">20개씩 보기</option>
-                  <option :value="40">40개씩 보기</option>
-                  <option :value="60">60개씩 보기</option>
-                </select>
-              </div>
-            </div>
-
-            <div v-if="activeFilterCount" class="hs-active-filters">
-              <span>선택한 필터</span>
-              <button v-if="isPriceChanged" class="hs-active-filter-pill" type="button" @click="priceRange = { ...defaultPrice }">
-                가격 · {{ priceMinLabel }} ~ {{ priceMaxLabel }}
-              </button>
-              <button
-                v-for="group in filterGroups"
-                :key="group.id"
-                v-show="filterState[group.id].length"
-                class="hs-active-filter-pill"
-                type="button"
-                @click="filterState[group.id] = []"
-              >
-                {{ group.title }} · {{ filterState[group.id].join(', ') }}
-              </button>
-            </div>
-
-            <div class="hs-product-grid">
-              <article
-                v-for="item in displayedProducts"
-                :key="item.id"
-                class="hs-product-card"
-                :class="{ 'is-soldout': item.isSoldOut }"
-              >
-                <RouterLink :to="buildProductDetailPath(item.id)" class="hs-product-card__link" :aria-label="`${item.name} 상세 페이지로 이동`" />
-                <div class="hs-product-card__image-wrap">
-                  <img :src="item.image" :alt="item.imageAlt ?? item.name" />
-                  <span v-if="item.isSoldOut" class="hs-product-card__badge hs-product-card__badge--soldout">품절</span>
-                  <span v-else-if="item.badge" class="hs-product-card__badge">{{ item.badge }}</span>
-                </div>
-
-                <div class="hs-product-card__copy">
-                  <p class="hs-product-card__brand">{{ item.brand }}</p>
-                  <h3>{{ item.name }}</h3>
-                  <div class="hs-product-price-block">
-                    <span
-                      v-if="Number(item.discountRate ?? 0) > 0 && Number(item.originalPrice ?? 0) > Number(item.price ?? 0)"
-                      class="hs-price__original hs-price__original--top"
-                    >
-                      {{ formatPrice(item.originalPrice) }}
-                    </span>
-                    <div class="hs-price">
-                      <span v-if="item.discountRate" class="hs-price__discount">{{ item.discountRate }}%</span>
-                      <strong>{{ formatPrice(item.price) }}</strong>
-                    </div>
-                  </div>
-                  <div v-if="item.rating !== null || item.reviews !== null" class="hs-product-meta">
-                    <span v-if="item.rating !== null">★ {{ item.rating }}</span>
-                    <span v-if="item.reviews !== null">후기 {{ Number(item.reviews ?? 0).toLocaleString('ko-KR') }}</span>
-                  </div>
-                  <p v-if="item.isSoldOut" class="hs-product-stock">품절 · 상세 페이지에서 재입고 여부를 확인해 주세요.</p>
-                  <div v-if="item.features?.length" class="hs-product-tags">
-                    <span v-for="tag in item.features" :key="tag">{{ tag }}</span>
-                  </div>
-                </div>
-              </article>
-            </div>
-
-            <div v-if="!displayedProducts.length" class="hs-empty-state">
-              선택한 조건에 맞는 상품이 없습니다.
-            </div>
-          </section>
+          <CategoryProductSection
+            :filtered-products="filteredProducts"
+            :current-heading="currentHeading"
+            :selected-sort="selectedSort"
+            :selected-page-size="selectedPageSize"
+            :active-filter-count="activeFilterCount"
+            :is-price-changed="isPriceChanged"
+            :filter-groups="filterGroups"
+            :filter-state="filterState"
+            :price-min-label="priceMinLabel"
+            :price-max-label="priceMaxLabel"
+            :displayed-products="displayedProducts"
+            :format-price="formatPrice"
+            :build-product-detail-path="buildProductDetailPath"
+            :is-product-wishlisted="isProductWishlisted"
+            @update-sort="updateSort"
+            @update-page-size="updatePageSize"
+            @clear-price-filter="clearPriceFilter"
+            @clear-group-filter="clearGroupFilter"
+            @toggle-wishlist="toggleProductWishlist"
+          />
         </div>
       </div>
     </main>
@@ -607,448 +506,6 @@ watch(
   align-items: start;
 }
 
-.hs-filter-panel {
-  display: grid;
-  gap: 16px;
-  padding: 18px 16px 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  background: #ffffff;
-}
-
-.hs-filter-panel__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.hs-filter-panel__head strong {
-  font-size: 18px;
-}
-
-.hs-filter-panel__head button {
-  border: 0;
-  background: transparent;
-  color: #6b7280;
-  font: inherit;
-  cursor: pointer;
-}
-
-.hs-filter-group {
-  display: grid;
-  gap: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #eef2f7;
-}
-
-.hs-filter-group__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: #111827;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.hs-filter-options,
-.hs-active-filters,
-.hs-product-tags,
-.hs-product-meta,
-.hs-toolbar,
-.hs-toolbar__right,
-.hs-price-filter__inputs,
-.hs-price-filter__summary,
-.hs-price-filter__labels {
-  display: flex;
-  align-items: center;
-}
-
-.hs-filter-options,
-.hs-active-filters,
-.hs-product-tags,
-.hs-product-meta,
-.hs-category-tabs,
-.hs-toolbar,
-.hs-toolbar__right {
-  flex-wrap: wrap;
-}
-
-.hs-filter-options,
-.hs-active-filters,
-.hs-product-tags,
-.hs-product-meta,
-.hs-toolbar__right {
-  gap: 8px;
-}
-
-.hs-filter-chip,
-.hs-active-filter-pill {
-  border: 1px solid #d9dde3;
-  background: #ffffff;
-  border-radius: 999px;
-  padding: 10px 14px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.hs-filter-chip.is-active,
-.hs-active-filter-pill {
-  border-color: #0058a3;
-  background: #edf4ff;
-  color: #0058a3;
-}
-
-.hs-price-filter {
-  display: grid;
-  gap: 12px;
-}
-
-.hs-price-filter__inputs,
-.hs-price-filter__summary,
-.hs-price-filter__labels {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.hs-price-filter__inputs {
-  align-items: end;
-}
-
-.hs-price-filter__summary {
-  align-items: baseline;
-}
-
-.hs-price-filter__summary strong:first-child,
-.hs-price-filter__labels span:first-child {
-  text-align: left;
-}
-
-.hs-price-filter__summary strong:last-child,
-.hs-price-filter__labels span:last-child {
-  text-align: right;
-}
-
-.hs-price-input {
-  flex: 1;
-  display: grid;
-  gap: 6px;
-}
-
-.hs-price-input > span {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.hs-price-input__field {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 42px;
-  padding: 0 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-}
-
-.hs-price-input__field input {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  color: #111827;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  outline: none;
-}
-
-.hs-price-input__field input::-webkit-outer-spin-button,
-.hs-price-input__field input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.hs-price-input__field input[type='number'] {
-  -moz-appearance: textfield;
-}
-
-.hs-price-input__field em,
-.hs-price-filter__dash,
-.hs-price-filter__summary span,
-.hs-price-filter__labels {
-  color: #6b7280;
-  font-style: normal;
-}
-
-.hs-price-filter__summary strong {
-  font-size: 18px;
-}
-
-.hs-price-filter__slider-wrap {
-  position: relative;
-  height: 24px;
-}
-
-.hs-price-filter__track {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 4px;
-  border-radius: 999px;
-  transform: translateY(-50%);
-  background: linear-gradient(
-    to right,
-    #d8dde5 0%,
-    #d8dde5 var(--min-percent),
-    #111827 var(--min-percent),
-    #111827 var(--max-percent),
-    #d8dde5 var(--max-percent),
-    #d8dde5 100%
-  );
-}
-
-.hs-price-filter__range {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  margin: 0;
-  background: transparent;
-  pointer-events: none;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.hs-price-filter__range::-webkit-slider-runnable-track {
-  height: 4px;
-  background: transparent;
-}
-
-.hs-price-filter__range::-moz-range-track {
-  height: 4px;
-  background: transparent;
-}
-
-.hs-price-filter__range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  margin-top: -6px;
-  border-radius: 50%;
-  border: 2px solid #111827;
-  background: #ffffff;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-.hs-price-filter__range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #111827;
-  background: #ffffff;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-.hs-price-filter__range--min {
-  z-index: 2;
-}
-
-.hs-price-filter__range--max {
-  z-index: 3;
-}
-
-.hs-product-section {
-  display: grid;
-  gap: 18px;
-}
-
-.hs-toolbar {
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.hs-result-summary {
-  display: grid;
-  gap: 4px;
-}
-
-.hs-result-summary strong {
-  font-size: 18px;
-}
-
-.hs-result-summary span,
-.hs-active-filters > span {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.hs-toolbar__right select {
-  height: 42px;
-  min-width: 140px;
-  border-radius: 10px;
-  border: 1px solid #d8dde5;
-  padding: 0 14px;
-  background: #ffffff;
-  font: inherit;
-}
-
-.hs-product-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-}
-
-.hs-product-card {
-  position: relative;
-  display: grid;
-  gap: 14px;
-}
-
-.hs-product-card.is-soldout {
-  opacity: 0.78;
-}
-
-.hs-product-card__link {
-  position: absolute;
-  inset: 0;
-  display: block;
-  z-index: 1;
-  border-radius: 18px;
-  cursor: pointer;
-}
-
-.hs-product-card__link:focus-visible {
-  outline: 2px solid #0058a3;
-  outline-offset: 4px;
-}
-
-.hs-product-card__image-wrap {
-  position: relative;
-  overflow: hidden;
-  border-radius: 18px;
-  background: #f5f7fa;
-}
-
-.hs-product-card__image-wrap img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: contain;
-  object-position: center;
-}
-
-.hs-product-card__badge {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: rgba(17, 24, 39, 0.82);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.hs-product-card__badge--soldout {
-  background: #b42318;
-}
-
-.hs-product-card__copy {
-  position: relative;
-  z-index: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.hs-product-card__brand {
-  margin: 0;
-  color: #6b7280;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.hs-product-card__copy h3 {
-  margin: 0;
-  color: #111827;
-  font-size: 18px;
-  line-height: 1.45;
-}
-
-.hs-product-price-block {
-  display: grid;
-  gap: 4px;
-}
-
-.hs-price {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.hs-price__discount {
-  color: #e11d48;
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.hs-price strong {
-  font-size: 24px;
-}
-
-.hs-price__original,
-.hs-product-meta,
-.hs-product-tags span,
-.hs-empty-state {
-  color: #6b7280;
-}
-
-.hs-product-stock {
-  margin: 0;
-  color: #b42318;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.hs-price__original {
-  font-size: 14px;
-  text-decoration: line-through;
-}
-
-.hs-price__original--top {
-  display: inline-block;
-  line-height: 1.2;
-}
-
-.hs-product-tags span {
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: #f5f7fa;
-  font-size: 12px;
-}
-
-.hs-empty-state {
-  display: grid;
-  place-items: center;
-  min-height: 260px;
-  border: 1px dashed #cfd8e3;
-  border-radius: 18px;
-}
-
-@media (max-width: 1180px) {
-  .hs-product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 960px) {
   .hs-category-main {
     padding: 20px 0 56px;
@@ -1098,34 +555,6 @@ watch(
     grid-template-columns: 1fr;
     gap: 22px;
   }
-
-  .hs-filter-panel {
-    padding: 16px 14px 18px;
-  }
-
-  .hs-product-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .hs-price-filter__inputs {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: end;
-  }
-
-  .hs-price-input__field {
-    padding: 0 10px;
-  }
-
-  .hs-price-input__field input {
-    min-width: 0;
-  }
-
-  .hs-price-filter__summary strong {
-    font-size: 17px;
-  }
 }
 
 @media (max-width: 420px) {
@@ -1142,32 +571,6 @@ watch(
     height: 42px;
     padding: 0 14px;
     font-size: 15px;
-  }
-
-  .hs-filter-panel {
-    padding: 15px 12px 17px;
-  }
-
-  .hs-price-filter__inputs {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-  }
-
-  .hs-price-filter__dash {
-    display: none;
-  }
-
-  .hs-price-input__field {
-    gap: 4px;
-    padding: 0 8px;
-  }
-
-  .hs-price-input__field input {
-    font-size: 15px;
-  }
-
-  .hs-price-filter__summary strong {
-    font-size: 16px;
   }
 }
 </style>

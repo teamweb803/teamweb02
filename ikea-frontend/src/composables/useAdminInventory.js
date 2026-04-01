@@ -45,6 +45,8 @@ export function useAdminInventory() {
   const stockStatusFilter = shallowRef('ALL');
   const adjustmentStatusMessage = shallowRef('');
   const safeStockStatusMessage = shallowRef('');
+  const inventoryLoadErrorMessage = shallowRef('');
+  const isInventoryLoading = shallowRef(false);
   const adjustmentForm = reactive({
     type: 'increase',
     quantity: 1,
@@ -108,10 +110,21 @@ export function useAdminInventory() {
   });
 
   async function loadInventoryItems() {
-    inventoryItems.value = await getAdminInventoryItems();
+    isInventoryLoading.value = true;
+    inventoryLoadErrorMessage.value = '';
 
-    if (!selectedProductId.value && inventoryItems.value[0]) {
-      selectedProductId.value = inventoryItems.value[0].productId;
+    try {
+      inventoryItems.value = await getAdminInventoryItems();
+
+      if (!selectedProductId.value && inventoryItems.value[0]) {
+        selectedProductId.value = inventoryItems.value[0].productId;
+      }
+    } catch {
+      inventoryItems.value = [];
+      selectedProductId.value = '';
+      inventoryLoadErrorMessage.value = '재고 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    } finally {
+      isInventoryLoading.value = false;
     }
   }
 
@@ -220,6 +233,8 @@ export function useAdminInventory() {
     adjustmentStatusMessage,
     adjustmentForm,
     filteredItems,
+    inventoryLoadErrorMessage,
+    isInventoryLoading,
     loadInventoryItems,
     resolveStockStateKey,
     resolveStockStateLabel,

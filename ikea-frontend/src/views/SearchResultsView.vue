@@ -1,16 +1,47 @@
 <script setup>
+import { onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import SearchResultsSection from '../components/search/SearchResultsSection.vue';
 import { useProductSearch } from '../composables/useProductSearch';
+import { buildProductDetailPath } from '../constants/routes';
+import { useWishlistStore } from '../stores/wishlist';
 
+const route = useRoute();
+const router = useRouter();
+const wishlistStore = useWishlistStore();
 const { keyword, searchResults } = useProductSearch();
+
+onMounted(() => {
+  wishlistStore.ensureHydrated();
+});
+
+function openProduct(product) {
+  router.push(buildProductDetailPath(product.id));
+}
+
+function isProductWishlisted(productId) {
+  return wishlistStore.isProductWishlisted(productId);
+}
+
+function toggleProductWishlist(product) {
+  wishlistStore.toggleProduct(product, {
+    redirectPath: route.fullPath,
+  });
+}
 </script>
 
 <template>
   <SiteChrome>
     <main class="search-page">
       <div class="search-page__inner">
-        <SearchResultsSection :keyword="keyword" :results="searchResults" />
+        <SearchResultsSection
+          :keyword="keyword"
+          :results="searchResults"
+          :is-product-wishlisted="isProductWishlisted"
+          @product-activate="openProduct"
+          @toggle-wishlist="toggleProductWishlist"
+        />
       </div>
     </main>
   </SiteChrome>
