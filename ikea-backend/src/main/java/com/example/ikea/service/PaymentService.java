@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
@@ -32,6 +33,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
     private final PaymentRepository paymentRepository;
+    private final ProductStockService productStockService;
 
     @Value("${payment.toss.secret-key}")
     private String tossSecretKey;
@@ -58,10 +60,22 @@ public class PaymentService {
         Order order = orderRepository.findByOrderNo(dto.getOrderNo())
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
 
+        // 주문 소유자 검증
+
+        if (order.getMember() == null || !order.getMember().getMemberId().equals(memberId)) {
+            throw  new AccessDeniedException("본인 주문만 결제할 수 있습니다.");
+        }
+
         //결제 금액 검증
         if (!order.getFinalPrice().equals(dto.getAmount())) {
             throw new IllegalArgumentException("결제 금액이 일치하지 않습니다.");
         }
+
+        // 중복 결제 방어 : 같은 paymentKey로 이미 결제된 건이 있는지 확인
+        if (paymentRepository.findByTransactionId(dto.getPaymentKey()).isPresent()) {
+            throw new IllegalArgumentException("이미 처리된 결제입니다.");
+        }
+
 
         //이미 결제된 주문인지 확인
         if (order.getOrderStatus() != OrderStatus.PENDING) {
@@ -123,6 +137,17 @@ public class PaymentService {
         Order order = orderRepository.findById(dto.getOrderId())
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
 
+        // 주문 소유자 검증
+        if (order.getMember() == null || !order.getMember().getMemberId().equals(memberId)) {
+            throw new AccessDeniedException("본인 주문만 결제할 수 있습니다.");
+        }
+
+        // 이미 결제된 주문인지 확인
+        if (order.getOrderStatus() != OrderStatus.PENDING) {
+            throw new IllegalArgumentException("이미 처리된 주문입니다.");
+        }
+
+
         try {
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
@@ -168,6 +193,11 @@ public class PaymentService {
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 회원입니다."));
         Order order = orderRepository.findById(dto.getOrderId())
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
+
+        if (paymentRepository.findByTransactionId(dto.getTid()).isPresent()) {
+            throw  new IllegalArgumentException("이미 처리된 결제입니다.");
+        }
+
 
         if(order.getOrderStatus() != OrderStatus.PENDING) {
             throw new IllegalArgumentException("이미 처리된 주문입니다.");
@@ -223,24 +253,102 @@ public class PaymentService {
     public void cancelPayment(Long orderId, Long memberId, String reason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
+
         if (!order.getMember().getMemberId().equals(memberId)) {
-            throw  new IllegalArgumentException("권한이 없습니다.");
+            throw new IllegalArgumentException("주문 취소 권한이 없습니다.");
         }
+
 
         Payment payment = paymentRepository.findByOrder_OrderId(orderId)
                 .orElseThrow(() -> new IllegalStateException("결제 정보를 찾을 수 없습니다."));
 
+        if (payment.getPaymentStatus() == PaymentStatus.CANCEL) {
+            throw new IllegalArgumentException("이미 취소된 결제입니다.");
+        }
+
         if (payment.getPaymentStatus() != PaymentStatus.OK) {
             throw  new IllegalArgumentException("취소 가능한 결제가 아닙니다.");
+        }
+
+
+
+        // 결제 수단에 따라 외부 PG 취소 API 호출
+        if (payment.getPaymentMethod() == PaymentMethod.TOSS) {
+            cancelTossPayment(payment.getTransactionId(), payment.getAmount(), reason);
+        } else if (payment.getPaymentMethod() == PaymentMethod.KAKAO) {
+            cancelKakaoPayment(payment.getTransactionId(), payment.getAmount());
         }
 
         payment.setPaymentStatus(PaymentStatus.CANCEL);
         payment.setCancelReason(reason);
         payment.setCancelledAt(LocalDateTime.now());
 
+        for (OrderItem orderItem : order.getOrderItemList()) {
+            productStockService.increaseStock(
+                    orderItem.getProduct().getProductId(),
+                    orderItem.getQuantity()
+            );
+        }
         order.setOrderStatus(OrderStatus.CANCELLED);
     }
-    
+
+
+    // Toss 취소 후 API 호출 (내부 메서드)
+    private void cancelTossPayment(String transactionId, Integer amount, String reason) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            String encoded = Base64.getEncoder()
+                    .encodeToString((tossSecretKey + ":").getBytes(StandardCharsets.UTF_8));
+            headers.set("Authorization", "Basic " + encoded);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("cancelReason", reason);
+            body.put("cancelAmount", amount);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    tossBaseUrl + "/payments/" + transactionId + "/cancel", entity, Map.class);
+
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new IllegalArgumentException("토스 결제 취소에 실패했습니다.");
+            }
+        } catch (Exception e) {
+            log.error("토스 결제 취소 실패: {}", e.getMessage());
+            throw new IllegalArgumentException("토스 결제 취소에 실패했습니다.");
+        }
+    }
+
+    // Kakao 취소 후 API 호출 (내부 메서드)
+    private void cancelKakaoPayment(String tid, Integer amount) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "KakaoAK " + kakaoAdminKey);
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("cid", "TC0ONETIME");
+            body.add("tid", tid);
+            body.add("cancel_amount", String.valueOf(amount));
+            body.add("cancel_tax_free_amount", "0");
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    kakaoBaseUrl + "/cancel", entity, Map.class);
+
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new IllegalArgumentException("카카오 결제 취소에 실패했습니다.");
+            }
+        } catch (Exception e) {
+            log.error("카카오 결제 취소 실패: {}", e.getMessage());
+            throw new IllegalArgumentException("카카오 결제 취소에 실패했습니다.");
+        }
+    }
+
+
+
     // 내 결제 목록
     public List<PaymentResponseDto> getMyPaymentList(Long memberId) {
         return paymentRepository.findByMember_MemberIdOrderByCreatedAtDesc(memberId)

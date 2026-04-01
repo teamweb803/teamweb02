@@ -7,6 +7,7 @@ import com.example.ikea.dto.QnaResponseDto;
 import com.example.ikea.repository.MemberRepository;
 import com.example.ikea.repository.QnaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,16 +22,13 @@ public class QnaService {
     private final QnaRepository qnaRepository;
     private final MemberRepository memberRepository;
 
-    // 전체 목록
-    public List<QnaResponseDto> getQnaList() {
-        return qnaRepository.findAllGrouped().stream()
-                .map(QnaResponseDto::new)
-                .collect(Collectors.toList());
-    }
+    // 내 질문 목록
+    public List<QnaResponseDto> getQnaList(String loginId) {
+        Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
-    // 제목 검색
-    public List<QnaResponseDto> searchQna(String title) {
-        return qnaRepository.findByTitle(title).stream()
+        return qnaRepository.findByMemberIdAndLevelOrderByCreatedAtDesc(member.getMemberId(), 0)
+                .stream()
                 .map(QnaResponseDto::new)
                 .collect(Collectors.toList());
     }
@@ -43,12 +41,13 @@ public class QnaService {
     }
 
     // 질문 상세 조회
-    public QnaResponseDto getQna(Long qnaId, String loginId, boolean isAdmin) {
+    public QnaResponseDto getQna(Long qnaId, String loginId) {
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
-        if (!isAdmin && !question.getWriter().equals(loginId)) {
-            throw new IllegalArgumentException("해당 문의를 조회할 권한이 없습니다.");
+        // ownership check: 본인 질문인지 확인
+        if (!question.getWriter().equals(loginId)) {
+            throw new AccessDeniedException("본인 문의만 조회할 수 있습니다.");
         }
 
         return new QnaResponseDto(question);
@@ -111,6 +110,28 @@ public class QnaService {
     }
 
     // ===================== 관리자 =====================
+
+    // 전체 목록
+    public List<QnaResponseDto> getAllQnaList() {
+        return qnaRepository.findAllGrouped().stream()
+                .map(QnaResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    // 제목 검색
+    public List<QnaResponseDto> searchQna(String title) {
+        return qnaRepository.findByTitle(title).stream()
+                .map(QnaResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+
+    // 상세 조회(관리자용)
+    public QnaResponseDto getQnaForAdmin(Long qnaId) {
+        return new QnaResponseDto(qnaRepository.findById(qnaId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다.")));
+    }
+
 
     // 답변 등록 (관리자)
     @Transactional

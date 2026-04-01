@@ -27,6 +27,7 @@ public class OrderService {
     private final MemberRepository memberRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final ProductStockService productStockService;
 
     //주문 목록 조회(내 주문 내역)
     public List<OrderResponseDto> getOrderList(Long memberId) {
@@ -79,16 +80,18 @@ public class OrderService {
                 .build();
             orderRepository.save(order);
 
-        //장바구니 상품 -> 주문상품으로 전환
-        cartItems.forEach(cp -> {
+        //장바구니 상품 -> 주문상품으로 전환 + 재고 차감
+        for (CartItem cartItem : cartItems) {
+            productStockService.decreaseStock(cartItem.getProduct().getProductId(), cartItem.getQuantity());
+
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
-                    .product(cp.getProduct())
-                    .quantity(cp.getQuantity())
-                    .orderPrice(cp.getProduct().getPrice())
+                    .product(cartItem.getProduct())
+                    .quantity(cartItem.getQuantity())
+                    .orderPrice(cartItem.getProduct().getPrice())
                     .build();
             orderItemRepository.save(orderItem);
-        });
+        }
 
         //주문완료 후 장바구니 비우기
         cartItemRepository.deleteByCart_CartId(cart.getCartId());
@@ -107,13 +110,25 @@ public class OrderService {
             throw new AccessDeniedException("본인 주문만 취소할 수 있습니다.");
         }
 
-        //배송중인 주문은 취소 불가
+
         OrderStatus status = order.getOrderStatus();
-        if (status != OrderStatus.PENDING
-        && status != OrderStatus.PAID
-        && status != OrderStatus.ORDERED) {
-            throw new IllegalArgumentException("취소할 수 없는 주문입니다. 형재상태 : " + status);
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalArgumentException("이미 취소된 주문입니다.");
         }
+
+        if (status != OrderStatus.PENDING
+                && status != OrderStatus.ORDERED) {
+            throw new IllegalArgumentException("취소할 수 없는 주문입니다. 현재상태 : " + status);
+        }
+
+
+        for (OrderItem orderItem : order.getOrderItemList()) {
+            productStockService.increaseStock(
+                    orderItem.getProduct().getProductId(),
+                    orderItem.getQuantity()
+            );
+        }
+
         order.setOrderStatus(OrderStatus.CANCELLED);
     }
 

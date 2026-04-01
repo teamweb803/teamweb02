@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,25 +24,23 @@ public class QnaController {
     private final QnaService qnaService;
     private final MemberService memberService;
 
-    // 전체 목록
-    @GetMapping
-    public ResponseEntity<List<QnaResponseDto>> getQnaList() {
-        return ResponseEntity.ok(qnaService.getQnaList());
-    }
 
-    // 제목 검색
-    @GetMapping("/search")
-    public ResponseEntity<List<QnaResponseDto>> searchQna(@RequestParam String title) {
-        return ResponseEntity.ok(qnaService.searchQna(title));
+
+    //내 문의 목록
+    @GetMapping
+    public ResponseEntity<List<QnaResponseDto>> getQnaList(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(qnaService.getQnaList(userDetails.getUsername()));
     }
 
     // 질문 상세 + 답변 목록
     @GetMapping("/{qnaId}")
-    public ResponseEntity<Map<String, Object>> getQna(@PathVariable Long qnaId,
-                                                      @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<Map<String, Object>> getQna(
+            @PathVariable Long qnaId,
+            @AuthenticationPrincipal UserDetails userDetails) {
         String loginId = userDetails.getUsername();
 
-        QnaResponseDto question = qnaService.getQna(qnaId, loginId, false);
+        QnaResponseDto question = qnaService.getQna(qnaId, loginId);
         List<QnaResponseDto> answers = qnaService.getAnswerList(question.getQnaId());
 
         Map<String, Object> response = new HashMap<>();
