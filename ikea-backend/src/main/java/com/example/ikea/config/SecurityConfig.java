@@ -4,7 +4,6 @@ import com.example.ikea.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,60 +27,51 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // CSRF 비활성화 (JWT 방식에선 불필요)
                 .csrf(csrf -> csrf.disable())
-
-                // CORS 설정 (Vue 연동)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 세션 사용 안함 (JWT는 Stateless)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // URL 별 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                    // 누구나 접근 가능
-                                .requestMatchers(
-                                        "/api/auth/**",
-                                        "/api/member/join",
-                                        "/api/member/login",
-                                        "/api/product/**",
-                                        "/api/category/**",
-                                        "/api/notice/**"
-                                ).permitAll()
+                        // 공개 허용
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/member/join",
+                                "/api/member/login",
+                                "/api/product/**",
+                                "/api/category/**",
+                                "/api/notice/**"
+                        ).permitAll()
 
-                        // Qna : 조회만 공개, 나머지는 로그인
-                                .requestMatchers(HttpMethod.GET, "/api/qna/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/qna/**").authenticated()
-                                .requestMatchers(HttpMethod.PUT, "/api/qna/**").authenticated()
-                                .requestMatchers(HttpMethod.DELETE, "/api/qna/**").authenticated()
-                        // Review: 조회만 공개, 나머지는 로그인
-                                .requestMatchers(HttpMethod.GET, "/api/review/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/review/**").authenticated()
-                                .requestMatchers(HttpMethod.PUT, "/api/review/**").authenticated()
-                                .requestMatchers(HttpMethod.DELETE, "/api/review/**").authenticated()
+                        // 비회원 장바구니 / 비회원 주문 허용
+                        .requestMatchers("/api/cart/guest/**").permitAll()
+                        .requestMatchers("/api/order/guest/**").permitAll()
 
-                                //결제시 로그인 필요
-                                .requestMatchers("/api/payment/**").authenticated()
-                                //관리자만 접근 가능
-                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                //나머지는 로그인 필요
-                                .anyRequest().authenticated()
-                         )
+                        // 관리자 전용
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                // JWT 필터 등록
+                        // QnA / Review / 회원 cart / 회원 order / payment 는 로그인 필요
+                        .requestMatchers("/api/qna/**").authenticated()
+                        .requestMatchers("/api/review/**").authenticated()
+                        .requestMatchers("/api/cart/**").authenticated()
+                        .requestMatchers("/api/order/**").authenticated()
+                        .requestMatchers("/api/payment/**").authenticated()
+
+                        // 나머지
+                        .anyRequest().authenticated()
+                )
+
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
-
-    // CORS 설정
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:5173")); //Vue 기본 포트
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -93,7 +83,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration) throws  Exception {
+            AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 }

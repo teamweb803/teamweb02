@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class OrderRequestDto {
+public class MemberOrderRequestDto {
 
     @NotBlank(message = "주소는 필수 입력")
     private String address;

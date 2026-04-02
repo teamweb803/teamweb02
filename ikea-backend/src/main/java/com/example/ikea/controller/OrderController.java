@@ -1,6 +1,7 @@
 package com.example.ikea.controller;
 
-import com.example.ikea.dto.OrderRequestDto;
+import com.example.ikea.dto.GuestOrderRequestDto;
+import com.example.ikea.dto.MemberOrderRequestDto;
 import com.example.ikea.dto.OrderResponseDto;
 import com.example.ikea.service.MemberService;
 import com.example.ikea.service.OrderService;
@@ -8,7 +9,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,15 +39,21 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getDetailOrder(orderId, memberId));
     }
 
-    //주문 생성 (장바구니 -> 주문)
+    //주문 생성 (회원)
     @PostMapping
-    public ResponseEntity<Long> createOrder(
+    public ResponseEntity<Long> createMemberOrder(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody @Valid OrderRequestDto dto) {
+            @RequestBody @Valid MemberOrderRequestDto dto) {
         Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
-        return ResponseEntity.ok(orderService.createOrder(memberId, dto));
+        return ResponseEntity.ok(orderService.createMemberOrder(memberId, dto));
     }
 
+    // 주문 생성(비회원 전용)
+    @PostMapping("/guest")
+    public ResponseEntity<Long> createGuestOrder(
+            @RequestBody @Valid GuestOrderRequestDto dto) {
+        return ResponseEntity.ok(orderService.createGuestOrder(dto));
+    }
     //주문 취소
     @DeleteMapping("/{orderId}")
     public ResponseEntity<Void> cancelOrder(

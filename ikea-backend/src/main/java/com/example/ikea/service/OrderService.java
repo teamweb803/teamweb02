@@ -1,7 +1,8 @@
 package com.example.ikea.service;
 
 import com.example.ikea.domain.*;
-import com.example.ikea.dto.OrderRequestDto;
+import com.example.ikea.dto.GuestOrderRequestDto;
+import com.example.ikea.dto.MemberOrderRequestDto;
 import com.example.ikea.dto.OrderResponseDto;
 import com.example.ikea.repository.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +30,7 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductStockService productStockService;
+    private final ProductRepository productRepository;
 
     //주문 목록 조회(내 주문 내역)
     public List<OrderResponseDto> getOrderList(Long memberId) {
@@ -49,27 +52,27 @@ public class OrderService {
 
     //주문 생성 (장바구니 -> 주문)
     @Transactional
-    public Long createOrder(Long memberId, OrderRequestDto dto) {
+    public Long createMemberOrder(Long memberId, MemberOrderRequestDto dto) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 회원입니다."));
+
         Cart cart = cartRepository.findByMember_MemberId(memberId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 장바구니입니다."));
+
         List<CartItem> cartItems = cartItemRepository.findByCart_CartId(cart.getCartId());
+
         if (cartItems.isEmpty()) {
             throw new IllegalArgumentException("장바구니가 비어있습니다.");
         }
-        //총 금액 계산
+
         int totalPrice = cartItems.stream()
-                .mapToInt(cp -> cp.getProduct().getPrice() * cp.getQuantity())
+                .mapToInt(cartItem -> cartItem.getProduct().getPrice() * cartItem.getQuantity())
                 .sum();
 
-        //주문번호 자동 생성 코드
         String orderNo = "ORDER_"
                 + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                 + "_" + UUID.randomUUID().toString().substring(0, 8);
 
-
-        //주문 생성
         Order order = Order.builder()
                 .member(member)
                 .orderNo(orderNo)
@@ -77,12 +80,17 @@ public class OrderService {
                 .totalPrice(totalPrice)
                 .finalPrice(totalPrice)
                 .address(dto.getAddress())
+                .guestName(null)
+                .guestPhone(null)
                 .build();
-            orderRepository.save(order);
 
-        //장바구니 상품 -> 주문상품으로 전환 + 재고 차감
+        order = orderRepository.save(order);
+
         for (CartItem cartItem : cartItems) {
-            productStockService.decreaseStock(cartItem.getProduct().getProductId(), cartItem.getQuantity());
+            productStockService.decreaseStock(
+                    cartItem.getProduct().getProductId(),
+                    cartItem.getQuantity()
+            );
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
@@ -90,10 +98,10 @@ public class OrderService {
                     .quantity(cartItem.getQuantity())
                     .orderPrice(cartItem.getProduct().getPrice())
                     .build();
+
             orderItemRepository.save(orderItem);
         }
 
-        //주문완료 후 장바구니 비우기
         cartItemRepository.deleteByCart_CartId(cart.getCartId());
 
         return order.getOrderId();
@@ -159,5 +167,59 @@ public class OrderService {
     //대시보드용 주문 수
     public Long getOrderCount() {
         return orderRepository.count();
+    }
+
+    // ======================비회원 전용 =================
+    @Transactional
+    public Long createGuestOrder(GuestOrderRequestDto dto) {
+        Cart cart = cartRepository.findByGuestCartKey(dto.getGuestCartKey())
+                .orElseThrow(() -> new IllegalStateException("존재하지 않는 비회원 장바구니입니다."));
+
+        List<CartItem> cartItems = cartItemRepository.findByCart_CartId(cart.getCartId());
+
+        if (cartItems.isEmpty()) {
+            throw new IllegalArgumentException("장바구니가 비어있습니다.");
+        }
+
+        int totalPrice = cartItems.stream()
+                .mapToInt(cartItem -> cartItem.getProduct().getPrice() * cartItem.getQuantity())
+                .sum();
+
+        String orderNo = "ORDER_"
+                + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                + "_" + UUID.randomUUID().toString().substring(0, 8);
+
+        Order order = Order.builder()
+                .member(null)
+                .orderNo(orderNo)
+                .orderStatus(OrderStatus.PENDING)
+                .totalPrice(totalPrice)
+                .finalPrice(totalPrice)
+                .address(dto.getAddress())
+                .guestName(dto.getGuestName())
+                .guestPhone(dto.getGuestPhone())
+                .build();
+
+        order = orderRepository.save(order);
+
+        for (CartItem cartItem : cartItems) {
+            productStockService.decreaseStock(
+                    cartItem.getProduct().getProductId(),
+                    cartItem.getQuantity()
+            );
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(cartItem.getProduct())
+                    .quantity(cartItem.getQuantity())
+                    .orderPrice(cartItem.getProduct().getPrice())
+                    .build();
+
+            orderItemRepository.save(orderItem);
+        }
+
+        cartItemRepository.deleteByCart_CartId(cart.getCartId());
+
+        return order.getOrderId();
     }
 }
