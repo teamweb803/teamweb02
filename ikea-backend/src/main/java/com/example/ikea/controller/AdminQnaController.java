@@ -45,7 +45,7 @@ public class AdminQnaController {
     // 답변 수정
     @PutMapping("/{qnaId}/answer")
     public ResponseEntity<Void> updateAnswer(@PathVariable Long qnaId,
-                                             @RequestParam @Valid QnaRequestDto dto) {
+                                             @RequestBody @Valid QnaRequestDto dto) {
         qnaService.updateAnswer(qnaId, dto);
         return ResponseEntity.ok().build();
     }

@@ -98,14 +98,19 @@ public class QnaService {
     public void deleteQuestion(Long qnaId, String loginId) {
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
         if (question.getLevel() != 0) {
             throw new IllegalArgumentException("질문만 삭제할 수 있습니다.");
         }
+
         if (!question.getWriter().equals(loginId)) {
             throw new IllegalArgumentException("본인 글만 삭제할 수 있습니다.");
         }
 
-        qnaRepository.deleteByParentId(question.getQnaId());
+        // 답변만 먼저 삭제
+        qnaRepository.deleteByParentIdAndLevel(question.getQnaId(), 1);
+
+        // 그 다음 질문 삭제
         qnaRepository.delete(question);
     }
 

@@ -2,6 +2,7 @@ package com.example.ikea.config;
 
 import com.example.ikea.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,6 +24,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -50,14 +54,13 @@ public class SecurityConfig {
                         // 관리자 전용
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // QnA / Review / 회원 cart / 회원 order / payment 는 로그인 필요
+                        // 로그인 필요
                         .requestMatchers("/api/qna/**").authenticated()
                         .requestMatchers("/api/review/**").authenticated()
                         .requestMatchers("/api/cart/**").authenticated()
                         .requestMatchers("/api/order/**").authenticated()
                         .requestMatchers("/api/payment/**").authenticated()
 
-                        // 나머지
                         .anyRequest().authenticated()
                 )
 
@@ -71,7 +74,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

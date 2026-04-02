@@ -1,15 +1,10 @@
 server:
   port: 8402
+
 spring:
   profiles:
-    include: local
-  datasource:
-    url: jdbc:postgresql://localhost:5440/ikea
-    username: postgres
-    password: 1234
+    active: local
   jpa:
-    hibernate:
-      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -17,16 +12,17 @@ spring:
 
 payment:
   toss:
-    secret-key: ${TOSS_SECRET_KEY}
-    client-key: ${TOSS_CLIENT_KEY}
+    secret-key: ${TOSS_SECRET_KEY:test_sk_여기에실제키입력}
+    client-key: ${TOSS_CLIENT_KEY:test_ck_여기에실제키입력}
     base-url: https://api.tosspayments.com/v1
   kakao:
-    admin-key: ${KAKAO_ADMIN_KEY}
+    admin-key: ${KAKAO_ADMIN_KEY:여기에실제키입력}
     base-url: https://kapi.kakao.com/v1/payment
-#  spring:
-#    servlet:
-#      multipart:
-#        max-file-size: 10MB
-#        max-request-size: 20MB
+
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:ikea-shopping-mall-secret-key-2026-spring-boot}
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:5173
