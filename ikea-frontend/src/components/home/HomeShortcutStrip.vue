@@ -46,7 +46,7 @@ const emit = defineEmits(['activate']);
           :src="item.image"
           :alt="item.label"
           :style="{
-            objectFit: item.imageFit || 'cover',
+            objectFit: item.imageFit || 'contain',
             objectPosition: item.imagePosition || 'center center',
           }"
           loading="eager"
@@ -98,7 +98,7 @@ const emit = defineEmits(['activate']);
 .hs-shortcut.is-category .hs-shortcut__thumb {
   border-radius: 10px;
   background: transparent;
-  padding: 0;
+  padding: 4px 8px;
 }
 
 .hs-shortcut__thumb img {

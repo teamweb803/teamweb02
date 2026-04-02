@@ -21,7 +21,7 @@ function moveToLogin() {
   router.push({
     path: ROUTE_PATHS.memberLogin,
     query: {
-      reason: 'auth-required',
+      reason: 'wishlist-login',
       redirect: redirectPath,
     },
   });

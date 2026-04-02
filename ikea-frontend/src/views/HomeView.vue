@@ -370,7 +370,9 @@ function handleFeaturedClick(featured) {
       <HomePickSection
         :title="pickSection.title"
         :items="decoratedPickSection.items"
+        :is-product-wishlisted="isProductWishlisted"
         @product-activate="handleProductCardClick"
+        @toggle-wishlist="toggleProductWishlist"
       />
     </main>
   </SiteChrome>
