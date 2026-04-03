@@ -1,14 +1,11 @@
 package com.example.ikea.service;
 
-import com.example.ikea.domain.Cart;
-import com.example.ikea.domain.Member;
-import com.example.ikea.domain.MemberRole;
+import com.example.ikea.domain.*;
 import com.example.ikea.dto.MemberJoinRequestDto;
 import com.example.ikea.dto.MemberLoginRequestDto;
 import com.example.ikea.dto.MemberResponseDto;
 import com.example.ikea.dto.MemberUpdateDto;
-import com.example.ikea.repository.CartRepository;
-import com.example.ikea.repository.MemberRepository;
+import com.example.ikea.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,11 +24,21 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final CartRepository cartRepository;
+    private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
+    private final CartItemRepository cartItemRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final QnaRepository qnaRepository;
 
     //로그인
     public MemberResponseDto login(MemberLoginRequestDto request) {
         Member member = memberRepository.findByLoginId(request.getLoginId())
                 .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다."));
+
+        if (member.isDeleted()) {
+            throw new IllegalArgumentException("탈퇴한 회원은 로그인할 수 없습니다.");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
@@ -62,6 +69,11 @@ public class MemberService {
     public MemberResponseDto getMemberByLoginId(String loginId) {
         Member member = memberRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (member.isDeleted()) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
         return new MemberResponseDto(member);
     }
 
@@ -69,6 +81,11 @@ public class MemberService {
     public MemberResponseDto detailMember(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (member.isDeleted()) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
         return new MemberResponseDto(member);
     }
 
@@ -78,6 +95,10 @@ public class MemberService {
     public MemberResponseDto update(MemberUpdateDto dto, String loginId) {
         Member member = memberRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (member.isDeleted()) {
+            throw new IllegalArgumentException("탈퇴한 회원은 정보를 수정할 수 없습니다.");
+        }
 
         member.setName(dto.getName());
         member.setEmail(dto.getEmail());
@@ -91,10 +112,40 @@ public class MemberService {
 
     //회원 탈퇴
     @Transactional
-    public void deleteMember(String loginId) {
-        Member member = memberRepository.findByLoginId(loginId)
+    public void deleteMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-        memberRepository.delete(member);
+
+        if (member.isDeleted()) {
+            throw new IllegalArgumentException("이미 탈퇴한 회원입니다.");
+        }
+
+        List<OrderStatus> blockedStatuses = List.of(
+                OrderStatus.PENDING,
+                OrderStatus.PAID,
+                OrderStatus.ORDERED,
+                OrderStatus.DELIVERING
+        );
+
+        if (orderRepository.existsByMember_MemberIdAndOrderStatusIn(memberId, blockedStatuses)) {
+            throw new IllegalArgumentException("진행 중인 주문이 있어 탈퇴할 수 없습니다.");
+        }
+
+        if (paymentRepository.existsByMember_MemberIdAndPaymentStatus(memberId, PaymentStatus.OK)) {
+            throw new IllegalArgumentException("취소되지 않은 결제가 있어 탈퇴할 수 없습니다.");
+        }
+
+        cartRepository.findByMember_MemberId(memberId).ifPresent(cart -> {
+            cartItemRepository.deleteByCart_CartId(cart.getCartId());
+            cartRepository.delete(cart);
+        });
+
+        refreshTokenRepository.deleteByLoginId(member.getLoginId());
+
+        List<Qna> qnas = qnaRepository.findByMemberId(memberId);
+        qnaRepository.deleteAll(qnas);
+
+        member.setDeleted(true);
     }
 
 

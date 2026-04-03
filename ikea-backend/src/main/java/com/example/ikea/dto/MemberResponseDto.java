@@ -33,6 +33,8 @@ public class MemberResponseDto {
 
     private MemberRole memberRole;
 
+    private boolean deleted;
+
 
     public MemberResponseDto(Member member) {
         this.memberId = member.getMemberId();
@@ -45,5 +47,6 @@ public class MemberResponseDto {
         this.addressDetail = member.getAddressDetail();
         this.createdAt = member.getCreatedAt();
         this.memberRole = member.getMemberRole();
+        this.deleted = member.isDeleted();
     }
 }

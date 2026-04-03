@@ -35,4 +35,6 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
     // [추가] 회원 본인의 질문 목록만 조회 (level=0 이 질문, level=1 이 답변)
     // memberId 기준으로 본인 질문만 최신순 조회
     List<Qna> findByMemberIdAndLevelOrderByCreatedAtDesc(Long memberId, Integer level);
+
+    List<Qna> findByMemberId(Long MemberId);
 }
