@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,11 +44,12 @@ public class MemberController {
         return ResponseEntity.ok(new TokenResponseDto(accessToken, refreshToken));
     }
 
-    //마이페이지
+    // 내 정보 조회
     @GetMapping("/me")
     public ResponseEntity<MemberResponseDto> getMe(
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(memberService.detailMember(memberService.getMemberIdByLoginId(userDetails.getUsername())));
+        Long memberId = memberService.getMemberIdByLoginId(userDetails.getUsername());
+        return ResponseEntity.ok(memberService.detailMember(memberId));
     }
 
     //회원 정보 수정
@@ -57,8 +57,7 @@ public class MemberController {
     public ResponseEntity<MemberResponseDto> update(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody MemberUpdateDto dto) {
-        String loginId = userDetails.getUsername();
-        return ResponseEntity.ok(memberService.update(dto, loginId));
+        return ResponseEntity.ok(memberService.update(dto, userDetails.getUsername()));
     }
 
     // 회원탈퇴

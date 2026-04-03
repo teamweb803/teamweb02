@@ -8,9 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Setter
 @Getter
-@RequiredArgsConstructor
 public class MemberResponseDto {
 
     private Long memberId;

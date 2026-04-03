@@ -6,14 +6,11 @@ import com.example.ikea.dto.MemberOrderRequestDto;
 import com.example.ikea.dto.OrderResponseDto;
 import com.example.ikea.repository.*;
 import lombok.AllArgsConstructor;
-
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
@@ -32,14 +29,14 @@ public class OrderService {
     private final ProductStockService productStockService;
     private final ProductRepository productRepository;
 
-    //주문 목록 조회(내 주문 내역)
+    // 주문 목록 조회(내 주문 내역)
     public List<OrderResponseDto> getOrderList(Long memberId) {
         return orderRepository.findByMember_MemberId(memberId).stream()
                 .map(OrderResponseDto::new)
                 .collect(Collectors.toList());
     }
 
-    //주문 상세 조회
+    // 주문 상세 조회
     public OrderResponseDto getDetailOrder(Long orderId, Long memberId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
@@ -47,10 +44,11 @@ public class OrderService {
         if (order.getMember() == null || !order.getMember().getMemberId().equals(memberId)) {
             throw new AccessDeniedException("본인 주문만 조회할 수 있습니다.");
         }
+
         return new OrderResponseDto(order);
     }
 
-    //주문 생성 (장바구니 -> 주문)
+    // 주문 생성 (장바구니 -> 주문)
     @Transactional
     public Long createMemberOrder(Long memberId, MemberOrderRequestDto dto) {
         Member member = memberRepository.findById(memberId)
@@ -87,11 +85,6 @@ public class OrderService {
         order = orderRepository.save(order);
 
         for (CartItem cartItem : cartItems) {
-            productStockService.decreaseStock(
-                    cartItem.getProduct().getProductId(),
-                    cartItem.getQuantity()
-            );
-
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .product(cartItem.getProduct())
@@ -107,8 +100,7 @@ public class OrderService {
         return order.getOrderId();
     }
 
-
-    //주문 취소
+    // 주문 취소 (미결제 주문만)
     @Transactional
     public void cancelOrder(Long orderId, Long memberId) {
         Order order = orderRepository.findById(orderId)
@@ -118,23 +110,12 @@ public class OrderService {
             throw new AccessDeniedException("본인 주문만 취소할 수 있습니다.");
         }
 
-
-        OrderStatus status = order.getOrderStatus();
         if (order.getOrderStatus() == OrderStatus.CANCELLED) {
             throw new IllegalArgumentException("이미 취소된 주문입니다.");
         }
 
-        if (status != OrderStatus.PENDING
-                && status != OrderStatus.ORDERED) {
-            throw new IllegalArgumentException("취소할 수 없는 주문입니다. 현재상태 : " + status);
-        }
-
-
-        for (OrderItem orderItem : order.getOrderItemList()) {
-            productStockService.increaseStock(
-                    orderItem.getProduct().getProductId(),
-                    orderItem.getQuantity()
-            );
+        if (order.getOrderStatus() != OrderStatus.PENDING) {
+            throw new IllegalArgumentException("미결제 주문만 여기서 취소할 수 있습니다. 결제 완료 주문은 결제 취소를 이용하세요.");
         }
 
         order.setOrderStatus(OrderStatus.CANCELLED);
@@ -142,34 +123,37 @@ public class OrderService {
 
     // ====================== 관리자 ===================
 
-    //전체 주문 목록
+    // 전체 주문 목록
     public List<OrderResponseDto> getAllOrderList() {
         return orderRepository.findAll().stream()
                 .map(OrderResponseDto::new)
                 .collect(Collectors.toList());
     }
 
-    //상태별 주문 목록 (판매 관리)
+    // 상태별 주문 목록 (판매 관리)
     public List<OrderResponseDto> getOrderListByStatus(OrderStatus status) {
         return orderRepository.findByOrderStatus(status).stream()
                 .map(OrderResponseDto::new)
                 .collect(Collectors.toList());
     }
 
-    //주문 상태 변경 (배송 관리)
+    // 주문 상태 변경 (배송 관리)
     @Transactional
     public void updateOrderStatus(OrderStatus status, Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 주문입니다."));
+
+        validateOrderStatusChange(order.getOrderStatus(), status);
         order.setOrderStatus(status);
     }
 
-    //대시보드용 주문 수
+    // 대시보드용 주문 수
     public Long getOrderCount() {
         return orderRepository.count();
     }
 
-    // ======================비회원 전용 =================
+    // ====================== 비회원 전용 =================
+
     @Transactional
     public Long createGuestOrder(GuestOrderRequestDto dto) {
         Cart cart = cartRepository.findByGuestCartKey(dto.getGuestCartKey())
@@ -203,11 +187,6 @@ public class OrderService {
         order = orderRepository.save(order);
 
         for (CartItem cartItem : cartItems) {
-            productStockService.decreaseStock(
-                    cartItem.getProduct().getProductId(),
-                    cartItem.getQuantity()
-            );
-
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .product(cartItem.getProduct())
@@ -221,5 +200,21 @@ public class OrderService {
         cartItemRepository.deleteByCart_CartId(cart.getCartId());
 
         return order.getOrderId();
+    }
+
+    private void validateOrderStatusChange(OrderStatus current, OrderStatus next) {
+        if (current == OrderStatus.CANCELLED || current == OrderStatus.COMPLETED) {
+            throw new IllegalArgumentException("종료된 주문 상태는 변경할 수 없습니다.");
+        }
+
+        boolean valid =
+                (current == OrderStatus.PENDING && next == OrderStatus.PAID) ||
+                        (current == OrderStatus.PAID && next == OrderStatus.ORDERED) ||
+                        (current == OrderStatus.ORDERED && next == OrderStatus.DELIVERING) ||
+                        (current == OrderStatus.DELIVERING && next == OrderStatus.COMPLETED);
+
+        if (!valid) {
+            throw new IllegalArgumentException("허용되지 않는 주문 상태 변경입니다.");
+        }
     }
 }

@@ -42,11 +42,13 @@ public class QnaService {
 
     // 질문 상세 조회
     public QnaResponseDto getQna(Long qnaId, String loginId) {
+        Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
-        // ownership check: 본인 질문인지 확인
-        if (!question.getWriter().equals(loginId)) {
+        if (!question.getMemberId().equals(member.getMemberId())) {
             throw new AccessDeniedException("본인 문의만 조회할 수 있습니다.");
         }
 
@@ -79,6 +81,9 @@ public class QnaService {
     // 질문 수정 (일반회원)
     @Transactional
     public void updateQna(Long qnaId, String loginId, QnaRequestDto dto) {
+        Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
@@ -86,9 +91,10 @@ public class QnaService {
             throw new IllegalArgumentException("질문만 수정할 수 있습니다.");
         }
 
-        if (!question.getWriter().equals(loginId)) {
+        if (!question.getMemberId().equals(member.getMemberId())) {
             throw new IllegalArgumentException("본인 글만 수정할 수 있습니다.");
         }
+
         question.setTitle(dto.getTitle());
         question.setContent(dto.getContent());
     }
@@ -96,6 +102,9 @@ public class QnaService {
     // 질문 삭제 (일반회원)
     @Transactional
     public void deleteQuestion(Long qnaId, String loginId) {
+        Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
         Qna question = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
@@ -103,14 +112,11 @@ public class QnaService {
             throw new IllegalArgumentException("질문만 삭제할 수 있습니다.");
         }
 
-        if (!question.getWriter().equals(loginId)) {
+        if (!question.getMemberId().equals(member.getMemberId())) {
             throw new IllegalArgumentException("본인 글만 삭제할 수 있습니다.");
         }
 
-        // 답변만 먼저 삭제
         qnaRepository.deleteByParentIdAndLevel(question.getQnaId(), 1);
-
-        // 그 다음 질문 삭제
         qnaRepository.delete(question);
     }
 
@@ -130,13 +136,11 @@ public class QnaService {
                 .collect(Collectors.toList());
     }
 
-
     // 상세 조회(관리자용)
     public QnaResponseDto getQnaForAdmin(Long qnaId) {
         return new QnaResponseDto(qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다.")));
     }
-
 
     // 답변 등록 (관리자)
     @Transactional
@@ -167,9 +171,11 @@ public class QnaService {
     public void updateAnswer(Long qnaId, QnaRequestDto dto) {
         Qna answer = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
         if (answer.getLevel() != 1) {
             throw new IllegalArgumentException("답변만 수정할 수 있습니다.");
         }
+
         answer.setTitle(dto.getTitle());
         answer.setContent(dto.getContent());
     }
@@ -179,9 +185,11 @@ public class QnaService {
     public void deleteAnswer(Long qnaId) {
         Qna answer = qnaRepository.findById(qnaId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
         if (answer.getLevel() != 1) {
             throw new IllegalArgumentException("답변만 삭제할 수 있습니다.");
         }
+
         qnaRepository.delete(answer);
     }
 }
