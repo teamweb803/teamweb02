@@ -48,6 +48,7 @@ const emit = defineEmits(['activate']);
           :style="{
             objectFit: item.imageFit || 'cover',
             objectPosition: item.imagePosition || 'center center',
+            transform: item.imageScale ? `scale(${item.imageScale})` : undefined,
           }"
           loading="eager"
           decoding="async"
@@ -107,6 +108,7 @@ const emit = defineEmits(['activate']);
   max-width: 100%;
   max-height: 100%;
   object-fit: cover;
+  transition: transform 180ms ease;
 }
 
 .hs-shortcut__label {

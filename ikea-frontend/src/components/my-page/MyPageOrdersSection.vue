@@ -24,6 +24,18 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+  shouldShowOrderAction: {
+    type: Function,
+    required: true,
+  },
+  isOrderActionPending: {
+    type: Function,
+    required: true,
+  },
+  getOrderActionLabel: {
+    type: Function,
+    required: true,
+  },
   shouldShowReviewAction: {
     type: Function,
     required: true,
@@ -38,7 +50,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['open-review']);
+const emit = defineEmits(['open-review', 'request-order-action']);
 
 const reviewStatusClass = computed(() => ({
   'my-order-board__status--error': props.reviewStatusTone === 'error',
@@ -47,6 +59,10 @@ const reviewStatusClass = computed(() => ({
 
 function openReview(order) {
   emit('open-review', order);
+}
+
+function requestOrderAction(order) {
+  emit('request-order-action', order);
 }
 </script>
 
@@ -89,6 +105,15 @@ function openReview(order) {
           <span class="my-order-row__status">{{ order.status }}</span>
           <strong class="my-order-row__price">{{ order.price }}</strong>
           <div class="my-order-row__actions">
+            <button
+              v-if="shouldShowOrderAction(order)"
+              type="button"
+              class="my-order-row__action-button my-order-row__action-button--danger"
+              :disabled="isOrderActionPending(order)"
+              @click="requestOrderAction(order)"
+            >
+              {{ getOrderActionLabel(order) }}
+            </button>
             <button
               v-if="shouldShowReviewAction(order)"
               type="button"
@@ -135,7 +160,7 @@ function openReview(order) {
 
 .my-status-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 44px;
 }
 
@@ -273,6 +298,12 @@ function openReview(order) {
   cursor: pointer;
 }
 
+.my-order-row__action-button--danger {
+  border-color: #ecc8c8;
+  background: #fff7f7;
+  color: #a33c3c;
+}
+
 .my-order-row__action-button.is-complete {
   background: #f6f6f6;
   color: #8a8a8a;
@@ -281,7 +312,7 @@ function openReview(order) {
 
 @media (max-width: 1080px) {
   .my-status-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .my-order-board__head,
@@ -299,7 +330,7 @@ function openReview(order) {
 
 @media (max-width: 720px) {
   .my-status-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .my-section__action-bar {
@@ -322,6 +353,12 @@ function openReview(order) {
   }
 
   .my-order-row__actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .my-status-grid {
     grid-template-columns: 1fr;
   }
 }

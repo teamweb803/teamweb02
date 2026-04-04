@@ -9,7 +9,8 @@ import { resolveCustomerServiceSection } from '../constants/customerServiceNavig
 import { getCustomerSupportQnaRows } from '../services/customerSupportService';
 import { getCustomerNoticeRows } from '../services/noticeService';
 import { useAccountStore } from '../stores/account';
-import { hasAdminAccess, hasAuthenticatedSession } from '../utils/accessControl';
+import { resolveLookupErrorMessage } from '../utils/apiErrorMessage';
+import { hasAuthenticatedSession } from '../utils/accessControl';
 
 const BOARD_PAGE_SIZE = 6;
 
@@ -22,6 +23,7 @@ export function useCustomerServiceBoard() {
   const noticeKeyword = ref('');
   const activeFaqCategory = ref(CUSTOMER_SERVICE_FAQ_CATEGORIES[0]);
   const openFaqIds = ref(['faq-1']);
+  const faqPage = ref(1);
   const qnaKeyword = ref('');
   const noticePage = ref(1);
   const qnaPage = ref(1);
@@ -42,7 +44,7 @@ export function useCustomerServiceBoard() {
       return 'guest';
     }
 
-    return hasAdminAccess(accountStore) ? 'admin' : 'member';
+    return 'member';
   });
   const canBrowseQnaRows = computed(() => qnaViewerMode.value !== 'guest');
 
@@ -72,6 +74,15 @@ export function useCustomerServiceBoard() {
     }
 
     return CUSTOMER_SERVICE_FAQ_ROWS.filter((row) => row.category === activeFaqCategory.value);
+  });
+
+  const faqTotalPages = computed(() =>
+    Math.max(1, Math.ceil(filteredFaqRows.value.length / BOARD_PAGE_SIZE)),
+  );
+
+  const pagedFaqRows = computed(() => {
+    const start = (faqPage.value - 1) * BOARD_PAGE_SIZE;
+    return filteredFaqRows.value.slice(start, start + BOARD_PAGE_SIZE);
   });
 
   const filteredQnaRows = computed(() => {
@@ -112,7 +123,7 @@ export function useCustomerServiceBoard() {
       noticeRows.value = await getCustomerNoticeRows();
     } catch (error) {
       noticeRows.value = CUSTOMER_SERVICE_NOTICE_ROWS;
-      noticeLoadError.value = error?.message ?? '공지사항을 불러오지 못했습니다.';
+      noticeLoadError.value = resolveLookupErrorMessage(error, '공지사항을 불러오지 못했습니다.');
     } finally {
       hasLoadedNoticeRows.value = true;
       isNoticeLoading.value = false;
@@ -129,12 +140,13 @@ export function useCustomerServiceBoard() {
 
     isQnaLoading.value = true;
     qnaLoadError.value = '';
+    const previousRows = Array.isArray(qnaRows.value) ? [...qnaRows.value] : [];
 
     try {
       qnaRows.value = await getCustomerSupportQnaRows();
     } catch (error) {
-      qnaRows.value = [];
-      qnaLoadError.value = error?.message ?? '문의 내역을 불러오지 못했습니다.';
+      qnaRows.value = previousRows;
+      qnaLoadError.value = resolveLookupErrorMessage(error, '등록 내역을 불러오지 못했습니다.');
     } finally {
       isQnaLoading.value = false;
     }
@@ -142,6 +154,7 @@ export function useCustomerServiceBoard() {
 
   function selectFaqCategory(category) {
     activeFaqCategory.value = category;
+    faqPage.value = 1;
   }
 
   function toggleFaq(id) {
@@ -152,6 +165,11 @@ export function useCustomerServiceBoard() {
 
   function changeNoticePage(page) {
     noticePage.value = page;
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }
+
+  function changeFaqPage(page) {
+    faqPage.value = page;
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
 
@@ -174,11 +192,18 @@ export function useCustomerServiceBoard() {
     noticePage.value = 1;
   });
 
+  watch(faqTotalPages, (pageCount) => {
+    if (faqPage.value > pageCount) {
+      faqPage.value = pageCount;
+    }
+  });
+
   watch(qnaKeyword, () => {
     qnaPage.value = 1;
   });
 
   watch(currentSection, (section) => {
+    faqPage.value = 1;
     noticePage.value = 1;
     qnaPage.value = 1;
 
@@ -203,10 +228,13 @@ export function useCustomerServiceBoard() {
   return {
     activeFaqCategory,
     canBrowseQnaRows,
+    changeFaqPage,
     changeNoticePage,
     changeQnaPage,
     currentSection,
     faqCategories: CUSTOMER_SERVICE_FAQ_CATEGORIES,
+    faqPage,
+    faqTotalPages,
     filteredFaqRows,
     filteredQnaCount,
     isNoticeLoading,
@@ -216,6 +244,7 @@ export function useCustomerServiceBoard() {
     noticePage,
     noticeTotalPages,
     openFaqIds,
+    pagedFaqRows,
     pagedNotices,
     pagedQnaRows,
     qnaPage,
@@ -224,6 +253,7 @@ export function useCustomerServiceBoard() {
     qnaSubmitted,
     qnaTotalPages,
     qnaViewerMode,
+    reloadQnaRows: loadQnaRows,
     selectFaqCategory,
     toggleFaq,
   };

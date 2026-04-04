@@ -9,7 +9,7 @@ const props = defineProps({
   },
   emptyTitle: {
     type: String,
-    default: '등록된 문의가 없습니다.',
+    default: '등록된 내역이 없습니다.',
   },
   emptyDescription: {
     type: String,
@@ -19,7 +19,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showItemActions: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const emit = defineEmits(['edit-item', 'delete-item']);
 
 const openIds = shallowRef([]);
 
@@ -71,8 +77,8 @@ watch(
 
       <div v-if="isOpen(item.id)" class="cs-qna-list__detail">
         <section class="cs-qna-list__detail-section">
-          <span>문의 내용</span>
-          <p>{{ item.questionContent || '등록된 문의 내용을 확인할 수 없습니다.' }}</p>
+          <span>내용</span>
+          <p>{{ item.questionContent || '등록된 내용을 확인할 수 없습니다.' }}</p>
         </section>
 
         <section class="cs-qna-list__detail-section">
@@ -81,6 +87,15 @@ watch(
           <p v-else class="is-pending-copy">답변이 등록되면 여기에서 바로 확인할 수 있습니다.</p>
           <small v-if="item.answerDate">{{ item.answerDate }}</small>
         </section>
+
+        <div v-if="showItemActions" class="cs-qna-list__actions">
+          <button type="button" class="cs-qna-list__action cs-qna-list__action--secondary" @click="emit('edit-item', item)">
+            수정
+          </button>
+          <button type="button" class="cs-qna-list__action cs-qna-list__action--danger" @click="emit('delete-item', item)">
+            삭제
+          </button>
+        </div>
       </div>
     </article>
   </div>
@@ -171,6 +186,13 @@ watch(
   padding: 0 0 20px;
 }
 
+.cs-qna-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .cs-qna-list__detail-section {
   display: grid;
   gap: 8px;
@@ -185,6 +207,22 @@ watch(
   font-weight: 600;
 }
 
+.cs-qna-list__action {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+  color: #111111;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cs-qna-list__action--danger {
+  border-color: #e3c8c8;
+  color: #b42318;
+}
+
 @media (max-width: 720px) {
   .cs-qna-list__summary,
   .cs-qna-list__meta {
@@ -195,6 +233,10 @@ watch(
   .cs-qna-list__summary {
     gap: 12px;
     padding: 16px 0;
+  }
+
+  .cs-qna-list__actions {
+    justify-content: stretch;
   }
 }
 </style>

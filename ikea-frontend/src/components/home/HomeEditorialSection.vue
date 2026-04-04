@@ -208,16 +208,16 @@ function handleKeydown(event, payload, eventName) {
   min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  background: var(--hs-soft);
-  color: var(--hs-blue);
+  background: var(--hs-badge-blue);
+  color: var(--hs-badge-blue-ink);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .hs-mini-product__badge.is-soldout {
-  background: #111111;
-  color: #ffffff;
+  background: var(--hs-badge-danger);
+  color: var(--hs-badge-danger-ink);
 }
 
 .hs-mini-product__copy h3 {

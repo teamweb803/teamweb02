@@ -14,11 +14,13 @@ defineProps({
 <template>
   <section class="admin-panel">
     <header class="admin-panel__head">
-      <div>
+      <div class="admin-panel__heading">
         <strong>{{ title }}</strong>
         <p v-if="description">{{ description }}</p>
       </div>
-      <slot name="action" />
+      <div v-if="$slots.action" class="admin-panel__action">
+        <slot name="action" />
+      </div>
     </header>
     <div class="admin-panel__body">
       <slot />
@@ -36,9 +38,14 @@ defineProps({
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   padding: 20px 0 16px;
   border-bottom: 1px solid #e6e6e6;
+}
+
+.admin-panel__heading {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .admin-panel__head strong {
@@ -59,7 +66,27 @@ defineProps({
   line-height: 1.6;
 }
 
+.admin-panel__action {
+  display: flex;
+  flex: 0 1 320px;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
 .admin-panel__body {
-  padding-top: 16px;
+  padding-top: 18px;
+}
+
+@media (max-width: 720px) {
+  .admin-panel__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-panel__action {
+    width: 100%;
+    flex-basis: auto;
+    justify-content: stretch;
+  }
 }
 </style>

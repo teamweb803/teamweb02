@@ -4,37 +4,36 @@ import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
 import CommonStatePanel from '../common/CommonStatePanel.vue';
 import {
+  ADMIN_ORDER_FILTER_OPTIONS,
+  getAdminOrderStatusLabel,
+  getNextAdminOrderStatuses,
+} from '../../constants/adminOrderConfig';
+import {
   getAdminOrders,
+  getAdminPayments,
   updateAdminOrderStatus,
 } from '../../services/adminService';
 import {
   formatAdminCurrency,
   formatAdminDateTime,
+  mergeAdminOrdersWithPayments,
   normalizeAdminOrder,
   normalizeArrayPayload,
+  resolveAdminOrderPaymentLabel,
+  resolveAdminOrderPaymentStatusLabel,
+  resolveAdminOrderPaymentSummary,
 } from '../../mappers/adminManagementMapper';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
-const STATUS_OPTIONS = [
-  { value: 'ALL', label: '전체' },
-  { value: 'ORDERED', label: '결제완료' },
-  { value: 'DELIVERING', label: '배송중' },
-  { value: 'COMPLETED', label: '배송완료' },
-  { value: 'CANCELLED', label: '취소' },
-];
-
-const STATUS_LABEL_MAP = {
-  ORDERED: '결제완료',
-  DELIVERING: '배송중',
-  COMPLETED: '배송완료',
-  CANCELLED: '취소',
-};
+const STATUS_OPTIONS = ADMIN_ORDER_FILTER_OPTIONS;
 
 const allOrders = shallowRef([]);
 const selectedOrderId = shallowRef('');
 const statusFilter = shallowRef('ALL');
-const statusDraft = shallowRef('ORDERED');
+const statusDraft = shallowRef('');
 const statusMessage = shallowRef('');
 const loadErrorMessage = shallowRef('');
+const loadNoticeMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isSubmitting = shallowRef(false);
 const currentPage = shallowRef(1);
@@ -65,18 +64,56 @@ const selectedOrder = computed(
   () => allOrders.value.find((order) => order.orderId === selectedOrderId.value) ?? null,
 );
 
+const availableStatusOptions = computed(() => getNextAdminOrderStatuses(selectedOrder.value?.orderStatus)
+  .map((value) => ({
+    value,
+    label: formatStatusLabel(value),
+  })));
+
+const canSubmitStatusChange = computed(() => (
+  Boolean(selectedOrder.value)
+  && Boolean(statusDraft.value)
+  && availableStatusOptions.value.some((option) => option.value === statusDraft.value)
+));
+
+const statusEditorHint = computed(() => {
+  if (!selectedOrder.value) {
+    return '';
+  }
+
+  if (!availableStatusOptions.value.length) {
+    return '현재 상태에서는 더 이상 주문 단계를 변경할 수 없습니다.';
+  }
+
+  return `${formatStatusLabel(selectedOrder.value.orderStatus)} 다음 단계만 선택할 수 있습니다.`;
+});
+
 function formatStatusLabel(status) {
-  return STATUS_LABEL_MAP[status] ?? status ?? '-';
+  return getAdminOrderStatusLabel(status);
+}
+
+function formatPaymentLabel(order) {
+  return resolveAdminOrderPaymentLabel(order);
+}
+
+function formatPaymentStatusLabel(order) {
+  return resolveAdminOrderPaymentStatusLabel(order);
+}
+
+function formatPaymentSummary(order) {
+  return resolveAdminOrderPaymentSummary(order);
 }
 
 function createOrderItemKey(orderId, item, index) {
   return `${orderId}-${item.productId ?? item.productName ?? item.name ?? index}`;
 }
 
-function applyOrders(items) {
-  allOrders.value = items
+function applyOrders(items, payments = []) {
+  const normalizedOrders = items
     .map((item) => normalizeAdminOrder(item))
     .filter((item) => item.orderId);
+
+  allOrders.value = mergeAdminOrdersWithPayments(normalizedOrders, payments);
 
   const hasSelectedOrder = allOrders.value.some((order) => order.orderId === selectedOrderId.value);
 
@@ -88,13 +125,39 @@ function applyOrders(items) {
 async function loadOrders() {
   isLoading.value = true;
   loadErrorMessage.value = '';
+  loadNoticeMessage.value = '';
 
   try {
-    const payload = await getAdminOrders();
-    applyOrders(normalizeArrayPayload(payload, []));
-  } catch {
+    const [ordersResult, paymentsResult] = await Promise.allSettled([
+      getAdminOrders(),
+      getAdminPayments(),
+    ]);
+
+    if (ordersResult.status !== 'fulfilled') {
+      applyOrders([]);
+      loadErrorMessage.value = resolveAdminActionErrorMessage(
+        ordersResult.reason,
+        '주문 목록을 불러오지 못했습니다.',
+      );
+      return false;
+    }
+
+    const orderItems = normalizeArrayPayload(ordersResult.value, []);
+    const paymentItems = paymentsResult.status === 'fulfilled'
+      ? normalizeArrayPayload(paymentsResult.value, [])
+      : [];
+
+    applyOrders(orderItems, paymentItems);
+
+    if (paymentsResult.status !== 'fulfilled') {
+      loadNoticeMessage.value = resolveAdminActionErrorMessage(
+        paymentsResult.reason,
+        '결제수단 정보는 일부 표시되지 않을 수 있습니다.',
+      );
+    }
+  } catch (error) {
     applyOrders([]);
-    loadErrorMessage.value = '주문 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    loadErrorMessage.value = resolveAdminActionErrorMessage(error, '주문 목록을 불러오지 못했습니다.');
     return false;
   } finally {
     isLoading.value = false;
@@ -123,15 +186,16 @@ async function submitStatusChange() {
     statusMessage.value = didLoadFromServer
       ? '주문 상태를 저장했습니다.'
       : '주문 상태는 저장됐지만 목록 재조회는 실패했습니다.';
-  } catch {
-    statusMessage.value = '주문 상태 변경에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '주문 상태 변경에 실패했습니다.');
   }
 
   isSubmitting.value = false;
 }
 
 watch(selectedOrder, (order) => {
-  statusDraft.value = order?.orderStatus ?? 'ORDERED';
+  const nextStatuses = getNextAdminOrderStatuses(order?.orderStatus);
+  statusDraft.value = nextStatuses[0] ?? order?.orderStatus ?? '';
 }, { immediate: true });
 
 watch(statusFilter, () => {
@@ -152,7 +216,7 @@ onMounted(loadOrders);
 
 <template>
   <section class="admin-orders-manager">
-    <AdminPanel title="주문 상태 관리" description="주문 현황을 확인하고 상태를 직접 업데이트합니다.">
+    <AdminPanel title="주문 상태 관리" description="주문 현황을 확인하고 다음 단계로 상태를 변경합니다.">
       <div class="admin-orders-manager__chips">
         <button
           v-for="option in orderCounts"
@@ -166,6 +230,8 @@ onMounted(loadOrders);
           <strong>{{ option.count }}</strong>
         </button>
       </div>
+
+      <p v-if="loadNoticeMessage" class="admin-orders-manager__notice">{{ loadNoticeMessage }}</p>
 
       <div class="admin-orders-manager__table">
         <div class="admin-orders-manager__head">
@@ -187,10 +253,10 @@ onMounted(loadOrders);
         >
           <strong>#{{ order.orderNo || order.orderId }}</strong>
           <span>{{ order.orderItems?.[0]?.productName ?? order.orderItems?.[0]?.name ?? '-' }}</span>
-          <span>{{ order.payment || '-' }}</span>
+          <span>{{ formatPaymentSummary(order) }}</span>
           <span>{{ formatStatusLabel(order.orderStatus) }}</span>
           <strong>{{ formatAdminCurrency(order.totalPrice) }}</strong>
-          <span>{{ formatAdminDateTime(order.createdAt) }}</span>
+          <span>{{ order.createdAtDisplay || formatAdminDateTime(order.createdAt) }}</span>
         </button>
 
         <CommonStatePanel
@@ -214,11 +280,19 @@ onMounted(loadOrders);
           </article>
           <article>
             <span>주문 시각</span>
-            <strong>{{ formatAdminDateTime(selectedOrder.createdAt) }}</strong>
+            <strong>{{ selectedOrder.createdAtDisplay || formatAdminDateTime(selectedOrder.createdAt) }}</strong>
           </article>
           <article>
             <span>결제수단</span>
-            <strong>{{ selectedOrder.payment || '-' }}</strong>
+            <strong>{{ formatPaymentLabel(selectedOrder) }}</strong>
+          </article>
+          <article>
+            <span>결제상태</span>
+            <strong>{{ formatPaymentStatusLabel(selectedOrder) }}</strong>
+          </article>
+          <article>
+            <span>현재 상태</span>
+            <strong>{{ formatStatusLabel(selectedOrder.orderStatus) }}</strong>
           </article>
           <article>
             <span>결제금액</span>
@@ -246,25 +320,32 @@ onMounted(loadOrders);
 
         <div class="admin-orders-manager__editor">
           <label>
-            <span>주문 상태</span>
-            <select v-model="statusDraft">
-              <option value="ORDERED">결제완료</option>
-              <option value="DELIVERING">배송중</option>
-              <option value="COMPLETED">배송완료</option>
-              <option value="CANCELLED">취소</option>
+            <span>다음 상태</span>
+            <select v-model="statusDraft" :disabled="!availableStatusOptions.length || isSubmitting">
+              <option
+                v-for="option in availableStatusOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+              <option v-if="!availableStatusOptions.length" :value="selectedOrder.orderStatus">
+                변경 가능 상태 없음
+              </option>
             </select>
           </label>
 
           <button
             type="button"
             class="admin-orders-manager__primary"
-            :disabled="isSubmitting"
+            :disabled="isSubmitting || !canSubmitStatusChange"
             @click="submitStatusChange"
           >
-            {{ isSubmitting ? '저장 중..' : '상태 저장' }}
+            {{ isSubmitting ? '저장 중...' : '상태 저장' }}
           </button>
         </div>
 
+        <p v-if="statusEditorHint" class="admin-orders-manager__status">{{ statusEditorHint }}</p>
         <p v-if="statusMessage" class="admin-orders-manager__status">{{ statusMessage }}</p>
       </div>
 
@@ -312,6 +393,16 @@ onMounted(loadOrders);
   border-color: #111111;
   background: #111111;
   color: #ffffff;
+}
+
+.admin-orders-manager__notice {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .admin-orders-manager__table {
@@ -362,7 +453,7 @@ onMounted(loadOrders);
 
 .admin-orders-manager__summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 14px;
 }
 
@@ -467,6 +558,14 @@ onMounted(loadOrders);
   color: #666666;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.admin-orders-manager__status {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
 }
 
 @media (max-width: 1024px) {

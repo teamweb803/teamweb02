@@ -126,7 +126,7 @@ export async function adjustAdminInventoryItem(productId, { type, quantity, curr
   const normalizedProductId = normalizeProductId(productId);
 
   if (!isTrackableProductId(normalizedProductId)) {
-    throw new Error('백엔드 재고와 연결할 수 없는 상품입니다.');
+    throw new Error('재고 수량을 조정할 수 없는 상품입니다.');
   }
 
   const delta = Math.max(0, normalizeInteger(quantity, 0));

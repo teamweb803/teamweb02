@@ -17,6 +17,7 @@ import {
 } from '../../mappers/adminManagementMapper';
 import { useFeedback } from '../../composables/useFeedback';
 import { useAccountStore } from '../../stores/account';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
 const accountStore = useAccountStore();
 const { memberName, loginId } = storeToRefs(accountStore);
@@ -81,6 +82,13 @@ const pagedThreads = computed(() => {
 const selectedThread = computed(
   () => threads.value.find((thread) => thread.id === selectedThreadId.value) ?? null,
 );
+const submitButtonLabel = computed(() => {
+  if (isSubmitting.value) {
+    return selectedThread.value?.answer ? '답변 수정 중...' : '답변 등록 중...';
+  }
+
+  return selectedThread.value?.answer ? '답변 수정' : '답변 등록';
+});
 
 function resolveOperatorName() {
   return memberName.value || loginId.value || '운영 관리자';
@@ -122,9 +130,12 @@ async function loadThreads(options = {}) {
   try {
     const payload = await getAdminQnas();
     applyThreads(normalizeArrayPayload(payload, []));
-  } catch {
+  } catch (error) {
     applyThreads([]);
-    loadErrorMessage.value = '문의 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    loadErrorMessage.value = resolveAdminActionErrorMessage(
+      error,
+      '문의 목록을 불러오지 못했습니다.',
+    );
     return false;
   } finally {
     isLoading.value = false;
@@ -178,10 +189,11 @@ async function submitAnswer() {
         ? '답변을 등록했습니다.'
         : '답변은 등록됐지만 목록 재조회는 실패했습니다.';
     }
-  } catch {
-    statusMessage.value = hasAnswer
-      ? '답변 수정에 실패했습니다. 서버 상태를 확인해 주세요.'
-      : '답변 등록에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(
+      error,
+      hasAnswer ? '답변 수정에 실패했습니다.' : '답변 등록에 실패했습니다.',
+    );
   }
 
   isSubmitting.value = false;
@@ -215,8 +227,8 @@ async function removeAnswer() {
     statusMessage.value = didLoadFromServer
       ? '답변을 삭제했습니다.'
       : '답변은 삭제됐지만 목록 재조회는 실패했습니다.';
-  } catch {
-    statusMessage.value = '답변 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '답변 삭제에 실패했습니다.');
   }
 
   isSubmitting.value = false;
@@ -325,7 +337,7 @@ onMounted(loadThreads);
 
           <div class="admin-qna-manager__actions">
             <button type="submit" class="admin-qna-manager__primary" :disabled="isSubmitting">
-              {{ isSubmitting ? '처리 중..' : selectedThread.answer ? '답변 수정' : '답변 등록' }}
+              {{ submitButtonLabel }}
             </button>
             <button
               type="button"
@@ -360,11 +372,12 @@ onMounted(loadThreads);
 }
 
 .admin-qna-manager__search {
-  width: 280px;
+  width: min(320px, 100%);
   height: 44px;
   padding: 0 14px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .admin-qna-manager__list {
@@ -532,6 +545,14 @@ onMounted(loadThreads);
   color: #666666;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.admin-qna-manager__status {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
 }
 
 @media (max-width: 720px) {

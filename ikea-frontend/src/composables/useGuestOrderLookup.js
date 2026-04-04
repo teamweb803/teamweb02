@@ -5,6 +5,7 @@ import {
   resolveGuestLookupMode,
   validateGuestOrderLookupForm,
 } from '../utils/guestOrderLookup';
+import { resolveLookupErrorMessage } from '../utils/apiErrorMessage';
 
 export function useGuestOrderLookup() {
   const route = useRoute();
@@ -63,6 +64,7 @@ export function useGuestOrderLookup() {
     isSubmitting.value = true;
     resultMessage.value = '';
     resultTone.value = 'neutral';
+    const previousOrders = Array.isArray(searchedOrders.value) ? [...searchedOrders.value] : [];
 
     try {
       searchedOrders.value = await lookupGuestOrders({
@@ -75,9 +77,12 @@ export function useGuestOrderLookup() {
         ? `${searchedOrders.value.length}건의 주문을 찾았습니다.`
         : '입력한 정보와 일치하는 주문이 없습니다. 이름과 주문번호 또는 휴대전화번호를 다시 확인해 주세요.';
     } catch (error) {
-      searchedOrders.value = [];
+      searchedOrders.value = previousOrders;
       resultTone.value = 'error';
-      resultMessage.value = error?.message ?? '비회원 주문 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
+      resultMessage.value = resolveLookupErrorMessage(
+        error,
+        '비회원 주문 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      );
     } finally {
       isSubmitting.value = false;
     }

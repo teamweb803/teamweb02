@@ -59,7 +59,9 @@ export function buildMemberOrderRequest(payload = {}) {
 
 export function buildGuestOrderRequest(payload = {}) {
   return {
-    ...buildCheckoutOrderRequest(payload),
-    isGuestOrder: true,
+    guestCartKey: normalizeIdentifier(payload.guestCartKey),
+    guestName: normalizeIdentifier(payload.guestName ?? payload.ordererName),
+    guestPhone: normalizeIdentifier(payload.guestPhone ?? payload.ordererPhone),
+    address: buildDeliveryAddress(payload),
   };
 }

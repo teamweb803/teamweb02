@@ -2,6 +2,7 @@ import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useFeedback } from './useFeedback';
 import { useCartStore } from '../stores/cart';
+import { resolveCartActionErrorMessage } from '../utils/apiErrorMessage';
 
 export function useCommerceCart() {
   const cartStore = useCartStore();
@@ -27,7 +28,7 @@ export function useCommerceCart() {
     try {
       return await cartStore.updateQuantity(itemId, delta);
     } catch (error) {
-      showError(error?.message ?? '장바구니 수량을 변경하지 못했습니다.');
+      showError(resolveCartActionErrorMessage(error, '장바구니 수량을 변경하지 못했습니다.'));
       return null;
     }
   }
@@ -36,7 +37,7 @@ export function useCommerceCart() {
     try {
       return await cartStore.removeItem(itemId);
     } catch (error) {
-      showError(error?.message ?? '장바구니 상품을 삭제하지 못했습니다.');
+      showError(resolveCartActionErrorMessage(error, '장바구니 상품을 삭제하지 못했습니다.'));
       return null;
     }
   }
@@ -45,7 +46,7 @@ export function useCommerceCart() {
     try {
       return await cartStore.removeSelected();
     } catch (error) {
-      showError(error?.message ?? '선택한 상품을 삭제하지 못했습니다.');
+      showError(resolveCartActionErrorMessage(error, '선택한 상품을 삭제하지 못했습니다.'));
       return null;
     }
   }

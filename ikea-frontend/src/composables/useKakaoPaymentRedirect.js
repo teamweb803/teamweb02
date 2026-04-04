@@ -6,6 +6,9 @@ import {
   getPendingPayment,
 } from './useCommerceCart';
 import { ROUTE_PATHS } from '../constants/routes';
+import { useAccountStore } from '../stores/account';
+import { resolvePaymentApprovalErrorMessage } from '../utils/apiErrorMessage';
+import { buildGuestOrderLookupQuery } from '../utils/guestOrderLookup';
 
 function normalizeIdentifier(value) {
   return String(value ?? '').trim();
@@ -14,6 +17,7 @@ function normalizeIdentifier(value) {
 export function useKakaoPaymentRedirect(status = 'success') {
   const route = useRoute();
   const router = useRouter();
+  const accountStore = useAccountStore();
 
   const tone = ref(status === 'success' ? 'loading' : status === 'fail' ? 'error' : 'neutral');
   const title = ref('');
@@ -28,9 +32,23 @@ export function useKakaoPaymentRedirect(status = 'success') {
     actions.value = nextActions;
   }
 
-  function buildDefaultActions(isRetryVisible = false) {
-    const pendingPayment = getPendingPayment();
-    const isGuestOrder = Boolean(pendingPayment?.orderSnapshot?.isGuestOrder);
+  function buildGuestLookupDestination(orderNumber = '', buyerName = '') {
+    return {
+      path: ROUTE_PATHS.guestOrderLookup,
+      query: buildGuestOrderLookupQuery({
+        inquiryType: 'order',
+        buyerName,
+        orderNumber,
+      }),
+    };
+  }
+
+  function buildDefaultActions({
+    isRetryVisible = false,
+    isGuestOrder = false,
+    orderNumber: nextOrderNumber = '',
+    buyerName = '',
+  } = {}) {
     const nextActions = [];
 
     if (isRetryVisible) {
@@ -41,11 +59,20 @@ export function useKakaoPaymentRedirect(status = 'success') {
       });
     }
 
-    nextActions.push({
-      label: isGuestOrder ? '장바구니로 이동' : '마이페이지로 이동',
-      to: isGuestOrder ? ROUTE_PATHS.cart : ROUTE_PATHS.memberMyPage,
-      variant: isRetryVisible ? 'secondary' : 'primary',
-    });
+    if (isGuestOrder && nextOrderNumber) {
+      nextActions.push({
+        label: '비회원 주문 조회',
+        to: buildGuestLookupDestination(nextOrderNumber, buyerName),
+        variant: isRetryVisible ? 'secondary' : 'primary',
+      });
+    } else {
+      nextActions.push({
+        label: isGuestOrder ? '장바구니로 이동' : '마이페이지로 이동',
+        to: isGuestOrder ? ROUTE_PATHS.cart : ROUTE_PATHS.memberMyPage,
+        variant: isRetryVisible ? 'secondary' : 'primary',
+      });
+    }
+
     nextActions.push({
       label: '홈으로 가기',
       to: ROUTE_PATHS.home,
@@ -55,8 +82,23 @@ export function useKakaoPaymentRedirect(status = 'success') {
     return nextActions;
   }
 
+  function resolveGuestOrderState(paymentSnapshot = null) {
+    if (paymentSnapshot?.orderSnapshot?.isGuestOrder !== undefined) {
+      return Boolean(paymentSnapshot.orderSnapshot.isGuestOrder);
+    }
+
+    accountStore.hydrate();
+    return !Boolean(accountStore.accessToken);
+  }
+
   onMounted(async () => {
+    accountStore.hydrate();
     const pendingPayment = getPendingPayment();
+    const isGuestOrder = resolveGuestOrderState(pendingPayment);
+    const guestBuyerName = normalizeIdentifier(
+      pendingPayment?.orderSnapshot?.ordererName
+      ?? pendingPayment?.orderSnapshot?.guestName,
+    );
     orderNumber.value = normalizeIdentifier(
       pendingPayment?.orderNumber ?? route.query.orderNumber,
     );
@@ -64,12 +106,30 @@ export function useKakaoPaymentRedirect(status = 'success') {
     if (status === 'success') {
       const pgToken = normalizeIdentifier(route.query.pg_token);
 
+      if (!pendingPayment || pendingPayment.provider !== 'kakaopay') {
+        setViewState(
+          'error',
+          '카카오페이 결제 정보를 다시 확인해 주세요.',
+          '현재 브라우저에서 진행 중인 카카오페이 주문 정보를 찾지 못했습니다. 주문 상태를 먼저 확인한 뒤 다시 진행해 주세요.',
+          buildDefaultActions({
+            isGuestOrder,
+            orderNumber: orderNumber.value,
+            buyerName: guestBuyerName,
+          }),
+        );
+        return;
+      }
+
       if (!pgToken) {
         setViewState(
           'error',
           '카카오페이 승인 정보를 찾지 못했습니다.',
-          '결제 승인을 다시 확인해 주세요. 문제가 계속되면 마이페이지 주문내역에서 상태를 먼저 확인하는 편이 안전합니다.',
-          buildDefaultActions(false),
+          '결제 승인을 다시 확인해 주세요. 문제가 계속되면 주문 상태를 먼저 확인하는 편이 안전합니다.',
+          buildDefaultActions({
+            isGuestOrder,
+            orderNumber: orderNumber.value,
+            buyerName: guestBuyerName,
+          }),
         );
         return;
       }
@@ -81,35 +141,67 @@ export function useKakaoPaymentRedirect(status = 'success') {
       );
 
       try {
-        const completedOrder = await confirmPendingKakaoPayment(pgToken);
+        const completedOrder = await confirmPendingKakaoPayment({
+          pgToken,
+          orderId: route.query.orderId,
+          orderNo: route.query.orderNo,
+          orderNumber: route.query.orderNumber,
+        });
 
         await router.replace({
           path: ROUTE_PATHS.orderComplete,
           query: {
             orderNumber: completedOrder.orderNumber,
             orderType: completedOrder.isGuestOrder ? 'guest' : 'member',
+            ...(completedOrder.isGuestOrder
+              ? {
+                buyerName: normalizeIdentifier(
+                  completedOrder.ordererName ?? guestBuyerName,
+                ),
+              }
+              : {}),
           },
         });
       } catch (error) {
         setViewState(
           'error',
           '카카오페이 결제를 완료하지 못했습니다.',
-          error?.message ?? '결제 승인 처리 중 문제가 생겼습니다. 주문 상태를 다시 확인해 주세요.',
-          buildDefaultActions(true),
+          resolvePaymentApprovalErrorMessage(error, '카카오페이'),
+          buildDefaultActions({
+            isRetryVisible: true,
+            isGuestOrder,
+            orderNumber: orderNumber.value,
+            buyerName: guestBuyerName,
+          }),
         );
       }
 
       return;
     }
 
-    await cancelPendingPaymentFlow();
+    const cancelledPayment = await cancelPendingPaymentFlow();
+    const recoveryPayment = cancelledPayment ?? pendingPayment;
+    const recoveryIsGuestOrder = resolveGuestOrderState(recoveryPayment);
+    const recoveryBuyerName = normalizeIdentifier(
+      recoveryPayment?.orderSnapshot?.ordererName
+      ?? recoveryPayment?.orderSnapshot?.guestName,
+    );
+    const recoveryOrderNumber = normalizeIdentifier(
+      recoveryPayment?.orderNumber
+      ?? recoveryPayment?.orderSnapshot?.orderNumber
+      ?? orderNumber.value,
+    );
 
     if (status === 'cancel') {
       setViewState(
         'neutral',
         '카카오페이 결제를 취소했습니다.',
-        '주문은 취소 처리했고, 결제는 진행되지 않았습니다. 장바구니와 주문 정보를 다시 확인한 뒤 결제를 다시 진행해 주세요.',
-        buildDefaultActions(false),
+        '결제가 중단되었습니다. 주문번호와 주문 상태를 다시 확인한 뒤 결제를 다시 진행해 주세요.',
+        buildDefaultActions({
+          isGuestOrder: recoveryIsGuestOrder,
+          orderNumber: recoveryOrderNumber,
+          buyerName: recoveryBuyerName,
+        }),
       );
       return;
     }
@@ -117,8 +209,13 @@ export function useKakaoPaymentRedirect(status = 'success') {
     setViewState(
       'error',
       '카카오페이 결제를 완료하지 못했습니다.',
-      '결제 승인 과정에서 문제가 생겨 주문을 취소했습니다. 장바구니와 결제 수단을 다시 확인해 주세요.',
-      buildDefaultActions(false),
+      normalizeIdentifier(route.query.message)
+        || '결제 승인 과정에서 문제가 생겼습니다. 주문 상태와 결제 수단을 다시 확인해 주세요.',
+      buildDefaultActions({
+        isGuestOrder: recoveryIsGuestOrder,
+        orderNumber: recoveryOrderNumber,
+        buyerName: recoveryBuyerName,
+      }),
     );
   });
 

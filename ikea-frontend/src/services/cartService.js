@@ -82,6 +82,24 @@ export async function addCartItem(memberIdOrCartRequest, maybeCartRequest) {
   return runCartRequestWithFallback(requestFactories);
 }
 
+export function addGuestCartItem(cartRequest = {}, guestCartKey = '') {
+  const normalizedGuestCartKey = String(guestCartKey ?? '').trim();
+
+  return httpRequester.post(
+    '/cart/guest',
+    cartRequest,
+    normalizedGuestCartKey
+      ? { query: { guestCartKey: normalizedGuestCartKey } }
+      : {},
+  );
+}
+
+export function clearGuestCart(guestCartKey) {
+  return httpRequester.delete('/cart/guest/clear', {
+    query: { guestCartKey },
+  });
+}
+
 export function updateCartItemQuantity(cartItemId, quantity) {
   return httpRequester.patch(
     `/cart/${cartItemId}/quantity`,

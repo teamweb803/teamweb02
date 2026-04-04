@@ -1,41 +1,57 @@
 <script setup>
-import { computed, onMounted, reactive, shallowRef } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, reactive, shallowRef, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ROUTE_PATHS } from '../../constants/routes';
 import { createCustomerSupportQna } from '../../services/customerSupportService';
+import { getQnaDetail, updateQnaQuestion } from '../../services/qnaService';
 import { useAccountStore } from '../../stores/account';
-import { buildGuestQnaLookupQuery } from '../../utils/guestQnaLookup';
 import { detectSensitiveQnaContent } from '../../utils/qnaPrivacy';
 import { hasAuthenticatedSession } from '../../utils/accessControl';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
-const EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-
+const route = useRoute();
 const router = useRouter();
 const accountStore = useAccountStore();
+
 const isSubmitting = shallowRef(false);
+const isLoading = shallowRef(false);
 const statusMessage = shallowRef('');
+const initialFormState = shallowRef(null);
 const questionTypes = ['배송', '주문/결제', '교환/반품', '상품', '기타'];
 
 const form = reactive({
   type: questionTypes[0],
-  writer: '',
-  email: '',
-  phoneNumber: '',
   title: '',
   content: '',
 });
 
 const privacyMessage = computed(() => detectSensitiveQnaContent([form.title, form.content]));
-const isGuestWriter = computed(() => !hasAuthenticatedSession(accountStore));
+const editingQnaId = computed(() => String(route.query.editId ?? '').trim());
+const isEditMode = computed(() => Boolean(editingQnaId.value));
+const submitButtonLabel = computed(() => {
+  if (isSubmitting.value) {
+    return isEditMode.value ? '수정 중...' : '등록 중...';
+  }
 
-function resetForm() {
-  form.type = questionTypes[0];
-  form.writer = accountStore.memberName || '';
-  form.email = accountStore.email || '';
-  form.phoneNumber = accountStore.phoneNumber || '';
-  form.title = '';
-  form.content = '';
-  statusMessage.value = '';
+  return isEditMode.value ? '수정하기' : '등록하기';
+});
+
+function parseQuestionTitle(value = '') {
+  const normalizedTitle = String(value ?? '').trim();
+  const matched = normalizedTitle.match(/^\[(.+?)\]\s*(.*)$/);
+
+  if (!matched) {
+    return {
+      type: questionTypes[0],
+      title: normalizedTitle,
+    };
+  }
+
+  const [, typeCandidate, titleCandidate] = matched;
+  return {
+    type: questionTypes.includes(typeCandidate) ? typeCandidate : questionTypes[0],
+    title: String(titleCandidate ?? '').trim() || normalizedTitle,
+  };
 }
 
 function buildSubmitTitle() {
@@ -49,43 +65,63 @@ function buildSubmitTitle() {
   return `[${type}] ${title}`;
 }
 
-function normalizePhoneNumber(value) {
-  return String(value ?? '').replace(/\D+/g, '').slice(0, 11);
+function resetForm() {
+  const nextState = initialFormState.value ?? {
+    type: questionTypes[0],
+    title: '',
+    content: '',
+  };
+
+  form.type = nextState.type;
+  form.title = nextState.title;
+  form.content = nextState.content;
+  statusMessage.value = '';
 }
 
-function validateContactFields() {
-  const email = String(form.email ?? '').trim();
-  const phoneNumber = normalizePhoneNumber(form.phoneNumber);
-
-  if (!email) {
-    return '이메일 주소를 입력해 주세요.';
-  }
-
-  if (!EMAIL_PATTERN.test(email)) {
-    return '올바른 이메일 주소를 입력해 주세요.';
-  }
-
-  if (!phoneNumber) {
-    return '휴대전화번호를 입력해 주세요.';
-  }
-
-  if (!/^\d{10,11}$/.test(phoneNumber)) {
-    return '휴대전화번호는 10~11자리 숫자로 입력해 주세요.';
-  }
-
-  return '';
-}
-
-async function submitQna() {
-  if (!form.writer.trim() || !form.title.trim() || !form.content.trim()) {
-    statusMessage.value = '작성자, 제목, 문의 내용을 모두 입력해 주세요.';
+async function hydrateEditForm() {
+  if (!isEditMode.value) {
+    initialFormState.value = {
+      type: questionTypes[0],
+      title: '',
+      content: '',
+    };
+    resetForm();
     return;
   }
 
-  const contactValidationMessage = validateContactFields();
+  if (!hasAuthenticatedSession(accountStore)) {
+    statusMessage.value = '로그인 후 수정할 수 있습니다.';
+    return;
+  }
 
-  if (contactValidationMessage) {
-    statusMessage.value = contactValidationMessage;
+  isLoading.value = true;
+  statusMessage.value = '';
+
+  try {
+    const payload = await getQnaDetail(editingQnaId.value);
+    const question = payload?.question ?? payload?.data?.question ?? payload ?? {};
+    const parsedTitle = parseQuestionTitle(question.title);
+
+    initialFormState.value = {
+      type: parsedTitle.type,
+      title: parsedTitle.title,
+      content: String(question.content ?? '').trim(),
+    };
+    resetForm();
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '내역을 불러오지 못했습니다.');
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function submitQna() {
+  if (isLoading.value) {
+    return;
+  }
+
+  if (!form.title.trim() || !form.content.trim()) {
+    statusMessage.value = '제목과 내용을 모두 입력해 주세요.';
     return;
   }
 
@@ -98,36 +134,32 @@ async function submitQna() {
   statusMessage.value = '';
 
   try {
-    await createCustomerSupportQna({
-      writer: form.writer,
-      title: buildSubmitTitle(),
-      content: form.content,
-      email: form.email,
-      phoneNumber: form.phoneNumber,
-      isGuest: isGuestWriter.value,
-    });
-
-    if (isGuestWriter.value) {
-      router.push({
-        path: ROUTE_PATHS.customerServiceQnaLookup,
-        query: {
-          submitted: '1',
-          ...buildGuestQnaLookupQuery({
-            writer: form.writer,
-            inquiryType: 'email',
-            email: form.email,
-          }),
-        },
+    if (isEditMode.value) {
+      await updateQnaQuestion(Number(editingQnaId.value), {
+        title: buildSubmitTitle(),
+        content: form.content,
+      });
+      await router.push({
+        path: ROUTE_PATHS.customerServiceQna,
+        query: { updated: '1' },
       });
       return;
     }
 
-    router.push({
+    await createCustomerSupportQna({
+      title: buildSubmitTitle(),
+      content: form.content,
+    });
+
+    await router.push({
       path: ROUTE_PATHS.customerServiceQna,
       query: { submitted: '1' },
     });
   } catch (error) {
-    statusMessage.value = error?.message ?? '문의를 등록하지 못했습니다.';
+    statusMessage.value = resolveAdminActionErrorMessage(
+      error,
+      isEditMode.value ? '내역을 수정하지 못했습니다.' : '등록하지 못했습니다.',
+    );
   } finally {
     isSubmitting.value = false;
   }
@@ -135,60 +167,28 @@ async function submitQna() {
 
 onMounted(() => {
   accountStore.hydrate();
-  resetForm();
+  void hydrateEditForm();
 });
+
+watch(
+  () => editingQnaId.value,
+  () => {
+    accountStore.hydrate();
+    void hydrateEditForm();
+  },
+);
 </script>
 
 <template>
   <section class="cs-write">
-    <div class="cs-write__intro">
-      <p>
-        답변 안내를 위해 이메일 주소와 휴대전화번호를 함께 입력해 주세요. 제목과 문의 내용에는 추가 개인정보를
-        적지 않는 방식으로 유지합니다.
-      </p>
-    </div>
-
     <form class="cs-write__form" @submit.prevent="submitQna">
       <div class="cs-write__row">
-        <label for="cs-qna-type">문의 유형</label>
-        <select id="cs-qna-type" v-model="form.type">
+        <label for="cs-qna-type">유형</label>
+        <select id="cs-qna-type" v-model="form.type" :disabled="isLoading">
           <option v-for="type in questionTypes" :key="type" :value="type">
             {{ type }}
           </option>
         </select>
-      </div>
-
-      <div class="cs-write__row">
-        <label for="cs-qna-writer">작성자</label>
-        <input
-          id="cs-qna-writer"
-          v-model.trim="form.writer"
-          type="text"
-          maxlength="30"
-          placeholder="이름 또는 닉네임"
-        />
-      </div>
-
-      <div class="cs-write__row">
-        <label for="cs-qna-email">이메일 주소</label>
-        <input
-          id="cs-qna-email"
-          v-model.trim="form.email"
-          type="email"
-          maxlength="80"
-          placeholder="name@example.com"
-        />
-      </div>
-
-      <div class="cs-write__row">
-        <label for="cs-qna-phone">휴대전화번호</label>
-        <input
-          id="cs-qna-phone"
-          v-model.trim="form.phoneNumber"
-          type="text"
-          maxlength="20"
-          placeholder="010-0000-0000"
-        />
       </div>
 
       <div class="cs-write__row">
@@ -198,27 +198,30 @@ onMounted(() => {
           v-model.trim="form.title"
           type="text"
           maxlength="80"
-          placeholder="문의 제목을 입력해 주세요."
+          placeholder="제목을 입력해 주세요."
+          :disabled="isLoading"
         />
       </div>
 
       <div class="cs-write__row cs-write__row--textarea">
-        <label for="cs-qna-content">문의 내용</label>
+        <label for="cs-qna-content">내용</label>
         <textarea
           id="cs-qna-content"
           v-model.trim="form.content"
           rows="8"
-          placeholder="주문 정보와 상황을 설명해 주세요."
+          placeholder="주문 정보와 상황을 자세히 입력해 주세요."
+          :disabled="isLoading"
         />
       </div>
 
-      <p v-if="privacyMessage" class="cs-write__status cs-write__status--error">{{ privacyMessage }}</p>
+      <p v-if="isLoading" class="cs-write__status">내역을 불러오고 있습니다.</p>
+      <p v-else-if="privacyMessage" class="cs-write__status cs-write__status--error">{{ privacyMessage }}</p>
       <p v-else-if="statusMessage" class="cs-write__status">{{ statusMessage }}</p>
 
       <div class="cs-write__actions">
-        <button type="button" class="cs-write__secondary" @click="resetForm">입력 초기화</button>
-        <button type="submit" class="cs-write__primary" :disabled="isSubmitting || Boolean(privacyMessage)">
-          {{ isSubmitting ? '등록 중..' : '문의 등록' }}
+        <button type="button" class="cs-write__secondary" :disabled="isLoading" @click="resetForm">입력 초기화</button>
+        <button type="submit" class="cs-write__primary" :disabled="isLoading || isSubmitting || Boolean(privacyMessage)">
+          {{ submitButtonLabel }}
         </button>
       </div>
     </form>
@@ -231,13 +234,6 @@ onMounted(() => {
   gap: 22px;
 }
 
-.cs-write__intro {
-  padding: 16px 18px;
-  border: 1px solid #e6e6e6;
-  background: #fafafa;
-}
-
-.cs-write__intro p,
 .cs-write__status {
   margin: 0;
   color: #666666;

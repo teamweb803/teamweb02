@@ -10,7 +10,14 @@ import { useWishlistStore } from '../stores/wishlist';
 const route = useRoute();
 const router = useRouter();
 const wishlistStore = useWishlistStore();
-const { keyword, searchResults } = useProductSearch();
+const {
+  didSearchFail,
+  hasResolvedSearch,
+  isSearching,
+  keyword,
+  retrySearch,
+  searchResults,
+} = useProductSearch();
 
 onMounted(() => {
   wishlistStore.ensureHydrated();
@@ -37,9 +44,13 @@ function toggleProductWishlist(product) {
       <div class="search-page__inner">
         <SearchResultsSection
           :keyword="keyword"
+          :is-searching="isSearching"
+          :did-search-fail="didSearchFail"
+          :has-resolved-search="hasResolvedSearch"
           :results="searchResults"
           :is-product-wishlisted="isProductWishlisted"
           @product-activate="openProduct"
+          @retry-search="retrySearch"
           @toggle-wishlist="toggleProductWishlist"
         />
       </div>

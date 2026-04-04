@@ -21,7 +21,7 @@ const statusClass = computed(() => ({
 <template>
   <section class="guest-order">
     <div class="guest-order__intro">
-      <p>이름과 주문번호 또는 휴대전화번호를 입력하면 최근 주문 상태를 확인할 수 있습니다.</p>
+      <p>주문을 진행한 현재 브라우저에서 이름과 주문번호 또는 휴대전화번호를 입력하면 주문 상태를 확인할 수 있습니다.</p>
     </div>
 
     <form class="guest-order__form" @submit.prevent="submitLookup">
@@ -72,7 +72,7 @@ const statusClass = computed(() => ({
 
       <div class="guest-order__actions">
         <button type="submit" class="guest-order__primary" :disabled="!canSubmit || isSubmitting">
-          {{ isSubmitting ? '조회 중..' : '조회' }}
+          {{ isSubmitting ? '조회 중...' : '조회' }}
         </button>
       </div>
     </form>
@@ -101,7 +101,7 @@ const statusClass = computed(() => ({
         </article>
       </div>
       <div v-else class="guest-order__empty">
-        조회된 주문이 없으면 이름과 주문번호, 또는 이름과 휴대전화번호를 다시 확인해 주세요.
+        현재 브라우저에 저장된 주문이 없으면 이름과 주문번호, 또는 이름과 휴대전화번호를 다시 확인해 주세요.
       </div>
     </section>
   </section>

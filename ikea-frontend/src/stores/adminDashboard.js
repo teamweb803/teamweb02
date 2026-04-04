@@ -3,6 +3,7 @@ import {
   getAdminMembers,
   getAdminOrderCount,
   getAdminOrders,
+  getAdminPayments,
   getAdminProductCount,
   getAdminQnas,
   getAdminReviews,
@@ -12,6 +13,7 @@ import {
 import {
   buildAdminDashboard,
 } from '../mappers/adminDashboardMapper';
+import { resolveAdminActionErrorMessage } from '../utils/apiErrorMessage';
 
 function normalizeArrayPayload(payload, fallback = []) {
   if (Array.isArray(payload)) {
@@ -45,6 +47,7 @@ function createEmptyDashboard() {
     categories: getFallbackAdminCategories(),
     products: [],
     orders: [],
+    payments: [],
     members: [],
     reviews: [],
     qnas: [],
@@ -96,6 +99,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
           orderCountResult,
           productsResult,
           ordersResult,
+          paymentsResult,
           membersResult,
           reviewsResult,
           qnasResult,
@@ -104,6 +108,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
           getAdminOrderCount(),
           getProductCatalog(),
           getAdminOrders(),
+          getAdminPayments(),
           getAdminMembers(),
           getAdminReviews(),
           getAdminQnas(),
@@ -114,6 +119,9 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
           : [];
         const orders = ordersResult.status === 'fulfilled'
           ? normalizeArrayPayload(ordersResult.value)
+          : [];
+        const payments = paymentsResult.status === 'fulfilled'
+          ? normalizeArrayPayload(paymentsResult.value)
           : [];
         const members = membersResult.status === 'fulfilled'
           ? normalizeMembers(membersResult.value)
@@ -136,28 +144,33 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
           orderCountResult,
           productsResult,
           ordersResult,
+          paymentsResult,
           membersResult,
           reviewsResult,
           qnasResult,
         ].some((result) => result.status === 'rejected');
 
         if (hasRejectedRequest) {
-          this.loadErrorMessage = '일부 관리자 통계를 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+          this.loadErrorMessage = '일부 관리자 통계를 불러오지 못했습니다.';
         }
 
         this.dashboard = buildAdminDashboard({
           categories: getFallbackAdminCategories(),
           products,
           orders,
+          payments,
           members,
           reviews,
           qnas,
           productCount,
           orderCount,
         });
-      } catch {
+      } catch (error) {
         this.dashboard = createEmptyDashboard();
-        this.loadErrorMessage = '관리자 대시보드를 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+        this.loadErrorMessage = resolveAdminActionErrorMessage(
+          error,
+          '관리자 대시보드를 불러오지 못했습니다.',
+        );
       } finally {
         this.isDashboardLoading = false;
         this.loaded = true;

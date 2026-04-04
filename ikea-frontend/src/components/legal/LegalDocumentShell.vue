@@ -91,6 +91,9 @@ onMounted(() => {
                 <p class="legal-shell__eyebrow">{{ document.eyebrow }}</p>
                 <h2>{{ document.title }}</h2>
                 <p class="legal-shell__summary">{{ document.summary }}</p>
+                <ul v-if="document.highlights?.length" class="legal-shell__lead-list">
+                  <li v-for="highlight in document.highlights" :key="highlight">{{ highlight }}</li>
+                </ul>
               </div>
 
               <dl class="legal-shell__meta">
@@ -105,13 +108,6 @@ onMounted(() => {
               </dl>
             </header>
 
-            <section class="legal-highlight">
-              <h3>주요 안내</h3>
-              <ul class="legal-highlight__list">
-                <li v-for="highlight in document.highlights" :key="highlight">{{ highlight }}</li>
-              </ul>
-            </section>
-
             <section class="legal-body">
               <article
                 v-for="(section, index) in document.sections"
@@ -120,8 +116,7 @@ onMounted(() => {
                 class="legal-section"
               >
                 <div class="legal-section__head">
-                  <span>{{ String(index + 1).padStart(2, '0') }}</span>
-                  <h3>{{ section.title }}</h3>
+                  <h3>제{{ index + 1 }}조 ({{ section.title }})</h3>
                 </div>
 
                 <div class="legal-section__body">
@@ -129,16 +124,18 @@ onMounted(() => {
                     {{ paragraph }}
                   </p>
 
-                  <ul v-if="section.bullets?.length" class="legal-section__list">
+                  <ol v-if="section.bullets?.length" class="legal-section__clauses">
                     <li v-for="bullet in section.bullets" :key="bullet">{{ bullet }}</li>
-                  </ul>
+                  </ol>
 
-                  <dl v-if="section.entries?.length" class="legal-section__grid">
-                    <div v-for="entry in section.entries" :key="entry.label" class="legal-section__grid-item">
-                      <dt>{{ entry.label }}</dt>
-                      <dd>{{ entry.value }}</dd>
-                    </div>
-                  </dl>
+                  <ol v-if="section.entries?.length" class="legal-section__definitions">
+                    <li v-for="entry in section.entries" :key="entry.label">
+                      <p>
+                        <strong>{{ entry.label }}</strong>
+                        <span>{{ entry.value }}</span>
+                      </p>
+                    </li>
+                  </ol>
                 </div>
               </article>
             </section>
@@ -220,15 +217,16 @@ onMounted(() => {
 .legal-shell__content {
   min-width: 0;
   display: grid;
-  gap: 24px;
+  gap: 28px;
 }
 
 .legal-shell__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;
-  padding-bottom: 20px;
+  padding-bottom: 28px;
   border-bottom: 2px solid #111111;
+  align-items: end;
 }
 
 .legal-shell__eyebrow {
@@ -254,24 +252,36 @@ onMounted(() => {
   line-height: 1.8;
 }
 
+.legal-shell__lead-list {
+  margin: 18px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #444444;
+}
+
 .legal-shell__meta {
   display: grid;
-  gap: 12px;
+  gap: 18px;
   min-width: 220px;
   margin: 0;
-  padding: 18px 20px;
-  background: #f7f9fb;
+  padding: 18px 0 4px 28px;
+  border-left: 1px solid #e6e6e6;
+  align-content: start;
+  align-self: end;
 }
 
 .legal-shell__meta div {
   display: grid;
-  gap: 4px;
+  gap: 2px;
+  align-content: start;
 }
 
 .legal-shell__meta dt {
   color: #6b7280;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.4;
 }
 
 .legal-shell__meta dd {
@@ -279,101 +289,69 @@ onMounted(() => {
   color: #111111;
   font-size: 14px;
   font-weight: 600;
-}
-
-.legal-highlight {
-  padding: 22px 24px;
-  border: 1px solid #e6ebf2;
-  background: #fbfcfe;
-}
-
-.legal-highlight h3 {
-  margin: 0 0 14px;
-  color: #111111;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.legal-highlight__list,
-.legal-section__list {
-  margin: 0;
-  padding-left: 18px;
-  color: #444444;
-}
-
-.legal-highlight__list {
-  display: grid;
-  gap: 8px;
+  line-height: 1.45;
 }
 
 .legal-body {
   display: grid;
-  gap: 18px;
+  gap: 0;
+  border-top: 1px solid #ececec;
 }
 
 .legal-section {
-  border: 1px solid #e6e6e6;
-  background: #ffffff;
+  padding: 0;
+  border-bottom: 1px solid #ececec;
 }
 
 .legal-section__head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 22px;
-  border-bottom: 1px solid #eceff3;
-}
-
-.legal-section__head span {
-  color: #6b7280;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  padding: 26px 0 10px;
 }
 
 .legal-section__head h3 {
   margin: 0;
   color: #111111;
-  font-size: 20px;
-  line-height: 1.4;
+  font-size: 22px;
+  line-height: 1.5;
+  font-weight: 700;
 }
 
 .legal-section__body {
   display: grid;
   gap: 14px;
-  padding: 20px 22px 24px;
+  padding: 0 0 30px;
 }
 
 .legal-section__body p,
-.legal-section__list li {
+.legal-section__clauses li,
+.legal-section__definitions li {
   margin: 0;
   color: #444444;
   font-size: 15px;
   line-height: 1.8;
 }
 
-.legal-section__grid {
+.legal-section__clauses,
+.legal-section__definitions {
+  margin: 0;
+  padding-left: 24px;
   display: grid;
-  gap: 12px;
+  gap: 8px;
+}
+
+.legal-section__definitions li p {
   margin: 0;
 }
 
-.legal-section__grid-item {
-  display: grid;
-  grid-template-columns: 140px minmax(0, 1fr);
-  gap: 16px;
-  padding: 14px 16px;
-  background: #f9fafb;
-}
-
-.legal-section__grid-item dt {
+.legal-section__definitions strong {
   color: #111111;
   font-size: 14px;
   font-weight: 700;
+  margin-right: 6px;
 }
 
-.legal-section__grid-item dd {
-  margin: 0;
+.legal-section__definitions span {
   color: #555555;
   font-size: 14px;
   line-height: 1.7;
@@ -391,6 +369,16 @@ onMounted(() => {
 
   .legal-shell__header {
     grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .legal-shell__meta {
+    min-width: 0;
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid #e6e6e6;
+    padding-top: 16px;
+    align-self: start;
   }
 }
 
@@ -404,9 +392,8 @@ onMounted(() => {
     font-size: 26px;
   }
 
-  .legal-section__grid-item {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .legal-section__head h3 {
+    font-size: 20px;
   }
 }
 </style>

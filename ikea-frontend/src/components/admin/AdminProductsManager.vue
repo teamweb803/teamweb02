@@ -34,6 +34,7 @@ import {
   pickProductAttributes,
 } from '../../constants/productAttributeConfig';
 import { useFeedback } from '../../composables/useFeedback';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
 const categories = getFallbackAdminCategories();
 const catalogStore = useCatalogStore();
@@ -311,9 +312,9 @@ async function loadProducts() {
     const payload = await getProductCatalog();
     applyProducts(normalizeArrayPayload(payload, []));
     return true;
-  } catch {
+  } catch (error) {
     applyProducts([]);
-    loadErrorMessage.value = '상품 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    loadErrorMessage.value = resolveAdminActionErrorMessage(error, '상품 목록을 불러오지 못했습니다.');
     return false;
   } finally {
     isLoading.value = false;
@@ -394,10 +395,10 @@ async function submitProduct() {
         ? '상품 수정은 완료됐지만 목록 재조회는 실패했습니다.'
         : '상품 등록은 완료됐지만 목록 재조회는 실패했습니다.');
     beginCreateMode({ clearStatus: false });
-  } catch {
+  } catch (error) {
     statusMessage.value = isEditMode
-      ? '상품 수정에 실패했습니다. 서버 상태를 확인해 주세요.'
-      : '상품 등록에 실패했습니다. 서버 상태를 확인해 주세요.';
+      ? resolveAdminActionErrorMessage(error, '상품 수정에 실패했습니다.')
+      : resolveAdminActionErrorMessage(error, '상품 등록에 실패했습니다.');
   } finally {
     isSubmitting.value = false;
   }
@@ -425,8 +426,8 @@ async function removeProduct(product) {
     if (activeProductId.value === product.productId) {
       beginCreateMode({ clearStatus: false });
     }
-  } catch {
-    statusMessage.value = '상품 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '상품 삭제에 실패했습니다.');
   }
 }
 
@@ -586,11 +587,12 @@ onMounted(async () => {
 }
 
 .admin-products-manager__search {
-  width: 320px;
+  width: min(320px, 100%);
   height: var(--control-height-compact);
   padding: 0 14px;
   border: 1px solid var(--border-default);
   background: var(--surface-strong);
+  box-sizing: border-box;
 }
 
 .admin-products-manager__table {
@@ -697,7 +699,11 @@ onMounted(async () => {
 
 .admin-products-manager__field-control small,
 .admin-products-manager__status {
-  color: var(--text-muted-strong);
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
   font-size: 13px;
   line-height: 1.6;
 }

@@ -593,10 +593,10 @@ a {
   align-items: center;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 36%, white);
-  background: var(--accent-secondary);
-  color: var(--accent-secondary-ink);
-  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent-secondary) 36%, rgba(15, 23, 42, 0.08));
+  border: 1px solid color-mix(in srgb, var(--hs-badge-yellow) 36%, white);
+  background: var(--hs-badge-yellow);
+  color: var(--hs-badge-yellow-ink);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--hs-badge-yellow) 36%, rgba(15, 23, 42, 0.08));
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -998,7 +998,7 @@ a {
   gap: 8px;
 }
 
-button:hover:not(.wishlist-toggle-button),
+button:hover:not(.wishlist-toggle-button):not(.hs-header__search-button),
 a.reference-card:hover,
 .theme-button:hover,
 .page-button:hover,
@@ -1217,8 +1217,8 @@ a.reference-card:hover,
   min-height: 44px;
   padding: 0 18px;
   border-radius: 999px;
-  background: #f39a2f;
-  color: #111827;
+  background: var(--hs-badge-yellow);
+  color: var(--hs-badge-yellow-ink);
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
@@ -1242,15 +1242,15 @@ a.reference-card:hover,
 .detail-gallery__caption {
   left: 16px;
   bottom: 16px;
-  background: #ff5b5b;
-  color: #ffffff;
+  background: var(--hs-badge-blue);
+  color: var(--hs-badge-blue-ink);
 }
 
 .detail-gallery__zoom {
   right: 16px;
   bottom: 16px;
-  background: rgba(17, 24, 39, 0.78);
-  color: #ffffff;
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
 }
 
 .detail-gallery__thumbs {
@@ -1838,15 +1838,15 @@ a.reference-card:hover,
   min-height: 30px;
   padding: 0 10px;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.8);
-  color: #ffffff;
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
   font-size: 12px;
   font-weight: 700;
 }
 
 .detail-related-card__badge--soldout {
-  background: #111111;
-  color: #ffffff;
+  background: var(--hs-badge-danger);
+  color: var(--hs-badge-danger-ink);
 }
 
 .detail-related-card__copy {

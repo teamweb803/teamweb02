@@ -3,27 +3,18 @@
   buildProductDetailPath,
   ROUTE_PATHS,
 } from '../constants/routes';
-
-const ORDER_STATUS_LABELS = {
-  ORDERED: '결제완료',
-  DELIVERING: '배송중',
-  COMPLETED: '배송완료',
-  CANCELLED: '취소',
-};
-
-const STATUS_COLORS = {
-  ORDERED: '#2759c6',
-  DELIVERING: '#4f86f7',
-  COMPLETED: '#111111',
-  CANCELLED: '#d95f5f',
-};
-
-const PAYMENT_METHODS = {
-  CARD: { label: '신용카드', color: '#1c3f94' },
-  BANK: { label: '무통장입금', color: '#4f86f7' },
-  KAKAO: { label: '카카오페이', color: '#88aef2' },
-  TOSS: { label: '토스페이', color: '#c7d7f7' },
-};
+import {
+  ADMIN_ORDER_STATUS_COLORS,
+  ADMIN_ORDER_STATUS_LABELS,
+  ADMIN_PAYMENT_METHODS,
+  getAdminOrderStatusLabel,
+} from '../constants/adminOrderConfig';
+import {
+  mergeAdminOrdersWithPayments,
+  normalizeAdminPayment,
+  resolveAdminOrderPaymentCode,
+  resolveAdminOrderPaymentSummary,
+} from './adminManagementMapper';
 
 function formatNumber(value) {
   return Number(value ?? 0).toLocaleString('ko-KR');
@@ -50,27 +41,7 @@ function formatDate(value) {
 }
 
 function toOrderStatusLabel(status) {
-  return ORDER_STATUS_LABELS[status] ?? status ?? '-';
-}
-
-function normalizePaymentCode(payment) {
-  const code = String(payment ?? '')
-    .trim()
-    .toUpperCase();
-
-  if (code === 'KAKAOPAY') {
-    return 'KAKAO';
-  }
-
-  if (code === 'TOSSPAY') {
-    return 'TOSS';
-  }
-
-  if (code in PAYMENT_METHODS) {
-    return code;
-  }
-
-  return code;
+  return getAdminOrderStatusLabel(status);
 }
 
 function buildStockSeed(sourceId) {
@@ -297,7 +268,8 @@ export function createMemberRows(members) {
       email: item.email,
       role: item.memberRole,
       date: formatDate(item.createdAt),
-      canDelete: item.memberRole === 'USER',
+      deleted: Boolean(item.deleted),
+      canDelete: item.memberRole === 'USER' && !item.deleted,
     }));
 }
 
@@ -324,7 +296,7 @@ export function createProductRows(products) {
 export function createOrderRows(orders) {
   return orders
     .map((item) => {
-      const rawPayment = normalizePaymentCode(item.payment);
+      const rawPayment = resolveAdminOrderPaymentCode(item);
 
       return {
         id: item.orderId,
@@ -332,7 +304,7 @@ export function createOrderRows(orders) {
         itemSummary: item.orderItems?.[0]
           ? `${item.orderItems[0].productName ?? item.orderItems[0].name}${item.orderItems.length > 1 ? ` 외 ${item.orderItems.length - 1}건` : ''}`
           : '-',
-        payment: PAYMENT_METHODS[rawPayment]?.label ?? item.payment ?? '-',
+        payment: resolveAdminOrderPaymentSummary(item),
         totalPrice: formatCurrency(item.totalPrice),
         date: formatDate(item.createdAt),
         rawStatus: item.orderStatus,
@@ -363,19 +335,14 @@ function createSalesTrendChart(orders) {
 }
 
 function createStatusChart(orderRows) {
-  const segments = [
-    { label: '결제완료', key: 'ORDERED' },
-    { label: '배송중', key: 'DELIVERING' },
-    { label: '배송완료', key: 'COMPLETED' },
-    { label: '취소', key: 'CANCELLED' },
-  ].map((item) => {
-    const count = orderRows.filter((row) => row.rawStatus === item.key).length;
+  const segments = Object.entries(ADMIN_ORDER_STATUS_LABELS).map(([key, label]) => {
+    const count = orderRows.filter((row) => row.rawStatus === key).length;
 
     return {
-      label: item.label,
+      label,
       value: count,
       formattedValue: `${count}건`,
-      color: STATUS_COLORS[item.key],
+      color: ADMIN_ORDER_STATUS_COLORS[key],
     };
   });
 
@@ -400,10 +367,10 @@ function createSupportChart(qnaRows) {
   };
 }
 
-function createPaymentChart(orders) {
-  const paymentEntries = Object.entries(PAYMENT_METHODS)
+function createPaymentChart(payments) {
+  const paymentEntries = Object.entries(ADMIN_PAYMENT_METHODS)
     .map(([key, method]) => {
-      const count = orders.filter((order) => normalizePaymentCode(order.payment) === key).length;
+      const count = payments.filter((payment) => resolveAdminOrderPaymentCode(payment) === key).length;
 
       return {
         label: method.label,
@@ -418,7 +385,7 @@ function createPaymentChart(orders) {
     segments: paymentEntries.length
       ? paymentEntries
       : [{ label: '결제 없음', value: 1, formattedValue: '0건', color: '#dbe6fb' }],
-    valueLabel: `${orders.length}건`,
+    valueLabel: `${payments.length}건`,
     totalText: '결제 기준',
   };
 }
@@ -454,6 +421,7 @@ export function buildAdminDashboard({
   categories = [],
   products = [],
   orders = [],
+  payments = [],
   members = [],
   reviews = [],
   qnas = [],
@@ -463,7 +431,9 @@ export function buildAdminDashboard({
   const normalizedProductMap = buildNormalizedProductMap(products);
   const categoryRows = createCategoryRows(categories, products);
   const productRows = createProductRows(products);
-  const orderRows = createOrderRows(orders);
+  const normalizedPayments = payments.map((payment) => normalizeAdminPayment(payment));
+  const normalizedOrders = mergeAdminOrdersWithPayments(orders, normalizedPayments);
+  const orderRows = createOrderRows(normalizedOrders);
   const memberRows = createMemberRows(members);
   const qnaRows = createQuestionRows(qnas);
   const reviewRows = createReviewRows(reviews).map((row) => {
@@ -482,11 +452,11 @@ export function buildAdminDashboard({
       { id: 'members', label: '회원 수', value: `${memberRows.length}명` },
       { id: 'reviews', label: '리뷰 수', value: `${reviewRows.length}건` },
     ],
-    trendChart: createOrderTrendChart(orders),
-    salesChart: createSalesTrendChart(orders),
+    trendChart: createOrderTrendChart(normalizedOrders),
+    salesChart: createSalesTrendChart(normalizedOrders),
     categoryChart: createCategoryChart(categoryRows),
     statusChart: createStatusChart(orderRows),
-    paymentChart: createPaymentChart(orders),
+    paymentChart: createPaymentChart(normalizedPayments),
     supportChart: createSupportChart(qnaRows),
     stockRows: createStockRows(productRows),
     watchProducts: createWatchProducts(products),

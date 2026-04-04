@@ -5,6 +5,7 @@ import { ROUTE_PATHS } from '../constants/routes';
 import { logoutAuth } from '../services/authService';
 import { getCurrentMember, loginMember } from '../services/memberService';
 import { useAccountStore } from '../stores/account';
+import { resolveLoginErrorMessage } from '../utils/apiErrorMessage';
 
 function unwrapPayload(payload) {
   return payload?.data ?? payload ?? {};
@@ -73,16 +74,6 @@ function resolveRedirectPath(redirectPath) {
   }
 
   return ROUTE_PATHS.home;
-}
-
-function createLoginErrorMessage(error) {
-  if (Number(error?.status ?? 0) === 0) {
-    return '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
-  }
-
-  const message = String(error?.message ?? '').trim();
-
-  return message || '로그인에 실패했습니다.';
 }
 
 export function useAccountSession() {
@@ -156,7 +147,8 @@ export function useAccountSession() {
       const tokens = extractTokens(response);
 
       if (!tokens.accessToken) {
-        throw new Error('로그인 응답에 accessToken이 없습니다.');
+        loginError.value = '로그인 정보를 다시 확인해 주세요.';
+        return null;
       }
 
       accountStore.setTokens(tokens);
@@ -175,8 +167,8 @@ export function useAccountSession() {
       router.push(resolveRedirectPath(redirectPath));
       return response;
     } catch (error) {
-      loginError.value = createLoginErrorMessage(error);
-      throw error;
+      loginError.value = resolveLoginErrorMessage(error);
+      return null;
     } finally {
       loginSubmitting.value = false;
     }
