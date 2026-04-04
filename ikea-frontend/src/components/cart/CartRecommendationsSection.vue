@@ -85,8 +85,8 @@ defineProps({
   left: 14px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: #364152;
-  color: #ffffff;
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
   font-size: 13px;
   font-weight: 700;
 }

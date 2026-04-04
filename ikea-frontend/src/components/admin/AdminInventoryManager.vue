@@ -128,7 +128,13 @@ watch(
           :title="isInventoryLoading ? '재고 목록을 불러오는 중입니다.' : inventoryLoadErrorMessage ? '재고 목록을 불러오지 못했습니다.' : '선택한 조건에 맞는 재고 상품이 없습니다.'"
           :description="inventoryLoadErrorMessage"
           compact
-        />
+        >
+          <template v-if="inventoryLoadErrorMessage" #actions>
+            <button type="button" class="admin-inventory-manager__retry" @click="loadInventoryItems">
+              다시 불러오기
+            </button>
+          </template>
+        </CommonStatePanel>
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
@@ -201,7 +207,13 @@ watch(
         :description="inventoryLoadErrorMessage"
         align="left"
         compact
-      />
+      >
+        <template v-if="inventoryLoadErrorMessage" #actions>
+          <button type="button" class="admin-inventory-manager__retry" @click="loadInventoryItems">
+            다시 불러오기
+          </button>
+        </template>
+      </CommonStatePanel>
     </AdminPanel>
   </section>
 </template>
@@ -228,8 +240,13 @@ watch(
 .admin-inventory-manager__detail-meta span,
 .admin-inventory-manager__detail-meta p,
 .admin-inventory-manager__status {
-  color: #666666;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
   font-size: 14px;
+  line-height: 1.6;
 }
 
 .admin-inventory-manager__summary strong,
@@ -243,11 +260,12 @@ watch(
 }
 
 .admin-inventory-manager__search {
-  width: 280px;
+  width: min(320px, 100%);
   height: 44px;
   padding: 0 14px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .admin-inventory-manager__chips {
@@ -467,6 +485,17 @@ watch(
   border: 1px solid #111111;
   background: #111111;
   color: #ffffff;
+  cursor: pointer;
+}
+
+.admin-inventory-manager__retry {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 

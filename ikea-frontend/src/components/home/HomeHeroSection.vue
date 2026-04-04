@@ -226,17 +226,11 @@ function handleKeydown(event, slide) {
   color: #ffffff;
   transform: translateY(-50%);
   cursor: pointer;
-  transition: opacity 0.18s ease, visibility 0.18s ease, background-color 0.18s ease;
 }
 
 .hs-hero__nav svg {
   width: 100%;
   height: 100%;
-}
-
-.hs-hero__nav:hover {
-  transform: translateY(-50%) !important;
-  background: rgba(17, 24, 39, 0.56);
 }
 
 .hs-hero__nav--prev {
@@ -284,21 +278,6 @@ function handleKeydown(event, slide) {
 .hs-hero__count {
   font-size: 13px;
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .hs-hero__nav {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .hs-hero:hover .hs-hero__nav,
-  .hs-hero:focus-within .hs-hero__nav {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-  }
 }
 
 @media (max-width: 720px) {

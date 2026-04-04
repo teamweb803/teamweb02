@@ -7,6 +7,7 @@ import {
   getFallbackProductDetailContent,
   getFallbackProductDetailSeed,
   getFallbackProductList,
+  getProductDetail,
   getProductList,
 } from '../services/productService';
 import { syncCategoryRouteMap } from '../constants/routes';
@@ -14,6 +15,7 @@ import { primeStorefrontInventory } from '../services/storefrontStockService';
 import {
   buildCategoryRouteMap,
   normalizeCategoryCollection,
+  normalizeCatalogProduct,
   normalizeProductCollection,
 } from '../mappers/catalogMapper';
 
@@ -29,6 +31,7 @@ export const useCatalogStore = defineStore('catalog', {
   state: () => ({
     categories: normalizeCategoryCollection(fallbackCategories),
     products: normalizeProductCollection(getFallbackProductList()),
+    productDetailsById: {},
     categoriesLoadedFromApi: false,
     productsLoadedFromApi: false,
   }),
@@ -77,7 +80,11 @@ export const useCatalogStore = defineStore('catalog', {
       );
     },
     findProductById(productId) {
-      return this.products.find((product) => String(product.id) === String(productId ?? '').trim()) ?? null;
+      const normalizedProductId = String(productId ?? '').trim();
+
+      return this.productDetailsById[normalizedProductId]
+        ?? this.products.find((product) => String(product.id) === normalizedProductId)
+        ?? null;
     },
     getDefaultCatalogProduct() {
       return this.products[0] ?? null;
@@ -87,6 +94,47 @@ export const useCatalogStore = defineStore('catalog', {
     },
     getProductDetailContent(product) {
       return getFallbackProductDetailContent(product);
+    },
+    async loadProductDetail(productId, { force = false } = {}) {
+      const normalizedProductId = String(productId ?? '').trim();
+
+      if (!normalizedProductId) {
+        return null;
+      }
+
+      if (!force && this.productDetailsById[normalizedProductId]) {
+        return this.productDetailsById[normalizedProductId];
+      }
+
+      const baseProduct = this.products.find((product) => String(product.id) === normalizedProductId) ?? null;
+      const response = await getProductDetail(normalizedProductId);
+      const source = response?.data ?? response ?? {};
+      const normalizedProduct = normalizeCatalogProduct({
+        ...baseProduct,
+        ...source,
+        id: source.id ?? source.productId ?? baseProduct?.id ?? normalizedProductId,
+        productId: source.productId ?? source.id ?? baseProduct?.productId ?? normalizedProductId,
+      });
+
+      this.productDetailsById = {
+        ...this.productDetailsById,
+        [normalizedProductId]: normalizedProduct,
+      };
+
+      const productIndex = this.products.findIndex((product) => String(product.id) === normalizedProductId);
+
+      if (productIndex >= 0) {
+        const nextProducts = [...this.products];
+        nextProducts.splice(productIndex, 1, normalizedProduct);
+        this.products = nextProducts;
+      } else {
+        this.products = normalizeProductCollection([
+          normalizedProduct,
+          ...this.products,
+        ]);
+      }
+
+      return normalizedProduct;
     },
     async loadCategories() {
       try {

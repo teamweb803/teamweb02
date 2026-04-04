@@ -7,6 +7,8 @@ import MyPageOverviewSection from '../components/my-page/MyPageOverviewSection.v
 import MyPageReviewDialog from '../components/my-page/MyPageReviewDialog.vue';
 import MyPageSidebar from '../components/my-page/MyPageSidebar.vue';
 import MyPageSupportSection from '../components/my-page/MyPageSupportSection.vue';
+import { useMemberWithdrawal } from '../composables/useMemberWithdrawal';
+import { useMyPageOrderActions } from '../composables/useMyPageOrderActions';
 import { useMyPage } from '../composables/useMyPage';
 import { useMyPageReviewComposer } from '../composables/useMyPageReviewComposer';
 
@@ -46,8 +48,17 @@ const sectionMetaMap = {
 const activeSectionMeta = computed(
   () => sectionMetaMap[activeSectionId.value] ?? sectionMetaMap.overview,
 );
+const {
+  canWithdraw,
+  isSubmitting: isWithdrawalSubmitting,
+  submitWithdrawal,
+  withdrawalGuideItems,
+  withdrawalHintMessage,
+  withdrawalHintTone,
+} = useMemberWithdrawal();
 
 const {
+  clearStatus: clearReviewStatus,
   closeDialog: closeReviewDialog,
   getActionLabel: getReviewActionLabel,
   isActionDisabled: isReviewActionDisabled,
@@ -60,6 +71,15 @@ const {
   statusTone: reviewStatusTone,
   submitReview,
 } = useMyPageReviewComposer();
+const {
+  clearStatus: clearOrderActionStatus,
+  getActionLabel: getOrderActionLabel,
+  isActionPending: isOrderActionPending,
+  requestAction: requestOrderAction,
+  shouldShowAction: shouldShowOrderAction,
+  statusMessage: orderActionStatusMessage,
+  statusTone: orderActionStatusTone,
+} = useMyPageOrderActions();
 
 const statusMessage = computed(() => {
   if (isProfileLoading.value) {
@@ -80,6 +100,12 @@ const profileStateDescription = computed(() => (
     ? '저장된 회원 정보와 최근 주문 상태를 확인하고 있습니다.'
     : statusMessage.value
 ));
+const orderBoardStatusMessage = computed(() => (
+  orderActionStatusMessage.value || reviewStatusMessage.value
+));
+const orderBoardStatusTone = computed(() => (
+  orderActionStatusMessage.value ? orderActionStatusTone.value : reviewStatusTone.value
+));
 
 function moveToSection(sectionId) {
   activeSectionId.value = sectionId;
@@ -88,6 +114,16 @@ function moveToSection(sectionId) {
     left: 0,
     behavior: 'auto',
   });
+}
+
+function handleOpenReview(order) {
+  clearOrderActionStatus();
+  openReviewDialog(order);
+}
+
+async function handleRequestOrderAction(order) {
+  clearReviewStatus();
+  await requestOrderAction(order);
 }
 </script>
 
@@ -133,13 +169,17 @@ function moveToSection(sectionId) {
               v-else-if="activeSectionId === 'orders'"
               :order-steps="orderSteps"
               :recent-orders="recentOrders"
-              :review-status-message="reviewStatusMessage"
-              :review-status-tone="reviewStatusTone"
+              :review-status-message="orderBoardStatusMessage"
+              :review-status-tone="orderBoardStatusTone"
               :build-product-detail-path="buildProductDetailPath"
+              :should-show-order-action="shouldShowOrderAction"
+              :is-order-action-pending="isOrderActionPending"
+              :get-order-action-label="getOrderActionLabel"
               :should-show-review-action="shouldShowReviewAction"
               :is-review-action-disabled="isReviewActionDisabled"
               :get-review-action-label="getReviewActionLabel"
-              @open-review="openReviewDialog"
+              @open-review="handleOpenReview"
+              @request-order-action="handleRequestOrderAction"
             />
 
             <MyPageActivitySection
@@ -154,6 +194,12 @@ function moveToSection(sectionId) {
               :account-highlights="accountHighlights"
               :profile="profile"
               :support-cards="supportCards"
+              :withdrawal-guide-items="withdrawalGuideItems"
+              :withdrawal-hint-message="withdrawalHintMessage"
+              :withdrawal-hint-tone="withdrawalHintTone"
+              :can-withdraw="canWithdraw"
+              :is-withdrawal-submitting="isWithdrawalSubmitting"
+              @withdraw="submitWithdrawal"
             />
           </section>
         </section>

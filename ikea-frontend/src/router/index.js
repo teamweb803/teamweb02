@@ -28,7 +28,6 @@ const OrderCompleteView = () => import('../views/OrderCompleteView.vue');
 const KakaoPaymentView = () => import('../views/KakaoPaymentView.vue');
 const TossPaymentView = () => import('../views/TossPaymentView.vue');
 const CustomerServiceView = () => import('../views/CustomerServiceView.vue');
-const CustomerServiceQnaLookupView = () => import('../views/CustomerServiceQnaLookupView.vue');
 const CustomerServiceQnaWriteView = () => import('../views/CustomerServiceQnaWriteView.vue');
 const CustomerServiceNoticeDetailView = () => import('../views/CustomerServiceNoticeDetailView.vue');
 const GuestOrderLookupView = () => import('../views/GuestOrderLookupView.vue');
@@ -211,13 +210,15 @@ const router = createRouter({
     },
     {
       path: ROUTE_PATHS.customerServiceQnaLookup,
-      name: 'customer-service-qna-lookup',
-      component: CustomerServiceQnaLookupView,
+      redirect: ROUTE_PATHS.customerServiceQna,
     },
     {
       path: ROUTE_PATHS.customerServiceQnaWrite,
       name: 'customer-service-qna-write',
       component: CustomerServiceQnaWriteView,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: ROUTE_PATHS.customerServiceQna,
@@ -258,7 +259,6 @@ const router = createRouter({
       component: MyPageView,
       meta: {
         requiresAuth: true,
-        allowGuestPreview: true,
       },
     },
     {

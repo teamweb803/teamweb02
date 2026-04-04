@@ -343,6 +343,14 @@ defineExpose({
   color: var(--hs-ink, #111827);
   transform: translateY(-50%);
   cursor: pointer;
+  transition: none;
+}
+
+.hs-header__search-button:hover,
+.hs-header__search-button:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  transform: translateY(-50%);
 }
 
 .hs-header__search-button svg,
@@ -392,8 +400,8 @@ defineExpose({
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #c62828;
-  color: #ffffff;
+  background: var(--hs-badge-danger);
+  color: var(--hs-badge-danger-ink);
   font-size: 11px;
   font-weight: 700;
   line-height: 18px;

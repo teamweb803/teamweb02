@@ -5,7 +5,7 @@ import AdminShell from '../components/admin/AdminShell.vue';
 
 <template>
   <AdminShell
-    title="문의 관리"
+    title="QnA 관리"
     description="답변 처리"
   >
     <AdminQnaManager />

@@ -154,6 +154,14 @@ export function getMyPayments() {
   return httpRequester.get('/payment/my');
 }
 
+export function cancelPayment(orderId, reason = '사용자 요청으로 결제를 취소했습니다.') {
+  return httpRequester.patch(`/payment/${orderId}/cancel`, null, {
+    params: {
+      reason,
+    },
+  });
+}
+
 export async function readyKakaoPayment(orderPayload = {}, options = {}) {
   const { isGuestOrder = false } = options;
   const requestBody = buildKakaoReadyBody(orderPayload);
@@ -168,9 +176,7 @@ export async function readyKakaoPayment(orderPayload = {}, options = {}) {
     ];
 
   const response = await runPaymentRequestWithFallback(requestFactories, {
-    fallbackMessage: isGuestOrder
-      ? '비회원 카카오페이 API가 아직 준비되지 않았습니다.'
-      : '',
+    fallbackMessage: '',
     fallbackStatuses: isGuestOrder ? [0, 400, 401, 404, 405] : [400, 404, 405],
   });
 
@@ -191,9 +197,7 @@ export async function readyTossPayment(orderPayload = {}, options = {}) {
     ];
 
   const response = await runPaymentRequestWithFallback(requestFactories, {
-    fallbackMessage: isGuestOrder
-      ? '비회원 토스페이 API가 아직 준비되지 않았습니다.'
-      : '토스페이 준비 API가 아직 준비되지 않았습니다.',
+    fallbackMessage: '',
     fallbackStatuses: isGuestOrder ? [0, 400, 401, 404, 405] : [0, 400, 404, 405],
   });
 
@@ -233,9 +237,7 @@ export async function confirmKakaoPayment(payload = {}, options = {}) {
     ];
 
   return runPaymentRequestWithFallback(requestFactories, {
-    fallbackMessage: isGuestOrder
-      ? '비회원 카카오페이 승인 API가 아직 준비되지 않았습니다.'
-      : '',
+    fallbackMessage: '',
     fallbackStatuses: isGuestOrder ? [0, 400, 401, 404, 405] : [400, 404, 405],
   });
 }
@@ -258,9 +260,7 @@ export async function confirmTossPayment(payload = {}, options = {}) {
     ];
 
   return runPaymentRequestWithFallback(requestFactories, {
-    fallbackMessage: isGuestOrder
-      ? '비회원 토스페이 승인 API가 아직 준비되지 않았습니다.'
-      : '',
+    fallbackMessage: '',
     fallbackStatuses: isGuestOrder ? [0, 400, 401, 404, 405] : [400, 404, 405],
   });
 }

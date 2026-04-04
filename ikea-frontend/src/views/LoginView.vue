@@ -34,13 +34,6 @@ const inquiryPlaceholder = computed(() => (
     : '휴대전화번호를 입력해 주세요.'
 ));
 const memberLoginError = computed(() => loginValidationError.value || loginError.value);
-const loginNotice = computed(() => {
-  if (String(route.query.reason ?? '').trim() === 'auth-required') {
-    return '로그인이 필요한 페이지입니다. 로그인 후 원래 보려던 화면으로 이동합니다.';
-  }
-
-  return '';
-});
 
 function validateLoginForm() {
   const normalizedLoginId = String(loginForm.loginId ?? '').trim();
@@ -74,12 +67,7 @@ async function handleSubmitLogin() {
   }
 
   loginValidationError.value = '';
-
-  try {
-    await submitLogin();
-  } catch {
-    // The composable exposes the current error message.
-  }
+  await submitLogin();
 }
 
 function clearGuestLookupError() {
@@ -190,8 +178,6 @@ watch(
           <div class="login-columns">
             <section class="login-box login-box--member">
               <h2>회원 로그인</h2>
-              <p v-if="loginNotice" class="login-status login-status--info">{{ loginNotice }}</p>
-
               <label class="login-field">
                 <span>아이디 또는 이메일</span>
                 <input
@@ -203,7 +189,7 @@ watch(
                 />
               </label>
 
-              <label class="login-field">
+              <label class="login-field login-field--query">
                 <span>비밀번호</span>
                 <input
                   v-model="loginForm.password"
@@ -215,24 +201,23 @@ watch(
                 />
               </label>
 
-              <label class="login-check login-check--small">
-                <input v-model="rememberId" type="checkbox" />
-                <span>아이디 저장</span>
-              </label>
-              <p class="login-note">(개인정보 보호를 위해 개인 PC에서만 이용해 주세요.)</p>
-              <p v-if="memberLoginError" class="login-status login-status--error">{{ memberLoginError }}</p>
+              <div class="login-box__support login-box__support--member">
+                <label class="login-check login-check--small">
+                  <input v-model="rememberId" type="checkbox" />
+                  <span>아이디 저장</span>
+                </label>
+                <p class="login-note">(개인정보 보호를 위해 개인 PC에서만 이용해 주세요.)</p>
+                <p v-if="memberLoginError" class="login-status login-status--error">{{ memberLoginError }}</p>
+              </div>
 
               <button class="login-primary" type="button" :disabled="loginSubmitting" @click="handleSubmitLogin">
-                {{ loginSubmitting ? '로그인 중..' : '로그인' }}
+                {{ loginSubmitting ? '로그인 중...' : '로그인' }}
               </button>
 
               <div class="login-actions">
                 <button type="button" @click="openAccountRecoverySupport">아이디/비밀번호 찾기</button>
                 <button type="button" @click="router.push(ROUTE_PATHS.memberJoin)">회원가입</button>
               </div>
-              <p class="login-help login-help--member">
-                계정 찾기 기능은 아직 준비 중이며, 현재는 고객센터 QnA로 연결됩니다.
-              </p>
             </section>
 
             <section class="login-box login-box--guest">
@@ -243,40 +228,44 @@ watch(
                 <input v-model.trim="guestLookupForm.buyerName" type="text" @input="clearGuestLookupError" />
               </label>
 
-              <div class="login-radio-row">
-                <label class="login-radio">
-                  <input v-model="inquiryType" type="radio" value="order" @change="clearGuestLookupError" />
-                  <span>주문번호</span>
-                </label>
-                <label class="login-radio">
-                  <input v-model="inquiryType" type="radio" value="phone" @change="clearGuestLookupError" />
-                  <span>휴대전화번호</span>
-                </label>
+              <div class="login-box__query">
+                <div class="login-radio-row">
+                  <label class="login-radio">
+                    <input v-model="inquiryType" type="radio" value="order" @change="clearGuestLookupError" />
+                    <span>주문번호</span>
+                  </label>
+                  <label class="login-radio">
+                    <input v-model="inquiryType" type="radio" value="phone" @change="clearGuestLookupError" />
+                    <span>휴대전화번호</span>
+                  </label>
+                </div>
+
+                <div v-if="inquiryType === 'phone'" class="login-inline login-inline--phone">
+                  <input
+                    v-model.trim="guestLookupForm.phoneNumber"
+                    type="text"
+                    :placeholder="inquiryPlaceholder"
+                    @input="clearGuestLookupError"
+                  />
+                  <button type="button" @click="openGuestLookup">조회 페이지</button>
+                </div>
+                <div v-else class="login-inline login-inline--order">
+                  <input
+                    v-model.trim="guestLookupForm.orderNumber"
+                    type="text"
+                    :placeholder="inquiryPlaceholder"
+                    @input="clearGuestLookupError"
+                  />
+                </div>
               </div>
 
-              <div v-if="inquiryType === 'phone'" class="login-inline login-inline--phone">
-                <input
-                  v-model.trim="guestLookupForm.phoneNumber"
-                  type="text"
-                  :placeholder="inquiryPlaceholder"
-                  @input="clearGuestLookupError"
-                />
-                <button type="button" @click="openGuestLookup">조회 페이지</button>
+              <div class="login-box__support login-box__support--guest">
+                <p class="login-help">
+                  주문번호를 찾을 수 없는 경우,<br />
+                  HOMiO 고객센터 1688-4945로 문의해 주세요.
+                </p>
+                <p v-if="guestLookupError" class="login-status login-status--error">{{ guestLookupError }}</p>
               </div>
-              <div v-else class="login-inline login-inline--order">
-                <input
-                  v-model.trim="guestLookupForm.orderNumber"
-                  type="text"
-                  :placeholder="inquiryPlaceholder"
-                  @input="clearGuestLookupError"
-                />
-              </div>
-
-              <p class="login-help">
-                주문번호를 찾을 수 없는 경우,<br />
-                HOMiO 고객센터 1688-4945로 문의해 주세요.
-              </p>
-              <p v-if="guestLookupError" class="login-status login-status--error">{{ guestLookupError }}</p>
 
               <button class="login-primary" type="button" @click="openGuestLookup">조회</button>
             </section>
@@ -357,6 +346,9 @@ watch(
 .login-box {
   width: 100%;
   max-width: 390px;
+  display: grid;
+  grid-template-rows: auto auto 90px 106px 50px auto;
+  align-content: start;
 }
 
 .login-box--member {
@@ -382,6 +374,11 @@ watch(
   flex-direction: column;
   gap: 10px;
   margin-bottom: 22px;
+}
+
+.login-field--query {
+  min-height: 90px;
+  margin-bottom: 0;
 }
 
 .login-field > span {
@@ -428,28 +425,20 @@ watch(
 }
 
 .login-note {
-  margin: 8px 0 20px;
+  margin: 8px 0 0;
   font-size: 12px;
   line-height: 1.5;
   color: #8b8b8b;
 }
 
 .login-status {
-  margin: 0 0 16px;
+  margin: 10px 0 0;
   font-size: 13px;
   line-height: 1.5;
 }
 
 .login-status--error {
   color: #c62828;
-}
-
-.login-status--info {
-  margin-bottom: 18px;
-  padding: 12px 14px;
-  border: 1px solid #e2e2e2;
-  background: #f7f7f7;
-  color: #222222;
 }
 
 .login-primary {
@@ -462,11 +451,32 @@ watch(
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
+  align-self: start;
 }
 
 .login-primary:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+.login-box__query {
+  min-height: 90px;
+  margin: 0;
+}
+
+.login-box__support {
+  min-height: 106px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.login-box__support--member {
+  margin-top: 0;
+}
+
+.login-box__support--guest {
+  margin-top: 0;
 }
 
 .login-actions {
@@ -490,7 +500,8 @@ watch(
   display: flex;
   align-items: center;
   gap: 24px;
-  margin: 4px 0 16px;
+  margin: 0 0 10px;
+  min-height: 21px;
 }
 
 .login-radio {
@@ -533,14 +544,10 @@ watch(
 }
 
 .login-help {
-  margin: 12px 0 28px;
+  margin: 0;
   font-size: 12px;
   line-height: 1.55;
   color: #8b8b8b;
-}
-
-.login-help--member {
-  margin-bottom: 0;
 }
 
 @media (max-width: 980px) {

@@ -1,8 +1,21 @@
 <script setup>
+import CommonStatePanel from '../common/CommonStatePanel.vue';
 import { resolveStorefrontAvailability } from '../../services/storefrontStockService';
 import HomeProductCard from '../home/HomeProductCard.vue';
 
 defineProps({
+  didSearchFail: {
+    type: Boolean,
+    default: false,
+  },
+  hasResolvedSearch: {
+    type: Boolean,
+    default: false,
+  },
+  isSearching: {
+    type: Boolean,
+    default: false,
+  },
   keyword: {
     type: String,
     default: '',
@@ -17,7 +30,7 @@ defineProps({
   },
 });
 
-const emit = defineEmits(['product-activate', 'toggle-wishlist']);
+const emit = defineEmits(['product-activate', 'retry-search', 'toggle-wishlist']);
 
 function mapSearchCard(product) {
   const availability = resolveStorefrontAvailability(product);
@@ -41,7 +54,6 @@ function mapSearchCard(product) {
     discount: discountRate,
   };
 }
-
 </script>
 
 <template>
@@ -52,7 +64,12 @@ function mapSearchCard(product) {
         <h1>검색 결과</h1>
         <p class="search-results__copy">
           <template v-if="keyword">
-            "{{ keyword }}"에 대한 결과 {{ results.length }}개를 찾았습니다.
+            <template v-if="isSearching && !hasResolvedSearch && !results.length">
+              "{{ keyword }}"에 대한 검색 결과를 찾고 있습니다.
+            </template>
+            <template v-else>
+              "{{ keyword }}"에 대한 결과 {{ results.length }}개를 찾았습니다.
+            </template>
           </template>
           <template v-else>
             찾고 싶은 상품명을 입력해 보세요.
@@ -61,7 +78,16 @@ function mapSearchCard(product) {
       </div>
     </header>
 
-    <div v-if="results.length" class="search-results__grid">
+    <CommonStatePanel
+      v-if="keyword && isSearching && !results.length"
+      title="검색 결과를 불러오고 있습니다."
+      description="입력한 검색어와 일치하는 상품을 확인하고 있습니다."
+      tone="loading"
+      layout="boxed"
+      compact
+    />
+
+    <div v-else-if="results.length" class="search-results__grid">
       <HomeProductCard
         v-for="product in results"
         :key="product.id"
@@ -73,7 +99,22 @@ function mapSearchCard(product) {
       />
     </div>
 
-    <section v-else class="search-results__empty">
+    <CommonStatePanel
+      v-else-if="didSearchFail"
+      title="검색 결과를 다시 확인해 주세요."
+      description="잠시 후 다시 검색하거나 다른 검색어로 시도해 보세요."
+      tone="error"
+      layout="boxed"
+      compact
+    >
+      <template #actions>
+        <button type="button" class="search-results__action" @click="emit('retry-search')">
+          다시 검색
+        </button>
+      </template>
+    </CommonStatePanel>
+
+    <section v-else-if="keyword && hasResolvedSearch" class="search-results__empty">
       <strong>일치하는 상품이 없습니다.</strong>
       <p>브랜드명, 상품명, 카테고리명으로 다시 검색해 보세요.</p>
     </section>
@@ -136,6 +177,17 @@ function mapSearchCard(product) {
 
 .search-results__empty strong {
   font-size: 22px;
+}
+
+.search-results__action {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #111827;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 @media (max-width: 1024px) {

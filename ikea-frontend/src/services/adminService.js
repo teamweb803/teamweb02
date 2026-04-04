@@ -18,6 +18,10 @@ export function getAdminOrders(query) {
   return httpRequester.get('/admin/order', { params: query });
 }
 
+export function getAdminPayments() {
+  return httpRequester.get('/admin/payment');
+}
+
 export function getAdminOrdersByStatus(status) {
   return httpRequester.get('/admin/order/status', { params: { status } });
 }
@@ -114,15 +118,11 @@ export function removeAdminReview(reviewId) {
 }
 
 export function createAdminQnaAnswer(parentId, payload) {
-  return httpRequester.post(`/admin/qna/${parentId}/answer`, null, {
-    params: payload,
-  });
+  return httpRequester.post(`/admin/qna/${parentId}/answer`, payload);
 }
 
 export function updateAdminQnaAnswer(qnaId, payload) {
-  return httpRequester.put(`/admin/qna/${qnaId}/answer`, null, {
-    params: payload,
-  });
+  return httpRequester.put(`/admin/qna/${qnaId}/answer`, payload);
 }
 
 export function deleteAdminQnaAnswer(qnaId) {

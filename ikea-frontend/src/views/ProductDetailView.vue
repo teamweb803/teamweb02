@@ -1,6 +1,7 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import GuestCheckoutPromptDialog from '../components/common/GuestCheckoutPromptDialog.vue';
 import WishlistToggleButton from '../components/common/WishlistToggleButton.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
@@ -8,6 +9,7 @@ import ProductCartAddedDialog from '../components/product/ProductCartAddedDialog
 import ProductDimensionDiagram from '../components/product/ProductDimensionDiagram.vue';
 import { useFeedback } from '../composables/useFeedback';
 import { useProductGallery } from '../composables/useProductGallery';
+import { useProductReviews } from '../composables/useProductReviews';
 import {
   buildProductDeliveryMessage,
   buildProductOptionSummary,
@@ -26,7 +28,12 @@ import {
   decorateStorefrontItems,
   resolveStorefrontAvailability,
 } from '../services/storefrontStockService';
+import {
+  recordRecentViewProduct,
+  resolveRecentViewSessionKey,
+} from '../services/recentViewService';
 import { hasAuthenticatedSession } from '../utils/accessControl';
+import { resolveCartActionErrorMessage } from '../utils/apiErrorMessage';
 
 const route = useRoute();
 const router = useRouter();
@@ -37,21 +44,112 @@ const wishlistStore = useWishlistStore();
 const { showError } = useFeedback();
 const { products: catalogProducts } = storeToRefs(catalogStore);
 
+const EMPTY_PRODUCT = Object.freeze({
+  id: '',
+  productId: '',
+  categorySlug: '',
+  categoryLabel: '',
+  label: '',
+  badge: '',
+  brand: '',
+  name: '',
+  image: '',
+  imageAlt: '',
+  altImage: '',
+  price: 0,
+  reviews: 0,
+  rating: 0,
+  typeSlug: 'all',
+});
+
 const quantity = ref(1);
 const isCartDialogOpen = ref(false);
 const isGuestCheckoutPromptOpen = ref(false);
+const isResolvingProduct = ref(true);
+const didFailToResolveProduct = ref(false);
+let latestResolveToken = 0;
 
-onMounted(() => {
+const requestedProductId = computed(() => String(route.params.productId ?? '').trim());
+
+function syncRecentViewHistory(productId = '') {
+  const normalizedProductId = String(productId ?? '').trim();
+  const sessionKey = resolveRecentViewSessionKey(accountStore);
+  const product = catalogStore.findProductById(normalizedProductId);
+
+  if (!normalizedProductId || !sessionKey || !product) {
+    return;
+  }
+
+  recordRecentViewProduct({
+    productId: normalizedProductId,
+    brand: product.brand,
+    title: product.name,
+    subtitle: [product.categoryLabel, product.label].filter(Boolean).join(' / '),
+    price: formatPrice(product.price),
+    image: product.image,
+  }, sessionKey);
+}
+
+async function resolveCurrentProduct() {
+  const resolveToken = ++latestResolveToken;
+  const normalizedProductId = requestedProductId.value;
+
+  isResolvingProduct.value = true;
+  didFailToResolveProduct.value = false;
+
   accountStore.hydrate();
-  void catalogStore.ensureCatalogLoaded();
   wishlistStore.ensureHydrated();
-});
+
+  if (!normalizedProductId) {
+    isResolvingProduct.value = false;
+    didFailToResolveProduct.value = true;
+    return;
+  }
+
+  const hasPreviewProduct = Boolean(catalogStore.findProductById(normalizedProductId));
+  isResolvingProduct.value = !hasPreviewProduct;
+
+  void catalogStore.ensureCatalogLoaded().catch(() => {});
+
+  try {
+    await catalogStore.loadProductDetail(normalizedProductId);
+  } catch {
+    if (resolveToken !== latestResolveToken) {
+      return;
+    }
+
+    didFailToResolveProduct.value = !catalogStore.findProductById(normalizedProductId);
+  } finally {
+    if (resolveToken !== latestResolveToken) {
+      return;
+    }
+
+    if (catalogStore.findProductById(normalizedProductId)) {
+      syncRecentViewHistory(normalizedProductId);
+    }
+
+    isResolvingProduct.value = false;
+  }
+}
 
 const currentProduct = computed(() => (
-  catalogStore.findProductById(route.params.productId) ?? catalogStore.getDefaultCatalogProduct()
+  catalogStore.findProductById(requestedProductId.value) ?? EMPTY_PRODUCT
+));
+const hasCurrentProduct = computed(() => Boolean(String(currentProduct.value?.id ?? '').trim()));
+const currentReviewProductId = computed(() => (
+  String(currentProduct.value?.productId ?? currentProduct.value?.id ?? requestedProductId.value).trim()
 ));
 
 const detailContent = computed(() => catalogStore.getProductDetailContent(currentProduct.value));
+const {
+  averageRating,
+  hasLoadedReviews,
+  isLoadingReviews,
+  loadProductReviews,
+  reviewCount,
+  reviewItems,
+  reviewLoadErrorMessage,
+} = useProductReviews(currentReviewProductId);
 
 const {
   galleryImages,
@@ -66,13 +164,25 @@ const {
   zoomSymbol,
 } = useProductGallery(computed(() => detailContent.value.galleryImages));
 
-const ratingLabel = computed(() => {
-  const rating = currentProduct.value.rating;
-  return typeof rating === 'number' ? rating.toFixed(1) : '-';
+const resolvedRatingValue = computed(() => {
+  if (reviewItems.value.length) {
+    return averageRating.value;
+  }
+
+  const rating = Number(currentProduct.value.rating ?? 0);
+  return rating > 0 ? rating : null;
 });
 
+const ratingLabel = computed(() => (
+  resolvedRatingValue.value === null ? '-' : resolvedRatingValue.value.toFixed(1)
+));
+
+const resolvedReviewCount = computed(() => (
+  reviewItems.value.length ? reviewCount.value : Number(currentProduct.value.reviews ?? 0)
+));
+
 const reviewCountLabel = computed(() => (
-  Number(currentProduct.value.reviews ?? 0).toLocaleString('ko-KR')
+  Number(resolvedReviewCount.value ?? 0).toLocaleString('ko-KR')
 ));
 
 const totalPrice = computed(() => currentProduct.value.price * quantity.value);
@@ -86,9 +196,38 @@ const summaryFacts = computed(() => {
 const descriptionParagraphs = computed(() => detailContent.value.description ?? []);
 const highlightItems = computed(() => detailContent.value.highlights ?? []);
 const measurementItems = computed(() => detailContent.value.measurements ?? []);
-const reviewHighlights = computed(() => detailContent.value.reviewHighlights ?? []);
+const fallbackReviewHighlights = computed(() => detailContent.value.reviewHighlights ?? []);
 const dimensionImage = computed(() => detailContent.value.dimensionImage ?? '');
 const shouldUseDimensionImage = computed(() => Boolean(detailContent.value.useDimensionImage && dimensionImage.value));
+const reviewSummaryMessage = computed(() => {
+  if (reviewItems.value.length) {
+    if (reviewCount.value === 1) {
+      return '등록된 리뷰 1개를 표시하고 있습니다.';
+    }
+
+    return `등록된 리뷰 ${reviewCountLabel.value}개를 표시하고 있습니다.`;
+  }
+
+  return detailContent.value.reviewIntro ?? '고객 리뷰를 확인해 보세요.';
+});
+const reviewStatusNote = computed(() => {
+  if (isLoadingReviews.value && !reviewItems.value.length) {
+    return '상품 리뷰를 불러오고 있습니다.';
+  }
+
+  if (reviewLoadErrorMessage.value) {
+    return reviewLoadErrorMessage.value;
+  }
+
+  if (hasLoadedReviews.value && !reviewItems.value.length) {
+    return '아직 등록된 리뷰가 없습니다.';
+  }
+
+  return '';
+});
+const displayedReviewItems = computed(() => (
+  reviewItems.value.length ? reviewItems.value : fallbackReviewHighlights.value
+));
 
 const deliveryMessage = computed(() => buildProductDeliveryMessage(currentProduct.value));
 const purchaseOptionCopy = computed(() => buildProductOptionSummary(currentProduct.value));
@@ -122,11 +261,20 @@ const sectionTabs = [
 ];
 
 watch(
+  requestedProductId,
+  () => {
+    void resolveCurrentProduct();
+  },
+  { immediate: true },
+);
+
+watch(
   () => currentProduct.value.id,
   () => {
     quantity.value = 1;
     isCartDialogOpen.value = false;
     isGuestCheckoutPromptOpen.value = false;
+
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   },
   { immediate: true },
@@ -151,7 +299,7 @@ function increaseQuantity() {
 }
 
 async function syncCurrentProductToCart() {
-  if (isSoldOut.value) {
+  if (isSoldOut.value || !hasCurrentProduct.value) {
     return null;
   }
 
@@ -160,7 +308,7 @@ async function syncCurrentProductToCart() {
       quantity: quantity.value,
     });
   } catch (error) {
-    showError(error?.message ?? '장바구니 처리 중 오류가 발생했습니다.');
+    showError(resolveCartActionErrorMessage(error, '장바구니 처리 중 오류가 발생했습니다.'));
     return null;
   }
 }
@@ -185,7 +333,7 @@ function viewCartFromDialog() {
 }
 
 async function goToCheckout() {
-  if (isSoldOut.value) {
+  if (isSoldOut.value || !hasCurrentProduct.value) {
     return;
   }
 
@@ -228,6 +376,10 @@ async function continueGuestCheckout() {
 }
 
 function toggleCurrentProductWishlist() {
+  if (!hasCurrentProduct.value) {
+    return;
+  }
+
   wishlistStore.toggleProduct(currentProduct.value, {
     redirectPath: route.fullPath,
   });
@@ -254,6 +406,32 @@ function handleDialogProductSelect(productId) {
   <SiteChrome>
     <main class="detail-page">
       <div class="detail-page__inner">
+        <section v-if="isResolvingProduct" class="detail-empty-state">
+          <CommonStatePanel
+            title="상품 정보를 불러오고 있습니다."
+            description="선택한 상품의 상세 정보를 확인하고 있습니다."
+            layout="boxed"
+            compact
+          />
+        </section>
+
+        <section v-else-if="!hasCurrentProduct && didFailToResolveProduct" class="detail-empty-state">
+          <CommonStatePanel
+            title="상품 정보를 찾지 못했습니다."
+            description="다른 상품을 선택해 다시 확인해 주세요."
+            layout="boxed"
+            compact
+          >
+            <template #actions>
+              <button class="detail-empty-state__action detail-empty-state__action--secondary" type="button" @click="resolveCurrentProduct">
+                다시 시도
+              </button>
+              <RouterLink class="detail-empty-state__action" :to="ROUTE_PATHS.home">홈으로 이동</RouterLink>
+            </template>
+          </CommonStatePanel>
+        </section>
+
+        <template v-else>
         <nav class="detail-breadcrumb" aria-label="breadcrumb">
           <RouterLink to="/" class="detail-breadcrumb__home" aria-label="홈으로 이동">
             <svg viewBox="0 0 24 24" fill="none">
@@ -405,7 +583,6 @@ function handleDialogProductSelect(productId) {
         <section id="description" class="detail-section detail-section--lined">
           <div class="detail-section__head">
             <h2>제품 설명</h2>
-            <p>현재 사이트의 상세 구성에 맞춰 핵심 설명만 정리했습니다.</p>
           </div>
 
           <div class="detail-section__content detail-section__content--split">
@@ -427,7 +604,6 @@ function handleDialogProductSelect(productId) {
         <section id="dimensions" class="detail-section detail-section--lined">
           <div class="detail-section__head">
             <h2>치수</h2>
-            <p>배치 전에 확인할 수 있도록 주요 치수를 한 번에 볼 수 있게 정리했습니다.</p>
           </div>
 
             <div class="detail-section__content detail-section__content--split detail-section__content--measure">
@@ -462,7 +638,6 @@ function handleDialogProductSelect(productId) {
         <section id="reviews" class="detail-section detail-section--lined">
           <div class="detail-section__head">
             <h2>고객 리뷰</h2>
-            <p>대표 리뷰 흐름만 먼저 정리해 두고, 실제 후기 데이터는 이후 연동을 고려했습니다.</p>
           </div>
 
           <div class="detail-review-summary">
@@ -472,22 +647,34 @@ function handleDialogProductSelect(productId) {
             </div>
             <div class="detail-review-summary__copy">
               <strong>리뷰 {{ reviewCountLabel }}개 기준 요약</strong>
-              <p>{{ detailContent.reviewIntro }}</p>
+              <p>{{ reviewSummaryMessage }}</p>
             </div>
           </div>
 
-          <div class="detail-review-grid">
+          <div v-if="reviewStatusNote" class="detail-review-feedback">
+            <p>{{ reviewStatusNote }}</p>
+            <button
+              v-if="reviewLoadErrorMessage"
+              class="detail-review-feedback__action"
+              type="button"
+              @click="loadProductReviews"
+            >
+              다시 불러오기
+            </button>
+          </div>
+
+          <div v-if="displayedReviewItems.length" class="detail-review-grid">
             <article
-              v-for="review in reviewHighlights"
-              :key="review.title"
+              v-for="review in displayedReviewItems"
+              :key="review.id ?? review.title"
               class="detail-review-card"
             >
               <div class="detail-review-card__head">
-                <strong>{{ review.title }}</strong>
-                <span v-if="review.rating">★ {{ review.rating.toFixed(1) }}</span>
+                <strong>{{ review.author ?? review.title }}</strong>
+                <span v-if="review.ratingLabel ?? review.rating">★ {{ (review.ratingLabel ?? review.rating?.toFixed?.(1) ?? '') }}</span>
               </div>
-              <p>{{ review.body }}</p>
-              <small>{{ review.meta }}</small>
+              <p>{{ review.content ?? review.body }}</p>
+              <small v-if="review.meta">{{ review.meta }}</small>
             </article>
           </div>
         </section>
@@ -495,7 +682,6 @@ function handleDialogProductSelect(productId) {
         <section v-if="relatedProducts.length" class="detail-related detail-section--lined">
           <div class="detail-section__head">
             <h2>다른 사람들이 함께 본 상품</h2>
-            <p>현재 {{ currentProduct.categoryLabel }} 카탈로그 안에서 자연스럽게 이어질 수 있는 상품을 먼저 연결했습니다.</p>
           </div>
 
           <div class="detail-related__grid">
@@ -531,6 +717,7 @@ function handleDialogProductSelect(productId) {
             </article>
           </div>
         </section>
+        </template>
       </div>
     </main>
     <ProductCartAddedDialog
@@ -549,3 +736,64 @@ function handleDialogProductSelect(productId) {
     />
   </SiteChrome>
 </template>
+
+<style scoped>
+.detail-empty-state {
+  padding-top: 24px;
+}
+
+.detail-empty-state__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.detail-empty-state__action--secondary {
+  border: 1px solid #d5d8dd;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+}
+
+.detail-review-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.detail-review-feedback p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.detail-review-feedback__action {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #d5d8dd;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .detail-review-feedback {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+</style>

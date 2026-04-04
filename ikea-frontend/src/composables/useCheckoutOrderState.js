@@ -3,7 +3,6 @@ import { computed, shallowRef, watch } from 'vue';
 const PAYMENT_METHODS = [
   { id: 'kakaopay', label: '카카오페이' },
   { id: 'tosspay', label: '토스페이' },
-  { id: 'card', label: '신용카드' },
   { id: 'bank', label: '무통장입금' },
 ];
 

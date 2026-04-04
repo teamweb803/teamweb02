@@ -1,4 +1,5 @@
 import { ROUTE_PATHS } from '../constants/routes';
+import { createEmptyOrderStatusSteps } from '../constants/orderStatus';
 import { createFallbackProfile } from '../mappers/myPageMapper';
 
 export function getMyPageStaticContent() {
@@ -15,12 +16,7 @@ export function getMyPageStaticContent() {
       { id: 'point', label: '보유 포인트', value: '0P' },
       { id: 'review', label: '작성 가능 리뷰', value: '0건' },
     ],
-    orderSteps: [
-      { id: 'paid', label: '결제완료', count: 0 },
-      { id: 'ready', label: '배송준비', count: 0 },
-      { id: 'shipping', label: '배송중', count: 0 },
-      { id: 'done', label: '구매확정', count: 0 },
-    ],
+    orderSteps: createEmptyOrderStatusSteps(),
     quickLinks: [
       {
         id: 'cart',
@@ -34,7 +30,7 @@ export function getMyPageStaticContent() {
       },
       {
         id: 'qna',
-        label: '1:1 문의 가기',
+        label: '1:1 QnA 가기',
         to: ROUTE_PATHS.customerServiceQna,
       },
     ],
@@ -53,8 +49,8 @@ export function getMyPageStaticContent() {
       },
       {
         id: 'qna',
-        title: '1:1 문의하기',
-        actionLabel: '문의 바로가기',
+        title: '1:1 QnA',
+        actionLabel: 'QnA 바로가기',
         to: ROUTE_PATHS.customerServiceQna,
       },
     ],

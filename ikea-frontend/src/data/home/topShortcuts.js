@@ -2,7 +2,6 @@ import bedMattressShortcutImage from '../../assets/home/shortcuts/bed-mattress.j
 import deskShortcutImage from '../../assets/home/shortcuts/desk.jpg';
 import diningShortcutImage from '../../assets/home/shortcuts/dining.jpg';
 import kitchenFurnitureShortcutImage from '../../assets/home/shortcuts/kitchen-furniture.jpg';
-import kitchenwareShortcutImage from '../../assets/home/shortcuts/kitchenware.jpg';
 import plantShortcutImage from '../../assets/home/shortcuts/plant.jpg';
 import sofaShortcutImage from '../../assets/home/shortcuts/sofa.jpg';
 
@@ -12,7 +11,7 @@ const topShortcutImageMap = {
   dining: diningShortcutImage,
   desk: deskShortcutImage,
   'kitchen-furniture': kitchenFurnitureShortcutImage,
-  kitchenware: kitchenwareShortcutImage,
+  kitchenware: 'https://www.ikea.com/kr/ko/images/products/ikea-365-pot-with-lid-stainless-steel__1006171_pe825756_s5.jpg',
   plant: plantShortcutImage,
 };
 
@@ -70,6 +69,7 @@ export const topShortcutBoxes = [
     image: topShortcutImageMap.kitchenware,
     imageFit: 'contain',
     imagePosition: 'center center',
+    imageScale: 1.22,
     label: '주방용품',
     categorySlug: 'kitchenware',
   },

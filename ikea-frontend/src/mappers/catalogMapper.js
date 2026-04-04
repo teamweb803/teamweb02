@@ -97,7 +97,7 @@ function resolveProductCategory(product = {}, fallbackProduct = null) {
   return null;
 }
 
-function normalizeCatalogProduct(product = {}) {
+export function normalizeCatalogProduct(product = {}) {
   const fallbackProduct = resolveFallbackProduct(product);
   const resolvedCategory = resolveProductCategory(product, fallbackProduct);
   const price = Number(product.price ?? fallbackProduct?.price ?? 0);

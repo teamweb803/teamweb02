@@ -22,6 +22,7 @@ import {
   isSpecialDeliveryItem,
 } from '../services/commerceShippingService';
 import { useAccountStore } from '../stores/account';
+import { resolveCheckoutErrorMessage } from '../utils/apiErrorMessage';
 
 const route = useRoute();
 const router = useRouter();
@@ -56,10 +57,24 @@ const isGuestCheckout = computed(() => !accountStore.accessToken);
 const EXTERNAL_PAYMENT_METHODS = ['kakaopay', 'tosspay'];
 
 const BASE_PAYMENT_METHODS = [
-  { id: 'kakaopay', label: '카카오페이' },
-  { id: 'tosspay', label: '토스페이' },
-  { id: 'card', label: '신용카드' },
-  { id: 'bank', label: '무통장입금' },
+  {
+    id: 'kakaopay',
+    label: '카카오페이',
+    enabled: true,
+    memberOnly: false,
+  },
+  {
+    id: 'tosspay',
+    label: '토스페이',
+    enabled: true,
+    memberOnly: false,
+  },
+  {
+    id: 'bank',
+    label: '무통장입금',
+    enabled: true,
+    memberOnly: false,
+  },
 ];
 
 async function syncOrderItems() {
@@ -104,25 +119,13 @@ watch(pointAmount, (value) => {
   pointAmount.value = normalized === '' ? '0' : String(Number(normalized));
 });
 
-const paymentMethods = computed(() => BASE_PAYMENT_METHODS.map((method) => {
-  return {
-    ...method,
-    disabled: false,
-    disabledReason: '',
-    helperText: '',
-  };
-}));
-const defaultPaymentMethod = computed(() => (isGuestCheckout.value ? 'bank' : 'kakaopay'));
+const paymentMethods = computed(() => BASE_PAYMENT_METHODS.filter((method) => (
+  method.enabled && (!method.memberOnly || !isGuestCheckout.value)
+)));
 
-watch(paymentMethods, (methods) => {
-  const currentMethod = methods.find((method) => method.id === paymentMethod.value);
-
-  if (currentMethod && !currentMethod.disabled) {
-    return;
-  }
-
-  paymentMethod.value = defaultPaymentMethod.value;
-}, { immediate: true });
+const defaultPaymentMethod = computed(() => (
+  paymentMethods.value[0]?.id ?? ''
+));
 
 const deliveryGroups = computed(() => buildDeliveryGroups(orderItems.value));
 const hasInstallDeliveryItems = computed(() => hasSpecialDeliveryItemsInOrder(orderItems.value));
@@ -150,7 +153,9 @@ const selectedPaymentMethod = computed(
   () => paymentMethods.value.find((method) => method.id === paymentMethod.value)
     ?? paymentMethods.value[0],
 );
-const paymentMethodNotice = computed(() => '');
+const paymentMethodGuide = computed(() => (
+  '카카오페이, 토스페이, 무통장입금 중 원하는 결제수단을 선택해 주세요.'
+));
 const submitButtonLabel = computed(() => (
   paymentMethod.value === 'kakaopay'
     ? '카카오페이로 이동'
@@ -192,6 +197,16 @@ const scheduleDayOptions = computed(() => (
     .filter((item) => item.year === scheduleYear.value && item.month === scheduleMonth.value)
     .map((item) => item.day)
 ));
+
+watch(
+  paymentMethods,
+  (methods) => {
+    if (!methods.some((method) => method.id === paymentMethod.value)) {
+      paymentMethod.value = methods[0]?.id ?? '';
+    }
+  },
+  { immediate: true },
+);
 
 watch(
   [availableScheduleDates, scheduleYear, scheduleMonth],
@@ -308,7 +323,7 @@ function closeShippingGuideModal() {
 }
 
 function openZoneCodeGuide() {
-  checkoutAddressGuide.value = '우편번호 찾기는 아직 준비 중입니다. 우편번호와 주소를 직접 입력해 주세요.';
+  checkoutAddressGuide.value = '우편번호와 주소를 직접 입력해 주세요.';
 }
 
 function applyMaxPointAmount() {
@@ -317,6 +332,14 @@ function applyMaxPointAmount() {
 
 function buildScheduleText() {
   return `${scheduleYear.value}년 ${scheduleMonth.value}월 ${scheduleDay.value}일 ${scheduleTime.value}`;
+}
+
+function selectPaymentMethod(method) {
+  if (!method?.id) {
+    return;
+  }
+
+  paymentMethod.value = method.id;
 }
 
 function validateCheckout() {
@@ -370,10 +393,6 @@ async function submitOrder() {
   isSubmitting.value = true;
 
   try {
-    if (selectedPaymentMethod.value?.disabled) {
-      throw new Error(selectedPaymentMethod.value.disabledReason);
-    }
-
     const checkoutPayload = {
       mode: String(route.query.mode ?? 'all'),
       itemId: String(route.query.itemId ?? ''),
@@ -410,10 +429,19 @@ async function submitOrder() {
       query: {
         orderNumber: completedOrder.orderNumber,
         orderType: completedOrder.isGuestOrder ? 'guest' : 'member',
+        ...(completedOrder.isGuestOrder
+          ? {
+            buyerName: String(
+              completedOrder.ordererName
+              ?? checkoutPayload.ordererName
+              ?? '',
+            ).trim(),
+          }
+          : {}),
       },
     });
   } catch (error) {
-    showError(error?.message ?? '주문 처리 중 오류가 발생했습니다.');
+    showError(resolveCheckoutErrorMessage(error, '주문 처리 중 오류가 발생했습니다.'));
   } finally {
     isSubmitting.value = false;
   }
@@ -728,22 +756,21 @@ async function submitOrder() {
               <header class="checkout-panel__head">
                 <h2>결제수단 선택</h2>
               </header>
-              <div class="checkout-payment-grid">
-                <button
-                  v-for="method in paymentMethods"
+      <div class="checkout-payment-grid">
+        <button
+          v-for="method in paymentMethods"
                   :key="method.id"
                   class="checkout-payment-button"
                   :class="{ 'is-active': paymentMethod === method.id }"
                   type="button"
-                  @click="paymentMethod = method.id"
+                  @click="selectPaymentMethod(method)"
                 >
-                  <span>{{ method.label }}</span>
-                  <small v-if="method.helperText">{{ method.helperText }}</small>
-                </button>
-              </div>
-              <p v-if="paymentMethodNotice" class="checkout-payment-note">{{ paymentMethodNotice }}</p>
-            </section>
-          </section>
+          <span>{{ method.label }}</span>
+        </button>
+      </div>
+      <p class="checkout-field-note">{{ paymentMethodGuide }}</p>
+    </section>
+  </section>
 
           <CheckoutFinalCard
             v-model:final-agreement="finalAgreement"
@@ -1367,7 +1394,7 @@ async function submitOrder() {
 
 .checkout-payment-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 

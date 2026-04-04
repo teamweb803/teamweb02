@@ -10,13 +10,9 @@ defineProps({
     type: Array,
     required: true,
   },
-  isProductWishlisted: {
-    type: Function,
-    default: () => false,
-  },
 });
 
-const emit = defineEmits(['product-activate', 'toggle-wishlist']);
+const emit = defineEmits(['product-activate']);
 </script>
 
 <template>
@@ -29,11 +25,8 @@ const emit = defineEmits(['product-activate', 'toggle-wishlist']);
         v-for="item in items"
         :key="item.id"
         :item="item"
-        :show-wishlist="true"
-        :is-wishlisted="isProductWishlisted(item.productId)"
         image-loading="lazy"
         @activate="emit('product-activate', $event)"
-        @toggle-wishlist="emit('toggle-wishlist', $event)"
       />
     </div>
   </section>

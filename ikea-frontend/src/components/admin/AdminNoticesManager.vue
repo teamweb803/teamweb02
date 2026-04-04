@@ -19,6 +19,7 @@ import {
 } from '../../mappers/adminManagementMapper';
 import { useFeedback } from '../../composables/useFeedback';
 import { useAccountStore } from '../../stores/account';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
 const accountStore = useAccountStore();
 const { memberName, loginId } = storeToRefs(accountStore);
@@ -45,7 +46,7 @@ const formModeLabel = computed(() => (selectedNoticeId.value ? '공지 수정' :
 const showCreateShortcut = computed(() => Boolean(selectedNoticeId.value));
 const submitButtonLabel = computed(() => {
   if (isSubmitting.value) {
-    return '처리 중..';
+    return selectedNoticeId.value ? '공지 수정 중...' : '공지 등록 중...';
   }
 
   return selectedNoticeId.value ? '수정 저장' : '공지 등록';
@@ -124,9 +125,9 @@ async function loadNotices(options = {}) {
   try {
     const payload = await getAdminNoticeList();
     applyNotices(normalizeArrayPayload(payload, []));
-  } catch {
+  } catch (error) {
     applyNotices([]);
-    loadErrorMessage.value = '공지 목록을 불러오지 못했습니다. 서버 상태를 확인해 주세요.';
+    loadErrorMessage.value = resolveAdminActionErrorMessage(error, '공지 목록을 불러오지 못했습니다.');
     return false;
   } finally {
     isLoading.value = false;
@@ -181,10 +182,10 @@ async function submitNotice() {
       beginCreateMode({ clearStatus: false });
       currentPage.value = 1;
     }
-  } catch {
+  } catch (error) {
     statusMessage.value = noticeId
-      ? '공지 수정에 실패했습니다. 서버 상태를 확인해 주세요.'
-      : '공지 등록에 실패했습니다. 서버 상태를 확인해 주세요.';
+      ? resolveAdminActionErrorMessage(error, '공지 수정에 실패했습니다.')
+      : resolveAdminActionErrorMessage(error, '공지 등록에 실패했습니다.');
   }
 
   isSubmitting.value = false;
@@ -210,8 +211,8 @@ async function removeNotice(notice) {
     statusMessage.value = didLoadFromServer
       ? '공지를 삭제했습니다.'
       : '공지 삭제는 완료됐지만 목록 재조회는 실패했습니다.';
-  } catch {
-    statusMessage.value = '공지 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '공지 삭제에 실패했습니다.');
   }
 
   if (selectedNoticeId.value === notice.noticeId) {
@@ -424,6 +425,13 @@ onMounted(async () => {
   color: #666666;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.admin-notices-manager__status {
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
 }
 
 @media (max-width: 1024px) {

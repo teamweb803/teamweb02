@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import { ROUTE_PATHS } from '../constants/routes';
 import { joinMember } from '../services/memberService';
+import { resolveJoinErrorMessage } from '../utils/apiErrorMessage';
 
 const router = useRouter();
 const joinForm = reactive({
@@ -104,7 +105,7 @@ async function submitJoin() {
     });
   } catch (error) {
     joinStatusTone.value = 'error';
-    joinStatus.value = error?.message ?? '회원가입에 실패했습니다.';
+    joinStatus.value = resolveJoinErrorMessage(error);
   } finally {
     joinSubmitting.value = false;
   }
@@ -224,7 +225,7 @@ async function submitJoin() {
             <p v-if="joinStatus" class="signup-info-status" :class="joinStatusClass">{{ joinStatus }}</p>
 
             <button class="signup-info-submit" type="submit" :disabled="joinSubmitting">
-              {{ joinSubmitting ? '가입 처리 중..' : '가입완료하기' }}
+              {{ joinSubmitting ? '가입 진행 중...' : '가입 완료' }}
             </button>
           </form>
         </section>

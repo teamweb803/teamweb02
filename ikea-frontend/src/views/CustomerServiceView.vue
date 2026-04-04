@@ -1,24 +1,32 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 import AdminPagination from '../components/admin/AdminPagination.vue';
 import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import CustomerQnaThreadList from '../components/customer-service/CustomerQnaThreadList.vue';
 import CustomerServiceShell from '../components/customer-service/CustomerServiceShell.vue';
+import { useFeedback } from '../composables/useFeedback';
 import { useCustomerServiceBoard } from '../composables/useCustomerServiceBoard';
 import {
   ROUTE_PATHS,
   buildCustomerServiceNoticeDetailPath,
 } from '../constants/routes';
+import { deleteQnaQuestion } from '../services/qnaService';
+import { resolveAdminActionErrorMessage } from '../utils/apiErrorMessage';
 
 const router = useRouter();
+const { requestConfirm, showError } = useFeedback();
+const isDeletingQna = shallowRef(false);
 const {
   activeFaqCategory,
   canBrowseQnaRows,
+  changeFaqPage,
   changeNoticePage,
   changeQnaPage,
   currentSection,
   faqCategories,
+  faqPage,
+  faqTotalPages,
   filteredFaqRows,
   filteredQnaCount,
   isNoticeLoading,
@@ -28,6 +36,7 @@ const {
   noticePage,
   noticeTotalPages,
   openFaqIds,
+  pagedFaqRows,
   pagedNotices,
   pagedQnaRows,
   qnaPage,
@@ -36,6 +45,7 @@ const {
   qnaSubmitted,
   qnaTotalPages,
   qnaViewerMode,
+  reloadQnaRows,
   selectFaqCategory,
   toggleFaq,
 } = useCustomerServiceBoard();
@@ -53,43 +63,47 @@ const pageTitle = computed(() => {
 });
 
 const qnaFeedbackMessage = computed(() => {
-  if (!qnaSubmitted.value) {
-    return '';
+  if (qnaSubmitted.value) {
+    return '등록이 완료되었습니다. 답변이 등록되면 이 화면에서 바로 확인할 수 있습니다.';
   }
 
-  return qnaViewerMode.value === 'guest'
-    ? '문의가 접수되었습니다. 비회원 문의 조회 화면에서 등록 내역을 확인할 수 있습니다.'
-    : '문의가 등록되었습니다. 운영 답변이 등록되면 이 목록에서 바로 확인할 수 있습니다.';
+  if (router.currentRoute.value.query.updated === '1') {
+    return '내역을 수정했습니다.';
+  }
+
+  if (router.currentRoute.value.query.deleted === '1') {
+    return '내역을 삭제했습니다.';
+  }
+
+  return '';
 });
 
 const qnaNoteMessage = computed(() => {
   if (qnaViewerMode.value === 'guest') {
-    return '비회원 문의는 공개 목록이 아니라 조회 화면에서 이름과 이메일 또는 휴대전화번호로 확인합니다.';
+    return 'QnA는 로그인한 계정 기준으로 등록 내역과 답변 상태를 확인할 수 있습니다.';
   }
 
-  if (qnaViewerMode.value === 'admin') {
-    return '관리자 계정은 전체 문의와 답변 상태를 확인할 수 있습니다.';
-  }
-
-  return '로그인한 계정 기준으로 본인 문의만 확인할 수 있습니다.';
+  return '로그인한 계정의 등록 내역만 표시됩니다.';
 });
 
-const qnaSearchPlaceholder = computed(() => (
-  qnaViewerMode.value === 'admin' ? '전체 문의 검색' : '내 문의 검색'
-));
-
+const qnaSearchPlaceholder = computed(() => '제목/답변 검색');
 const qnaEmptyDescription = computed(() => (
-  qnaViewerMode.value === 'admin'
-    ? '아직 등록된 문의가 없습니다.'
-    : '작성한 문의와 답변이 이 영역에 표시됩니다.'
+  qnaViewerMode.value === 'member'
+    ? '등록한 내역이 없습니다.'
+    : '로그인 후 등록 내역을 확인해 주세요.'
 ));
 
 function openQnaWrite() {
   router.push(ROUTE_PATHS.customerServiceQnaWrite);
 }
 
-function openQnaLookup() {
-  router.push(ROUTE_PATHS.customerServiceQnaLookup);
+function openQnaEdit(item) {
+  router.push({
+    path: ROUTE_PATHS.customerServiceQnaWrite,
+    query: {
+      editId: item.id,
+    },
+  });
 }
 
 function openQnaLogin() {
@@ -99,6 +113,39 @@ function openQnaLogin() {
       redirect: ROUTE_PATHS.customerServiceQna,
     },
   });
+}
+
+async function removeQna(item) {
+  if (isDeletingQna.value) {
+    return;
+  }
+
+  const confirmed = await requestConfirm({
+    title: '내역 삭제',
+    message: '등록 내역을 삭제하시겠습니까?',
+    confirmLabel: '삭제',
+  });
+
+  if (!confirmed) {
+    return;
+  }
+
+  isDeletingQna.value = true;
+
+  try {
+    await deleteQnaQuestion(Number(item.id));
+    await reloadQnaRows();
+    await router.replace({
+      path: ROUTE_PATHS.customerServiceQna,
+      query: {
+        deleted: '1',
+      },
+    });
+  } catch (error) {
+    showError(resolveAdminActionErrorMessage(error, '등록 내역을 삭제하지 못했습니다.'));
+  } finally {
+    isDeletingQna.value = false;
+  }
 }
 </script>
 
@@ -172,7 +219,7 @@ function openQnaLogin() {
       </div>
 
       <div class="cs-faq-list">
-        <article v-for="faq in filteredFaqRows" :key="faq.id" class="cs-faq-item">
+        <article v-for="faq in pagedFaqRows" :key="faq.id" class="cs-faq-item">
           <button class="cs-faq-item__question" type="button" @click="toggleFaq(faq.id)">
             <span>{{ faq.category }}</span>
             <strong>{{ faq.question }}</strong>
@@ -183,6 +230,13 @@ function openQnaLogin() {
           </div>
         </article>
       </div>
+
+      <AdminPagination
+        v-if="filteredFaqRows.length"
+        :current-page="faqPage"
+        :page-count="faqTotalPages"
+        @update:current-page="changeFaqPage"
+      />
     </template>
 
     <template v-else>
@@ -192,13 +246,8 @@ function openQnaLogin() {
 
       <div class="cs-qna-actions">
         <div class="cs-qna-actions__buttons">
-          <button type="button" @click="openQnaWrite">문의 작성</button>
-          <button v-if="qnaViewerMode === 'guest'" type="button" class="is-secondary" @click="openQnaLookup">
-            비회원 문의 조회
-          </button>
-          <button v-if="qnaViewerMode === 'guest'" type="button" class="is-light" @click="openQnaLogin">
-            로그인 후 내 문의 보기
-          </button>
+          <button v-if="qnaViewerMode === 'member'" type="button" @click="openQnaWrite">작성하기</button>
+          <button v-else type="button" class="is-light" @click="openQnaLogin">로그인 후 보기</button>
         </div>
       </div>
 
@@ -217,22 +266,28 @@ function openQnaLogin() {
         <CommonStatePanel
           v-if="isQnaLoading"
           tone="loading"
-          title="문의 목록을 불러오는 중입니다."
+          title="등록 내역을 불러오는 중입니다."
           compact
         />
         <CommonStatePanel
-          v-else-if="qnaLoadError"
+          v-else-if="qnaLoadError && !pagedQnaRows.length"
           tone="error"
-          title="문의 목록을 확인할 수 없습니다."
+          title="등록 내역을 확인할 수 없습니다."
           :description="qnaLoadError"
           compact
         />
 
         <template v-else>
+          <div v-if="qnaLoadError" class="cs-feedback cs-feedback--warning">
+            {{ qnaLoadError }}
+          </div>
+
           <CustomerQnaThreadList
             :items="pagedQnaRows"
             :empty-description="qnaEmptyDescription"
-            :show-writer="qnaViewerMode === 'admin'"
+            :show-item-actions="qnaViewerMode === 'member'"
+            @edit-item="openQnaEdit"
+            @delete-item="removeQna"
           />
 
           <AdminPagination
@@ -248,9 +303,13 @@ function openQnaLogin() {
         v-else
         layout="boxed"
         align="left"
-        title="비회원 문의 조회를 이용해 주세요."
-        description="문의 작성 후 이름과 이메일 또는 휴대전화번호로 등록 내역과 답변 상태를 확인할 수 있습니다."
-      />
+        title="로그인 후 등록 내역을 확인해 주세요."
+        description="QnA는 로그인한 계정 기준으로 등록, 조회, 수정, 삭제할 수 있습니다."
+      >
+        <template #actions>
+          <button type="button" class="cs-inline-action" @click="openQnaLogin">로그인</button>
+        </template>
+      </CommonStatePanel>
     </template>
   </CustomerServiceShell>
 </template>
@@ -307,15 +366,21 @@ function openQnaLogin() {
   cursor: pointer;
 }
 
-.cs-qna-actions__buttons button.is-secondary {
-  background: #ffffff;
-  color: #111111;
-}
-
 .cs-qna-actions__buttons button.is-light {
   border-color: #d9d9d9;
   background: #ffffff;
   color: #444444;
+}
+
+.cs-inline-action {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .cs-qna-note {
@@ -336,6 +401,12 @@ function openQnaLogin() {
   color: #264a86;
   font-size: 14px;
   line-height: 1.7;
+}
+
+.cs-feedback--warning {
+  border-color: #f1d8aa;
+  background: #fff8ea;
+  color: #7c5411;
 }
 
 .cs-board {
@@ -377,19 +448,6 @@ function openQnaLogin() {
   padding-right: 18px;
   font-size: 15px;
   font-weight: 500;
-}
-
-.cs-board__head--qna,
-.cs-board__row--qna {
-  grid-template-columns: 90px minmax(0, 1fr) 140px 140px;
-}
-
-.cs-board__empty {
-  padding: 22px 0;
-  color: #666666;
-  font-size: 14px;
-  line-height: 1.7;
-  text-align: center;
 }
 
 .cs-faq-filter {
@@ -455,11 +513,6 @@ function openQnaLogin() {
 }
 
 @media (max-width: 960px) {
-  .cs-board__head--qna,
-  .cs-board__row--qna {
-    grid-template-columns: 70px minmax(0, 1fr) 110px 110px;
-  }
-
   .cs-faq-item__question {
     grid-template-columns: 110px minmax(0, 1fr) 32px;
   }
@@ -485,8 +538,6 @@ function openQnaLogin() {
 
   .cs-board__head,
   .cs-board__row,
-  .cs-board__head--qna,
-  .cs-board__row--qna,
   .cs-faq-item__question {
     grid-template-columns: 1fr;
     gap: 8px;

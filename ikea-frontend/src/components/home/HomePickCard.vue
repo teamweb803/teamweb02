@@ -1,6 +1,4 @@
 <script setup>
-import WishlistToggleButton from '../common/WishlistToggleButton.vue';
-
 const props = defineProps({
   item: {
     type: Object,
@@ -10,35 +8,19 @@ const props = defineProps({
     type: String,
     default: 'lazy',
   },
-  showWishlist: {
-    type: Boolean,
-    default: false,
-  },
-  isWishlisted: {
-    type: Boolean,
-    default: false,
-  },
 });
 
-const emit = defineEmits(['activate', 'toggle-wishlist']);
+const emit = defineEmits(['activate']);
 
 function handleActivate() {
   emit('activate', props.item);
 }
 
 function handleKeydown(event) {
-  if (event.target !== event.currentTarget) {
-    return;
-  }
-
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
     handleActivate();
   }
-}
-
-function handleWishlistToggle() {
-  emit('toggle-wishlist', props.item);
 }
 </script>
 
@@ -53,12 +35,6 @@ function handleWishlistToggle() {
   >
     <div class="hs-pick-card__image-wrap">
       <img :src="item.image" :alt="item.title" :loading="imageLoading" decoding="async" />
-      <WishlistToggleButton
-        v-if="showWishlist"
-        class="hs-pick-card__wishlist"
-        :active="isWishlisted"
-        @toggle="handleWishlistToggle"
-      />
       <span
         class="hs-pick-card__badge"
         :class="item.isSoldOut ? 'is-soldout' : (item.accent === 'yellow' ? 'is-yellow' : 'is-blue')"
@@ -115,13 +91,6 @@ function handleWishlistToggle() {
   object-fit: contain;
 }
 
-.hs-pick-card__wishlist {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  z-index: 1;
-}
-
 .hs-pick-card__badge {
   position: absolute;
   top: 14px;
@@ -132,26 +101,26 @@ function handleWishlistToggle() {
   min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.82);
-  color: #ffffff;
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .hs-pick-card__badge.is-yellow {
-  background: var(--hs-yellow);
-  color: #111827;
+  background: var(--hs-badge-yellow);
+  color: var(--hs-badge-yellow-ink);
 }
 
 .hs-pick-card__badge.is-blue {
-  background: var(--hs-blue);
-  color: #ffffff;
+  background: var(--hs-badge-blue);
+  color: var(--hs-badge-blue-ink);
 }
 
 .hs-pick-card__badge.is-soldout {
-  background: #b42318;
-  color: #ffffff;
+  background: var(--hs-badge-danger);
+  color: var(--hs-badge-danger-ink);
 }
 
 .hs-pick-card__copy {

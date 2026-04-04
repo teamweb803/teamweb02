@@ -33,8 +33,8 @@ export const ADMIN_NAV_ITEMS = [
   },
   {
     id: 'qna',
-    label: '문의 관리',
-    title: '문의 관리',
+    label: 'QnA 관리',
+    title: 'QnA 관리',
     to: ROUTE_PATHS.adminQna,
   },
   {

@@ -44,11 +44,78 @@ function buildRequestConfig(path, options = {}) {
   return config;
 }
 
+function extractMessageFromPayload(payload) {
+  if (!payload) {
+    return '';
+  }
+
+  if (typeof payload === 'string') {
+    return payload.trim();
+  }
+
+  if (Array.isArray(payload)) {
+    return payload
+      .map((item) => extractMessageFromPayload(item))
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+  }
+
+  if (typeof payload === 'object') {
+    const directCandidates = [
+      payload.message,
+      payload.error,
+      payload.detail,
+      payload.title,
+    ];
+    const directMessage = directCandidates.find(
+      (candidate) => typeof candidate === 'string' && candidate.trim() !== '',
+    );
+
+    if (directMessage) {
+      return directMessage.trim();
+    }
+
+    if (Array.isArray(payload.errors)) {
+      const joinedErrors = payload.errors
+        .map((item) => extractMessageFromPayload(item))
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+
+      if (joinedErrors) {
+        return joinedErrors;
+      }
+    }
+
+    if (payload.errors && typeof payload.errors === 'object') {
+      const joinedErrors = Object.values(payload.errors)
+        .flat()
+        .map((item) => extractMessageFromPayload(item))
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+
+      if (joinedErrors) {
+        return joinedErrors;
+      }
+    }
+  }
+
+  return '';
+}
+
 function createApiError(error) {
-  const message = error.response?.data?.message ?? error.message ?? 'Request failed';
+  const responsePayload = error.response?.data ?? null;
+  const message = (
+    extractMessageFromPayload(responsePayload)
+    || String(error.response?.statusText ?? '').trim()
+    || error.message
+    || 'Request failed'
+  );
   const apiError = new Error(message);
   apiError.status = error.response?.status ?? 0;
-  apiError.data = error.response?.data ?? null;
+  apiError.data = responsePayload;
   return apiError;
 }
 

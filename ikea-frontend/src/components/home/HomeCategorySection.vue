@@ -166,9 +166,9 @@ function handleBannerKeydown(event) {
 }
 
 .hs-filter-chip.is-active {
-  border-color: var(--hs-ink);
-  background: var(--hs-ink);
-  color: #ffffff;
+  border-color: var(--hs-badge-dark);
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
 }
 
 .hs-banner {

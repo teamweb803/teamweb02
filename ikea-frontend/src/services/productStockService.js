@@ -1,10 +1,16 @@
 import httpRequester from '../libs/httpRequester';
 
+function createProductStockError(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
 function normalizeProductId(productId) {
   const normalizedProductId = Number(productId);
 
   if (!Number.isFinite(normalizedProductId)) {
-    throw new Error('A valid productId is required.');
+    return null;
   }
 
   return Math.trunc(normalizedProductId);
@@ -21,15 +27,33 @@ function normalizeQuantity(quantity) {
 }
 
 export function getProductStock(productId) {
-  return httpRequester.get(`/product_stocks/${normalizeProductId(productId)}`);
+  const normalizedProductId = normalizeProductId(productId);
+
+  if (normalizedProductId === null) {
+    return Promise.reject(createProductStockError('상품 정보를 다시 확인해 주세요.'));
+  }
+
+  return httpRequester.get(`/product_stocks/${normalizedProductId}`);
 }
 
 export function getAdminProductStock(productId) {
-  return httpRequester.get(`/admin/product_stocks/${normalizeProductId(productId)}`);
+  const normalizedProductId = normalizeProductId(productId);
+
+  if (normalizedProductId === null) {
+    return Promise.reject(createProductStockError('상품 정보를 다시 확인해 주세요.'));
+  }
+
+  return httpRequester.get(`/admin/product_stocks/${normalizedProductId}`);
 }
 
 export function updateAdminProductStock(productId, payload = {}) {
-  return httpRequester.put(`/admin/product_stocks/${normalizeProductId(productId)}`, {
+  const normalizedProductId = normalizeProductId(productId);
+
+  if (normalizedProductId === null) {
+    return Promise.reject(createProductStockError('상품 정보를 다시 확인해 주세요.'));
+  }
+
+  return httpRequester.put(`/admin/product_stocks/${normalizedProductId}`, {
     quantity: normalizeQuantity(payload.quantity),
   });
 }

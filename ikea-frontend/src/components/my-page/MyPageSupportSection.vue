@@ -1,4 +1,6 @@
 <script setup>
+defineEmits(['withdraw']);
+
 defineProps({
   accountHighlights: {
     type: Array,
@@ -11,6 +13,26 @@ defineProps({
   supportCards: {
     type: Array,
     required: true,
+  },
+  withdrawalGuideItems: {
+    type: Array,
+    required: true,
+  },
+  withdrawalHintMessage: {
+    type: String,
+    default: '',
+  },
+  withdrawalHintTone: {
+    type: String,
+    default: 'neutral',
+  },
+  canWithdraw: {
+    type: Boolean,
+    default: false,
+  },
+  isWithdrawalSubmitting: {
+    type: Boolean,
+    default: false,
   },
 });
 </script>
@@ -47,6 +69,40 @@ defineProps({
             <strong>{{ item.title }}</strong>
             <span>{{ item.actionLabel }}</span>
           </RouterLink>
+        </div>
+      </section>
+
+      <section class="my-panel my-panel--withdrawal">
+        <header class="my-panel__head">
+          <strong>회원 탈퇴</strong>
+        </header>
+        <div class="my-withdrawal-board">
+          <div class="my-withdrawal-copy">
+            <p class="my-withdrawal-copy__lead">
+              탈퇴 처리 후에는 현재 계정으로 다시 로그인할 수 없습니다.
+            </p>
+            <ul class="my-withdrawal-copy__list">
+              <li v-for="item in withdrawalGuideItems" :key="item">
+                {{ item }}
+              </li>
+            </ul>
+            <p
+              v-if="withdrawalHintMessage"
+              class="my-withdrawal-copy__hint"
+              :class="`is-${withdrawalHintTone}`"
+            >
+              {{ withdrawalHintMessage }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="my-withdrawal-button"
+            :disabled="!canWithdraw || isWithdrawalSubmitting"
+            @click="$emit('withdraw')"
+          >
+            {{ isWithdrawalSubmitting ? '탈퇴 처리 중...' : '회원 탈퇴' }}
+          </button>
         </div>
       </section>
     </div>
@@ -146,6 +202,67 @@ defineProps({
   gap: 52px;
 }
 
+.my-panel--withdrawal {
+  grid-column: 1 / -1;
+}
+
+.my-withdrawal-board {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 18px 0 0;
+}
+
+.my-withdrawal-copy {
+  min-width: 0;
+}
+
+.my-withdrawal-copy__lead,
+.my-withdrawal-copy__hint {
+  margin: 0;
+  color: var(--text-muted-strong);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.my-withdrawal-copy__list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: var(--text-muted-strong);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.my-withdrawal-copy__hint {
+  margin-top: 16px;
+}
+
+.my-withdrawal-copy__hint.is-warning {
+  color: #9d2f2f;
+}
+
+.my-withdrawal-copy__hint.is-success {
+  color: #1f5f3b;
+}
+
+.my-withdrawal-button {
+  min-width: 156px;
+  height: 44px;
+  padding: 0 18px;
+  border: 1px solid #111111;
+  background: #ffffff;
+  color: #111111;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.my-withdrawal-button:disabled {
+  border-color: #d0d0d0;
+  color: #8a8a8a;
+  cursor: default;
+}
+
 @media (max-width: 1080px) {
   .my-panel-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -159,6 +276,14 @@ defineProps({
 
   .my-support-row {
     grid-template-columns: 1fr;
+  }
+
+  .my-withdrawal-board {
+    display: grid;
+  }
+
+  .my-withdrawal-button {
+    width: 100%;
   }
 }
 </style>

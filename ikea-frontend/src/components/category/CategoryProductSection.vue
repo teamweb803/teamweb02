@@ -304,8 +304,8 @@ function toggleWishlist(item) {
   left: 14px;
   padding: 7px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(17, 24, 39, 0.82);
-  color: var(--surface-strong);
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
   font-size: 12px;
   font-weight: 700;
 }

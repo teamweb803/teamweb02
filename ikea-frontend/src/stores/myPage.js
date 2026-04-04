@@ -1,9 +1,16 @@
 import { defineStore } from 'pinia';
+import {
+  buildOrderStatusSteps,
+  getOrderStatusLabel,
+  normalizeOrderStatusCode,
+} from '../constants/orderStatus';
 import { normalizeMemberProfile } from '../mappers/myPageMapper';
 import { getCurrentMember } from '../services/memberService';
 import { getMyPageStaticContent, getFallbackMyPageProfile } from '../services/myPageService';
 import { getMyOrders } from '../services/orderService';
 import { getMyReviews } from '../services/reviewService';
+import { resolveProfileErrorMessage } from '../utils/apiErrorMessage';
+import { resolveOrderDateValue } from '../utils/orderDate';
 import { useAccountStore } from './account';
 import { useCatalogStore } from './catalog';
 
@@ -69,35 +76,10 @@ function formatDateLabel(value) {
   ].join('.');
 }
 
-function normalizeOrderStatusLabel(value) {
-  const normalizedValue = normalizeIdentifier(value).toUpperCase();
-
-  switch (normalizedValue) {
-    case 'PENDING':
-    case 'ORDERED':
-      return '주문 접수';
-    case 'PAID':
-      return '결제완료';
-    case 'READY':
-    case 'PREPARING':
-      return '배송준비';
-    case 'SHIPPING':
-    case 'DELIVERING':
-      return '배송중';
-    case 'DELIVERED':
-    case 'COMPLETED':
-      return '구매확정';
-    case 'CANCELLED':
-      return '주문취소';
-    default:
-      return normalizeIdentifier(value) || '-';
-  }
-}
-
 function buildSummaryCards(orders = [], reviews = []) {
-  const inProgressStatuses = new Set(['PENDING', 'ORDERED', 'PAID', 'READY', 'PREPARING', 'SHIPPING', 'DELIVERING']);
+  const inProgressStatuses = new Set(['PENDING', 'PAID', 'ORDERED', 'DELIVERING']);
   const inProgressCount = orders.filter((order) => (
-    inProgressStatuses.has(normalizeIdentifier(order.orderStatus ?? order.status).toUpperCase())
+    inProgressStatuses.has(normalizeOrderStatusCode(order.orderStatus ?? order.status))
   )).length;
 
   return [
@@ -110,40 +92,22 @@ function buildSummaryCards(orders = [], reviews = []) {
 
 function buildOrderSteps(orders = []) {
   const counts = {
-    paid: 0,
-    ready: 0,
-    shipping: 0,
-    done: 0,
+    PENDING: 0,
+    PAID: 0,
+    ORDERED: 0,
+    DELIVERING: 0,
+    COMPLETED: 0,
   };
 
   orders.forEach((order) => {
-    switch (normalizeIdentifier(order.orderStatus ?? order.status).toUpperCase()) {
-      case 'PAID':
-        counts.paid += 1;
-        break;
-      case 'READY':
-      case 'PREPARING':
-        counts.ready += 1;
-        break;
-      case 'SHIPPING':
-      case 'DELIVERING':
-        counts.shipping += 1;
-        break;
-      case 'DELIVERED':
-      case 'COMPLETED':
-        counts.done += 1;
-        break;
-      default:
-        break;
+    const normalizedStatus = normalizeOrderStatusCode(order.orderStatus ?? order.status);
+
+    if (Object.prototype.hasOwnProperty.call(counts, normalizedStatus)) {
+      counts[normalizedStatus] += 1;
     }
   });
 
-  return [
-    { id: 'paid', label: '결제완료', count: counts.paid },
-    { id: 'ready', label: '배송준비', count: counts.ready },
-    { id: 'shipping', label: '배송중', count: counts.shipping },
-    { id: 'done', label: '구매확정', count: counts.done },
-  ];
+  return buildOrderStatusSteps(counts);
 }
 
 function buildOrderOption(product, orderItem = {}, order = {}) {
@@ -161,8 +125,8 @@ function buildRecentOrders(orders = [], findProductById) {
   return orders.flatMap((order, orderIndex) => {
     const orderId = normalizeIdentifier(order.orderId ?? order.id);
     const orderNumber = normalizeIdentifier(order.orderNo ?? order.orderNumber);
-    const orderStatusCode = normalizeIdentifier(order.orderStatus ?? order.status).toUpperCase();
-    const orderDate = formatDateLabel(order.createdAt ?? order.orderedAt ?? order.orderDate);
+    const orderStatusCode = normalizeOrderStatusCode(order.orderStatus ?? order.status);
+    const orderDate = formatDateLabel(resolveOrderDateValue(order));
     const orderItems = unwrapArrayPayload(order?.orderItems);
     const sourceItems = orderItems.length ? orderItems : [order];
 
@@ -193,7 +157,7 @@ function buildRecentOrders(orders = [], findProductById) {
         orderNumber,
         date: orderDate,
         title: orderItem.productName ?? product?.name ?? '주문 상품',
-        status: normalizeOrderStatusLabel(orderStatusCode),
+        status: getOrderStatusLabel(orderStatusCode),
         statusCode: orderStatusCode,
         option: buildOrderOption(product, orderItem, order),
         image: orderItem.imgPath ?? product?.image ?? '',
@@ -264,7 +228,7 @@ export const useMyPageStore = defineStore('myPage', {
         } else {
           accountStore.setProfileHydrated(false);
           this.profile = getFallbackMyPageProfile(accountStore);
-          this.profileError = '회원 정보를 다시 확인해 주세요.';
+          this.profileError = resolveProfileErrorMessage(memberResult.reason);
         }
 
         const orders = ordersResult.status === 'fulfilled'
@@ -289,9 +253,7 @@ export const useMyPageStore = defineStore('myPage', {
       } catch (error) {
         accountStore.setProfileHydrated(false);
         this.profile = getFallbackMyPageProfile(accountStore);
-        this.resetDynamicSections();
-        this.profileError = '회원 정보를 다시 확인해 주세요.';
-        console.error(error);
+        this.profileError = resolveProfileErrorMessage(error);
       } finally {
         this.isProfileLoading = false;
         this.loaded = true;

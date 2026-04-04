@@ -10,7 +10,7 @@ const DEFAULT_CATEGORY = getDefaultFallbackCategory();
 export const DEFAULT_CATEGORY_ID = DEFAULT_CATEGORY.backendCategoryId;
 export const DEFAULT_CATEGORY_SLUG = DEFAULT_CATEGORY.slug;
 export const DEFAULT_PRODUCT_ID = '10489009';
-export const DEFAULT_NOTICE_ID = '6245';
+export const DEFAULT_NOTICE_ID = '18';
 
 export const CATEGORY_ROUTE_MAP = FALLBACK_CATEGORY_ROUTE_MAP;
 
