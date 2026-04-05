@@ -42,7 +42,7 @@ const cartStore = useCartStore();
 const catalogStore = useCatalogStore();
 const wishlistStore = useWishlistStore();
 const { showError } = useFeedback();
-const { products: catalogProducts } = storeToRefs(catalogStore);
+const { catalogProducts } = storeToRefs(catalogStore);
 
 const EMPTY_PRODUCT = Object.freeze({
   id: '',
@@ -583,6 +583,7 @@ function handleDialogProductSelect(productId) {
         <section id="description" class="detail-section detail-section--lined">
           <div class="detail-section__head">
             <h2>제품 설명</h2>
+            <p>현재 사이트의 상세 구성에 맞춰 핵심 설명만 정리했습니다.</p>
           </div>
 
           <div class="detail-section__content detail-section__content--split">
@@ -604,6 +605,7 @@ function handleDialogProductSelect(productId) {
         <section id="dimensions" class="detail-section detail-section--lined">
           <div class="detail-section__head">
             <h2>치수</h2>
+            <p>배치 전에 확인할 수 있도록 주요 치수를 한 번에 볼 수 있게 정리했습니다.</p>
           </div>
 
             <div class="detail-section__content detail-section__content--split detail-section__content--measure">
@@ -619,7 +621,7 @@ function handleDialogProductSelect(productId) {
                 v-else
                 :measurements="measurementItems"
               />
-              <p class="detail-dimension-panel__caption">{{ detailContent.dimensionCaption }}</p>
+              <p v-if="detailContent.dimensionCaption" class="detail-dimension-panel__caption">{{ detailContent.dimensionCaption }}</p>
             </div>
 
             <div class="detail-measure-list">
@@ -682,6 +684,7 @@ function handleDialogProductSelect(productId) {
         <section v-if="relatedProducts.length" class="detail-related detail-section--lined">
           <div class="detail-section__head">
             <h2>다른 사람들이 함께 본 상품</h2>
+            <p>현재 {{ currentProduct.categoryLabel }} 카탈로그 안에서 자연스럽게 이어질 수 있는 상품을 먼저 연결했습니다.</p>
           </div>
 
           <div class="detail-related__grid">

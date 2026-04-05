@@ -224,8 +224,17 @@ function handleKeydown(event, slide) {
   border-radius: 999px;
   background: rgba(17, 24, 39, 0.42);
   color: #ffffff;
+  opacity: 0;
+  pointer-events: none;
   transform: translateY(-50%);
+  transition: opacity 180ms ease, background-color 180ms ease, border-color 180ms ease;
   cursor: pointer;
+}
+
+.hs-hero:hover .hs-hero__nav,
+.hs-hero:focus-within .hs-hero__nav {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .hs-hero__nav svg {

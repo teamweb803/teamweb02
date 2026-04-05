@@ -1,10 +1,4 @@
 import httpRequester from '../libs/httpRequester';
-import { orderReviewItems, qnaThreads } from '../data/adminDashboardSeed';
-import { adminMemberSeed, adminOrderSeed } from '../data/adminManagementSeed';
-import { adminNoticeSeed } from '../data/adminNoticeSeed';
-import {
-  getFallbackCatalogCategories,
-} from './catalogFallbackService';
 
 export function getAdminProductCount() {
   return httpRequester.get('/admin/product/count');
@@ -167,26 +161,3 @@ export function deleteAdminNotice(noticeId) {
   return httpRequester.delete(`/admin/notice/${noticeId}`);
 }
 
-export function getFallbackAdminCategories() {
-  return getFallbackCatalogCategories();
-}
-
-export function getFallbackAdminReviewItems() {
-  return orderReviewItems;
-}
-
-export function getFallbackAdminQnaThreads() {
-  return qnaThreads;
-}
-
-export function getFallbackAdminMembers() {
-  return adminMemberSeed;
-}
-
-export function getFallbackAdminOrders() {
-  return adminOrderSeed;
-}
-
-export function getFallbackAdminNotices() {
-  return adminNoticeSeed;
-}

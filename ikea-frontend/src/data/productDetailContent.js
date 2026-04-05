@@ -1,4 +1,4 @@
-import { catalogProducts, getProductDetailSeed, productDetailContentMap } from './catalog';
+import { getProductDetailSeed } from './catalog';
 import {
   buildProductOptionSummary,
   buildProductQuickFacts,
@@ -18,6 +18,7 @@ function createMeasurementMap(measurements = []) {
     '팔걸이 높이': 'armHeight',
     '팔걸이 너비': 'armWidth',
     '가구 밑 자유공간': 'clearance',
+    '가구 밑 여유공간': 'clearance',
     '책상 하중': 'shelfLoad',
     '최대 하중': 'maxLoad',
   };
@@ -60,7 +61,7 @@ function mergeQuickFacts(primaryFacts = [], secondaryFacts = []) {
   return merged;
 }
 
-function createFallbackDetail(product) {
+function createFallbackDetail(product = {}) {
   const productLabel = product.label ?? product.categoryLabel ?? '대표 상품';
   const optionSummary = buildProductOptionSummary(product) || '기본 옵션';
   const galleryImages = Array.from(
@@ -71,97 +72,47 @@ function createFallbackDetail(product) {
     galleryImages,
     dimensionImage: null,
     useDimensionImage: false,
-    heroHook: `${productLabel}의 구성과 특징을 확인해 보세요.`,
+    heroHook: `${productLabel} 기준으로 빠르게 확인할 수 있는 최소 상세 정보입니다.`,
     description: [
-      `${product.name}의 디자인과 분위기를 살펴보세요.`,
-      `${optionSummary} 구성을 기준으로 상품 정보를 확인할 수 있습니다.`,
+      `${product.name} 상품의 핵심 정보만 먼저 확인할 수 있도록 정리한 상세 페이지입니다.`,
+      `${optionSummary} 구성을 기준으로 연결되어 있으며, 실데이터 연동 시 추가 설명이 보강될 예정입니다.`,
     ],
     highlights: [
-      `${productLabel} 기준 구성`,
-      `선택 옵션: ${optionSummary}`,
-      '구매 전 확인하면 좋은 포인트',
+      `${productLabel} 기준 대표 상품`,
+      `현재 선택 옵션: ${optionSummary}`,
+      'API 연결을 위한 최소 상세 데이터 구성',
     ],
     quickFacts: buildProductQuickFacts(product),
     measurements: [],
     dimensions: {},
-    dimensionCaption: '주요 치수를 함께 확인해 보세요.',
-    reviewIntro: '고객 리뷰를 확인해 보세요.',
-    reviewHighlights: [
-      {
-        title: '착석감이 편안해요',
-        body: `${product.name}의 사용감과 분위기를 확인할 수 있는 후기입니다.`,
-        rating: product.rating ?? null,
-        meta: '대표 후기',
-      },
-      {
-        title: '공간에 잘 어울려요',
-        body: `${optionSummary} 구성을 기준으로 공간 활용에 대한 후기를 확인할 수 있습니다.`,
-        rating: product.rating ?? null,
-        meta: '배치 후기',
-      },
-      {
-        title: '마감이 깔끔해요',
-        body: '색감과 소재, 전체적인 완성도에 대한 후기를 살펴볼 수 있습니다.',
-        rating: product.rating ?? null,
-        meta: '상품 후기',
-      },
-    ],
+    dimensionCaption: '세부 치수 데이터는 후속 API 또는 추가 수집 단계에서 연결 예정입니다.',
+    reviewIntro: null,
+    reviewHighlights: [],
   };
-}
-
-function findRepresentativeDetailSeed(product = {}) {
-  const currentId = String(product?.id ?? '').trim();
-  const currentCategorySlug = String(product?.categorySlug ?? '').trim();
-  const currentTypeSlug = String(product?.typeSlug ?? '').trim();
-
-  const candidate = catalogProducts.find((item) => {
-    const candidateId = String(item?.id ?? '').trim();
-
-    if (!candidateId || candidateId === currentId || !productDetailContentMap[candidateId]) {
-      return false;
-    }
-
-    if (currentCategorySlug && String(item?.categorySlug ?? '').trim() !== currentCategorySlug) {
-      return false;
-    }
-
-    if (currentTypeSlug && String(item?.typeSlug ?? '').trim() === currentTypeSlug) {
-      return true;
-    }
-
-    return Boolean(currentCategorySlug);
-  });
-
-  if (candidate) {
-    return productDetailContentMap[String(candidate.id)] ?? null;
-  }
-
-  return Object.values(productDetailContentMap)[0] ?? null;
 }
 
 export function getProductDetailContent(product) {
   const fallback = createFallbackDetail(product);
-  const override = getProductDetailSeed(product?.id);
-  const representativeSeed = !override ? findRepresentativeDetailSeed(product) : null;
+  const override = product?.detailDraft ?? getProductDetailSeed(product?.id);
 
-  if (!override && !representativeSeed) {
+  if (!override) {
     return fallback;
   }
 
-  const seed = override ?? representativeSeed;
-  const measurements = seed?.measurements ?? fallback.measurements;
+  const measurements = override.measurements ?? fallback.measurements;
 
   return {
     ...fallback,
-    ...seed,
-    galleryImages: override?.galleryImages ?? fallback.galleryImages,
-    dimensionImage: override?.dimensionImage ?? fallback.dimensionImage,
-    useDimensionImage: override?.useDimensionImage ?? false,
-    description: seed?.description ?? fallback.description,
-    highlights: seed?.highlights ?? fallback.highlights,
-    quickFacts: mergeQuickFacts(seed?.quickFacts ?? [], fallback.quickFacts),
+    ...override,
+    galleryImages: override.galleryImages ?? fallback.galleryImages,
+    dimensionImage: override.dimensionImage ?? fallback.dimensionImage,
+    useDimensionImage: override.useDimensionImage ?? false,
+    description: override.description ?? fallback.description,
+    highlights: override.highlights ?? fallback.highlights,
+    quickFacts: mergeQuickFacts(override.quickFacts ?? [], fallback.quickFacts),
     measurements,
     dimensions: createMeasurementMap(measurements),
-    reviewHighlights: seed?.reviewHighlights ?? fallback.reviewHighlights,
+    reviewIntro: null,
+    reviewHighlights: [],
   };
 }

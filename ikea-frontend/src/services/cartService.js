@@ -1,6 +1,5 @@
 import httpRequester from '../libs/httpRequester';
 import {
-  createCommerceCartSeed,
   createCommerceRecommendations,
 } from '../data/commerceSeed';
 import { useAccountStore } from '../stores/account';
@@ -131,7 +130,7 @@ export function clearMemberCart() {
 }
 
 export function getFallbackCartItems() {
-  return createCommerceCartSeed();
+  return [];
 }
 
 export function getFallbackRecommendations(excludeIds = []) {

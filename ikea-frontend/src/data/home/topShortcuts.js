@@ -11,7 +11,6 @@ const topShortcutImageMap = {
   dining: diningShortcutImage,
   desk: deskShortcutImage,
   'kitchen-furniture': kitchenFurnitureShortcutImage,
-  kitchenware: 'https://www.ikea.com/kr/ko/images/products/ikea-365-pot-with-lid-stainless-steel__1006171_pe825756_s5.jpg',
   plant: plantShortcutImage,
 };
 
@@ -66,10 +65,10 @@ export const topShortcutBoxes = [
   {
     id: 'shortcut-kitchenware',
     type: 'category',
-    image: topShortcutImageMap.kitchenware,
+    image: 'https://www.ikea.com/kr/ko/images/products/ikea-365-pot-with-lid-stainless-steel__1006171_pe825756_s5.jpg',
     imageFit: 'contain',
     imagePosition: 'center center',
-    imageScale: 1.22,
+    imageScale: 1.18,
     label: '주방용품',
     categorySlug: 'kitchenware',
   },

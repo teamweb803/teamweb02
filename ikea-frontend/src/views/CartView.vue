@@ -283,6 +283,7 @@ function continueGuestCheckout() {
         </section>
 
         <CartRecommendationsSection
+          v-if="recommendProducts.length"
           :format-price="formatPrice"
           :items="recommendProducts"
         />

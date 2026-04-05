@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
           </div>
 
           <article
-            v-for="card in footerSupportCards"
+            v-for="card in footerSupportCards ?? []"
             :key="card.title"
             class="hs-support-inline"
           >
@@ -135,7 +135,7 @@ onBeforeUnmount(() => {
 
       <section class="hs-footer__company">
         <div class="hs-footer__company-lines">
-          <p v-for="line in footerInfoLines" :key="line">{{ line }}</p>
+          <p v-for="line in footerInfoLines ?? []" :key="line">{{ line }}</p>
         </div>
       </section>
 

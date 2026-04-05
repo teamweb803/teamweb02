@@ -9,7 +9,7 @@ import CommonStatePanel from '../components/common/CommonStatePanel.vue';
 import SiteChrome from '../components/layout/SiteChrome.vue';
 import {
   completeCheckout,
-  getCheckoutSeedItems,
+  getCheckoutItemsForFlow,
   startExternalCheckout,
   useCommerceCart,
 } from '../composables/useCommerceCart';
@@ -86,7 +86,7 @@ async function syncOrderItems() {
     // Keep the current checkout snapshot when the cart sync is temporarily unavailable.
   }
 
-  orderItems.value = getCheckoutSeedItems(
+  orderItems.value = getCheckoutItemsForFlow(
     String(route.query.mode ?? 'all'),
     String(route.query.itemId ?? ''),
   );

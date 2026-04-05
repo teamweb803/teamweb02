@@ -1,4 +1,4 @@
-import {
+﻿import {
   backendCategories as fallbackCategories,
   catalogProducts as fallbackProducts,
 } from '../data/catalog';
@@ -46,16 +46,17 @@ function normalizeCatalogCategory(category = {}) {
     category.backendCategoryId ?? category.id ?? fallbackCategory?.backendCategoryId ?? '',
   ).trim();
   const label = category.label ?? category.categoryName ?? category.name ?? fallbackCategory?.label ?? '';
-  const cards = Array.isArray(category.cards) ? category.cards : fallbackCategory?.cards ?? [];
+  const cards = Array.isArray(category.cards) && category.cards.length
+    ? category.cards
+    : cloneArray(fallbackCategory?.cards ?? []);
 
   return {
-    ...fallbackCategory,
     ...category,
-    id: String(fallbackCategory?.id ?? category.id ?? backendCategoryId),
+    id: String(category.id ?? fallbackCategory?.id ?? backendCategoryId),
     backendCategoryId,
     slug: category.slug ?? fallbackCategory?.slug ?? backendCategoryId.toLowerCase(),
     label,
-    name: category.name ?? fallbackCategory?.name ?? label,
+    name: category.name ?? category.categoryName ?? fallbackCategory?.name ?? label,
     cards: cloneArray(cards),
   };
 }
@@ -100,13 +101,11 @@ function resolveProductCategory(product = {}, fallbackProduct = null) {
 export function normalizeCatalogProduct(product = {}) {
   const fallbackProduct = resolveFallbackProduct(product);
   const resolvedCategory = resolveProductCategory(product, fallbackProduct);
-  const price = Number(product.price ?? fallbackProduct?.price ?? 0);
-  const originalPrice = product.originalPrice
+  const price = Number(product.price ?? 0);
+  const originalPrice = product.originalPrice != null
     ? Number(product.originalPrice)
-    : fallbackProduct?.originalPrice
-      ? Number(fallbackProduct.originalPrice)
-      : null;
-  const providedDiscountRate = Number(product.discountRate ?? fallbackProduct?.discountRate ?? 0);
+    : null;
+  const providedDiscountRate = Number(product.discountRate ?? 0);
   const calculatedDiscountRate = (
     originalPrice && originalPrice > price
       ? Math.round(((originalPrice - price) / originalPrice) * 100)
@@ -114,25 +113,25 @@ export function normalizeCatalogProduct(product = {}) {
   );
   const id = String(product.id ?? product.productId ?? fallbackProduct?.id ?? fallbackProduct?.productId ?? '');
   const productId = String(product.productId ?? product.id ?? fallbackProduct?.productId ?? fallbackProduct?.id ?? '');
-  const image = product.image ?? product.imgPath ?? fallbackProduct?.image ?? fallbackProduct?.imgPath ?? '';
+  const resolvedImage = product.image ?? product.imgPath ?? '';
   const categoryLabel = product.categoryLabel
     ?? product.categoryName
-    ?? fallbackProduct?.categoryLabel
     ?? resolvedCategory?.label
     ?? '';
   const categorySlug = product.categorySlug ?? fallbackProduct?.categorySlug ?? resolvedCategory?.slug ?? '';
+  const reviews = Number(product.reviews ?? product.reviewCount ?? 0);
+  const rating = Number(product.rating ?? product.reviewAverage ?? 0);
 
   return {
-    ...fallbackProduct,
     ...product,
     id,
     productId,
     price,
     originalPrice,
     discountRate: providedDiscountRate > 0 ? providedDiscountRate : calculatedDiscountRate,
-    image,
-    imgPath: product.imgPath ?? product.image ?? fallbackProduct?.imgPath ?? fallbackProduct?.image ?? '',
-    imageAlt: product.imageAlt ?? fallbackProduct?.imageAlt ?? product.name ?? fallbackProduct?.name ?? '',
+    image: resolvedImage,
+    imgPath: product.imgPath ?? product.image ?? '',
+    imageAlt: product.imageAlt ?? product.name ?? fallbackProduct?.name ?? '',
     altImage: product.altImage ?? fallbackProduct?.altImage ?? '',
     categorySlug,
     categoryLabel,
@@ -140,14 +139,14 @@ export function normalizeCatalogProduct(product = {}) {
     backendCategoryId: String(
       product.backendCategoryId ?? product.categoryId ?? resolvedCategory?.backendCategoryId ?? '',
     ).trim(),
-    label: product.label ?? fallbackProduct?.label ?? categoryLabel,
-    badge: product.badge ?? fallbackProduct?.badge ?? '',
-    brand: product.brand ?? fallbackProduct?.brand ?? 'HOMiO',
-    description: product.description ?? fallbackProduct?.description ?? '',
-    typeSlug: product.typeSlug ?? fallbackProduct?.typeSlug ?? 'all',
-    features: Array.isArray(product.features) ? product.features : fallbackProduct?.features ?? [],
-    reviews: Number(product.reviews ?? fallbackProduct?.reviews ?? 0),
-    rating: Number(product.rating ?? fallbackProduct?.rating ?? 0),
+    label: product.label ?? categoryLabel,
+    badge: product.badge ?? '',
+    brand: product.brand ?? 'HOMiO',
+    description: product.description ?? '',
+    typeSlug: product.typeSlug ?? 'all',
+    features: Array.isArray(product.features) ? product.features : [],
+    reviews,
+    rating,
   };
 }
 
@@ -193,3 +192,4 @@ export function buildCategoryRouteMap(categories = []) {
     ]),
   );
 }
+
