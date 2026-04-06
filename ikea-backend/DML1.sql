@@ -80,3 +80,8 @@ CREATE INDEX IF NOT EXISTS idx_reviews_order_id
 
 CREATE INDEX IF NOT EXISTS idx_reviews_product_id
     ON reviews(product_id);
+
+    	-- 상수로 정의된 카테고리 데이터 삽입
+INSERT INTO category (name) VALUES 
+('침대/매트리스'), ('소파'), ('식탁/테이블/의자'), ('책상'), 
+('주방가구'), ('주방용품'), ('화분/식물');

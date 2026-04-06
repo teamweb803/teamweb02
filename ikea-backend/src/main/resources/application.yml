@@ -33,3 +33,7 @@ app:
 
 file:
   upload-dir: C:/uploads/products/
+
+logging:
+  level:
+    org.springframework.security: DEBUG

@@ -37,30 +37,24 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        // 공개 허용
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/member/join").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/member/login").permitAll()
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/api/member/join",
-                                "/api/member/login",
                                 "/api/product/**",
+                                "/api/product_stocks/**",
                                 "/api/category/**",
                                 "/api/notice/**"
                         ).permitAll()
-
-                        // 비회원 장바구니 / 비회원 주문 허용
                         .requestMatchers("/api/cart/guest/**").permitAll()
                         .requestMatchers("/api/order/guest/**").permitAll()
-
-                        // 관리자 전용
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // 로그인 필요
                         .requestMatchers("/api/qna/**").authenticated()
                         .requestMatchers("/api/review/**").authenticated()
                         .requestMatchers("/api/cart/**").authenticated()
                         .requestMatchers("/api/order/**").authenticated()
                         .requestMatchers("/api/payment/**").authenticated()
-
                         .anyRequest().authenticated()
                 )
 
@@ -74,7 +68,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        List<String> allowedOrigins = List.of(allowedOriginsRaw.split(","));
+        List<String> allowedOrigins = java.util.Arrays.stream(allowedOriginsRaw.split(","))
+                .map(String::trim)
+                .toList();
+
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
