@@ -9,6 +9,11 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
 
 payment:
   toss:
@@ -20,8 +25,11 @@ payment:
     base-url: https://kapi.kakao.com/v1/payment
 
 jwt:
-  secret: ${JWT_SECRET:ikea-shopping-mall-secret-key-2026-spring-boot}
+  secret: ikea2026SpringBootJwtSecretKeySecureABC
 
 app:
   cors:
     allowed-origins: http://localhost:5173
+
+file:
+  upload-dir: C:/uploads/products/

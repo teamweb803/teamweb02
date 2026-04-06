@@ -10,6 +10,7 @@ import com.example.ikea.repository.CategoryRepository;
 import com.example.ikea.repository.ProductRepository;
 import com.example.ikea.repository.ProductStockRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -163,7 +164,10 @@ public class ProductService {
 
     // ====================이미지 처리 ===================
 
-    //  이미지 저장
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
+    // 이미지 저장
     private String saveImage(List<MultipartFile> imgFile) throws IOException {
 
         List<String> imgPaths = new ArrayList<>();
@@ -172,7 +176,6 @@ public class ProductService {
             throw new IllegalArgumentException("최소 1개의 이미지가 필요합니다.");
         }
 
-        String uploadDir = "src/main/resources/static/uploads/products/";
         File dir = new File(uploadDir);
         if (!dir.exists() && !dir.mkdirs()) {
             throw new IOException("업로드 폴더 생성에 실패했습니다.");
@@ -198,17 +201,16 @@ public class ProductService {
         return String.join(",", imgPaths);
     }
 
-    //이미지 삭제
+    // 이미지 삭제
     private void deleteImage(String imgPath) {
         if (imgPath == null || imgPath.isBlank()) return;
 
         String[] paths = imgPath.split(",");
 
         for (String path : paths) {
-            String filePath = "src/main/resources/static" + path.trim();
+            String filePath = uploadDir + new File(path.trim()).getName();
             File file = new File(filePath);
             if (file.exists()) file.delete();
         }
     }
-
 }

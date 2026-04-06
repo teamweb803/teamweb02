@@ -8,7 +8,7 @@ spring:
       ddl-auto: update
 
 jwt:
-  secret: 여기에_로컬_시크릿
+  secret: 여기에_로컬_시크릿 sdfsdfsdfawebsdfbdbzdfbrdf
 
 payment:
   toss:
