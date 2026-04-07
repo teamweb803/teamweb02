@@ -4,8 +4,6 @@ import {
   buildProductCategoryPath,
   buildProductDetailPath,
   DEFAULT_CATEGORY_ID,
-  DEFAULT_NOTICE_ID,
-  DEFAULT_PRODUCT_ID,
   ROUTE_PATHS,
 } from '../constants/routes';
 import { useAccountStore } from '../stores/account';
@@ -26,6 +24,7 @@ const CartView = () => import('../views/CartView.vue');
 const CheckoutView = () => import('../views/CheckoutView.vue');
 const OrderCompleteView = () => import('../views/OrderCompleteView.vue');
 const KakaoPaymentView = () => import('../views/KakaoPaymentView.vue');
+const TossPaymentView = () => import('../views/TossPaymentView.vue');
 const CustomerServiceView = () => import('../views/CustomerServiceView.vue');
 const CustomerServiceQnaWriteView = () => import('../views/CustomerServiceQnaWriteView.vue');
 const CustomerServiceNoticeDetailView = () => import('../views/CustomerServiceNoticeDetailView.vue');
@@ -181,6 +180,18 @@ const router = createRouter({
       props: { status: 'fail' },
     },
     {
+      path: ROUTE_PATHS.paymentTossSuccess,
+      name: 'payment-toss-success',
+      component: TossPaymentView,
+      props: { status: 'success' },
+    },
+    {
+      path: ROUTE_PATHS.paymentTossFail,
+      name: 'payment-toss-fail',
+      component: TossPaymentView,
+      props: { status: 'fail' },
+    },
+    {
       path: `${ROUTE_PATHS.customerServiceNotice}/:noticeId`,
       name: 'customer-service-notice-detail',
       component: CustomerServiceNoticeDetailView,
@@ -196,9 +207,16 @@ const router = createRouter({
       component: CustomerServiceView,
     },
     {
+      path: ROUTE_PATHS.customerServiceQnaLookup,
+      redirect: ROUTE_PATHS.customerServiceQna,
+    },
+    {
       path: ROUTE_PATHS.customerServiceQnaWrite,
       name: 'customer-service-qna-write',
       component: CustomerServiceQnaWriteView,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: ROUTE_PATHS.customerServiceQna,
@@ -239,7 +257,6 @@ const router = createRouter({
       component: MyPageView,
       meta: {
         requiresAuth: true,
-        allowGuestPreview: true,
       },
     },
     {
@@ -301,7 +318,7 @@ const router = createRouter({
     },
     {
       path: '/goods/:productId',
-      redirect: (to) => buildProductDetailPath(to.params.productId ?? DEFAULT_PRODUCT_ID),
+      redirect: (to) => buildProductDetailPath(to.params.productId),
     },
     {
       path: '/customer-service',
@@ -313,7 +330,7 @@ const router = createRouter({
     },
     {
       path: '/cs/notice/:noticeId',
-      redirect: (to) => buildCustomerServiceNoticeDetailPath(to.params.noticeId ?? DEFAULT_NOTICE_ID),
+      redirect: (to) => buildCustomerServiceNoticeDetailPath(to.params.noticeId),
     },
     {
       path: '/:pathMatch(.*)*',

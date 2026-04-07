@@ -18,6 +18,7 @@ function createMeasurementMap(measurements = []) {
     '팔걸이 높이': 'armHeight',
     '팔걸이 너비': 'armWidth',
     '가구 밑 자유공간': 'clearance',
+    '가구 밑 여유공간': 'clearance',
     '책상 하중': 'shelfLoad',
     '최대 하중': 'maxLoad',
   };
@@ -60,7 +61,7 @@ function mergeQuickFacts(primaryFacts = [], secondaryFacts = []) {
   return merged;
 }
 
-function createFallbackDetail(product) {
+function createFallbackDetail(product = {}) {
   const productLabel = product.label ?? product.categoryLabel ?? '대표 상품';
   const optionSummary = buildProductOptionSummary(product) || '기본 옵션';
   const galleryImages = Array.from(
@@ -85,21 +86,14 @@ function createFallbackDetail(product) {
     measurements: [],
     dimensions: {},
     dimensionCaption: '세부 치수 데이터는 후속 API 또는 추가 수집 단계에서 연결 예정입니다.',
-    reviewIntro: '리뷰 데이터는 현재 상품별 요약 구조만 먼저 준비된 상태입니다.',
-    reviewHighlights: [
-      {
-        title: '기본 상세 구조 준비 완료',
-        body: '모든 상품이 동일한 상세 페이지 구조를 사용하며, 설명과 리뷰는 후속 데이터로 확장될 수 있습니다.',
-        rating: product.rating ?? null,
-        meta: '테스트 안내',
-      },
-    ],
+    reviewIntro: null,
+    reviewHighlights: [],
   };
 }
 
 export function getProductDetailContent(product) {
   const fallback = createFallbackDetail(product);
-  const override = getProductDetailSeed(product?.id);
+  const override = product?.detailDraft ?? getProductDetailSeed(product?.id);
 
   if (!override) {
     return fallback;
@@ -118,6 +112,7 @@ export function getProductDetailContent(product) {
     quickFacts: mergeQuickFacts(override.quickFacts ?? [], fallback.quickFacts),
     measurements,
     dimensions: createMeasurementMap(measurements),
-    reviewHighlights: override.reviewHighlights ?? fallback.reviewHighlights,
+    reviewIntro: null,
+    reviewHighlights: [],
   };
 }

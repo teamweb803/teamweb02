@@ -106,8 +106,17 @@ public class ProductService {
         Product product = Product.builder()
                 .name(dto.getName())
                 .price(dto.getPrice())
+                .originalPrice(dto.getOriginalPrice())
                 .imgPath(imgPath)
                 .category(category)
+                .brand(dto.getBrand())
+                .badge(dto.getBadge())
+                .label(dto.getLabel())
+                .typeSlug(dto.getTypeSlug())
+                .attributes(dto.getAttributes())
+                .detailContent(dto.getDetailContent())
+                .galleryImages(dto.getGalleryImages())
+                .dimensionImagePath(dto.getDimensionImagePath())
                 .build();
 
         Product savedProduct = productRepository.save(product);
@@ -138,7 +147,17 @@ public class ProductService {
 
         product.setName(dto.getName());
         product.setPrice(dto.getPrice());
+        product.setOriginalPrice(dto.getOriginalPrice());
         product.setCategory(category);
+        product.setBrand(dto.getBrand());
+        product.setBadge(dto.getBadge());
+        product.setLabel(dto.getLabel());
+        product.setTypeSlug(dto.getTypeSlug());
+        product.setAttributes(dto.getAttributes());
+        product.setDetailContent(dto.getDetailContent());
+        product.setGalleryImages(dto.getGalleryImages());
+        product.setDimensionImagePath(dto.getDimensionImagePath());
+
         return new ProductResponseDto(product);
     }
 

@@ -3,17 +3,16 @@ import { computed, shallowRef, watch } from 'vue';
 const PAYMENT_METHODS = [
   { id: 'kakaopay', label: '카카오페이' },
   { id: 'tosspay', label: '토스페이' },
-  { id: 'card', label: '신용카드' },
   { id: 'bank', label: '무통장입금' },
 ];
 
-export function useCheckoutOrderState(route, getCheckoutSeedItems) {
+export function useCheckoutOrderState(route, getCheckoutItemsForFlow) {
   const orderItems = shallowRef([]);
   const pointAmount = shallowRef('0');
   const paymentMethod = shallowRef('kakaopay');
 
   function syncOrderItems() {
-    orderItems.value = getCheckoutSeedItems(
+    orderItems.value = getCheckoutItemsForFlow(
       String(route.query.mode ?? 'all'),
       String(route.query.itemId ?? ''),
     );

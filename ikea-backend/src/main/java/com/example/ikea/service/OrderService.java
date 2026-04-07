@@ -1,6 +1,7 @@
 package com.example.ikea.service;
 
 import com.example.ikea.domain.*;
+import com.example.ikea.dto.GuestOrderCreateResponseDto;
 import com.example.ikea.dto.GuestOrderRequestDto;
 import com.example.ikea.dto.MemberOrderRequestDto;
 import com.example.ikea.dto.OrderResponseDto;
@@ -155,7 +156,7 @@ public class OrderService {
     // ====================== 비회원 전용 =================
 
     @Transactional
-    public Long createGuestOrder(GuestOrderRequestDto dto) {
+    public GuestOrderCreateResponseDto createGuestOrder(GuestOrderRequestDto dto) {
         Cart cart = cartRepository.findByGuestCartKey(dto.getGuestCartKey())
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 비회원 장바구니입니다."));
 
@@ -199,7 +200,11 @@ public class OrderService {
 
         cartItemRepository.deleteByCart_CartId(cart.getCartId());
 
-        return order.getOrderId();
+        return new GuestOrderCreateResponseDto(
+                order.getOrderId(),
+                order.getOrderNo(),
+                order.getOrderStatus()
+        );
     }
 
     private void validateOrderStatusChange(OrderStatus current, OrderStatus next) {

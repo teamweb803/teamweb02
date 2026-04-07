@@ -1,5 +1,6 @@
 package com.example.ikea.controller;
 
+import com.example.ikea.dto.GuestOrderCreateResponseDto;
 import com.example.ikea.dto.GuestOrderRequestDto;
 import com.example.ikea.dto.MemberOrderRequestDto;
 import com.example.ikea.dto.OrderResponseDto;
@@ -50,7 +51,7 @@ public class OrderController {
 
     // 주문 생성(비회원 전용)
     @PostMapping("/guest")
-    public ResponseEntity<Long> createGuestOrder(
+    public ResponseEntity<GuestOrderCreateResponseDto> createGuestOrder(
             @RequestBody @Valid GuestOrderRequestDto dto) {
         return ResponseEntity.ok(orderService.createGuestOrder(dto));
     }

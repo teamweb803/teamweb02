@@ -1,4 +1,5 @@
 import httpRequester from '../libs/httpRequester';
+import { COMMERCE_SESSION_KEYS } from '../constants/commerce';
 
 function unwrapArrayPayload(payload) {
   const source = payload?.data ?? payload;
@@ -28,6 +29,26 @@ function unwrapArrayPayload(payload) {
 
 function normalizeDigits(value) {
   return String(value ?? '').replace(/\D+/g, '');
+}
+
+function normalizeText(value) {
+  return String(value ?? '').trim();
+}
+
+function normalizeEmail(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function normalizePhoneNumber(value) {
+  return normalizeDigits(value).slice(0, 11);
+}
+
+function normalizeOrderNumber(value) {
+  return normalizeText(value).toUpperCase();
+}
+
+function canUseStorage() {
+  return typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';
 }
 
 function formatDisplayDate(value) {
@@ -67,16 +88,113 @@ function normalizeQnaStatus(source = {}) {
     return String(source.answerStatus).trim();
   }
 
-  return source.answered || source.answerContent ? '답변완료' : '접수완료';
+  return source.answered || source.answerContent ? '답변 완료' : '답변 대기';
 }
 
-function normalizeQnaRow(source = {}) {
+function buildNormalizedQnaRow(question = {}, answer = null, fallback = {}) {
+  const normalizedAnswerContent = normalizeText(
+    answer?.content
+    ?? answer?.answer
+    ?? fallback.answerContent
+    ?? fallback.answer
+    ?? '',
+  );
+
   return {
-    id: String(source.qnaId ?? source.id ?? source.questionId ?? '-'),
-    title: String(source.title ?? source.questionTitle ?? '문의 제목').trim(),
-    status: normalizeQnaStatus(source),
-    date: formatDisplayDate(source.createdAt ?? source.regDate ?? source.date),
+    id: String(question.qnaId ?? question.id ?? fallback.qnaId ?? fallback.id ?? ''),
+    title: normalizeText(question.title ?? fallback.title ?? '문의 제목'),
+    writer: normalizeText(
+      question.writer
+      ?? question.author
+      ?? question.memberName
+      ?? fallback.writer
+      ?? fallback.author
+      ?? '',
+    ),
+    email: normalizeEmail(
+      question.email
+      ?? question.emailAddress
+      ?? question.contactEmail
+      ?? fallback.email
+      ?? fallback.emailAddress
+      ?? '',
+    ),
+    phoneNumber: normalizePhoneNumber(
+      question.phoneNumber
+      ?? question.phone
+      ?? question.tel
+      ?? fallback.phoneNumber
+      ?? fallback.phone
+      ?? '',
+    ),
+    status: normalizeQnaStatus({
+      ...fallback,
+      ...question,
+      answerContent: normalizedAnswerContent,
+    }),
+    date: formatDisplayDate(
+      question.createdAt
+      ?? question.regDate
+      ?? question.date
+      ?? fallback.createdAt
+      ?? fallback.regDate
+      ?? fallback.date,
+    ),
+    questionContent: normalizeText(
+      question.content
+      ?? question.question
+      ?? fallback.content
+      ?? fallback.question
+      ?? '',
+    ),
+    answerContent: normalizedAnswerContent,
+    answerDate: formatDisplayDate(
+      answer?.createdAt
+      ?? answer?.regDate
+      ?? fallback.answerCreatedAt
+      ?? fallback.answeredAt,
+    ),
   };
+}
+
+function normalizeDirectQnaRows(items = []) {
+  return items.map((item) => {
+    const question = item.question && typeof item.question === 'object'
+      ? item.question
+      : item;
+    const answer = item.answer && typeof item.answer === 'object'
+      ? item.answer
+      : null;
+
+    return buildNormalizedQnaRow(question, answer, item);
+  });
+}
+
+function normalizeGroupedQnaRows(items = []) {
+  const questions = items.filter((item) => Number(item.level ?? 0) === 0);
+  const answersByParent = new Map(
+    items
+      .filter((item) => Number(item.level ?? 0) === 1)
+      .map((item) => [String(item.parentId ?? ''), item]),
+  );
+
+  return questions.map((question) => (
+    buildNormalizedQnaRow(question, answersByParent.get(String(question.qnaId ?? question.id)), question)
+  ));
+}
+
+function normalizeCustomerSupportQnaRows(payload) {
+  const items = unwrapArrayPayload(payload);
+
+  if (!items.length) {
+    return [];
+  }
+
+  const normalizedRows = items.some((item) => Object.prototype.hasOwnProperty.call(item ?? {}, 'level'))
+    ? normalizeGroupedQnaRows(items)
+    : normalizeDirectQnaRows(items);
+
+  return normalizedRows.sort((left, right) => String(right.date).localeCompare(String(left.date)));
 }
 
 function normalizeGuestOrderItem(source = {}) {
@@ -88,52 +206,81 @@ function normalizeGuestOrderItem(source = {}) {
 
 function normalizeGuestOrder(source = {}) {
   return {
-    orderNumber: String(source.orderNo ?? source.orderNumber ?? source.id ?? '-').trim(),
+    orderNumber: normalizeOrderNumber(source.orderNo ?? source.orderNumber ?? source.id ?? '-'),
     orderedAt: formatDisplayDate(source.orderedAt ?? source.createdAt ?? source.orderDate),
-    buyerName: String(source.buyerName ?? source.receiverName ?? source.ordererName ?? '').trim(),
+    buyerName: normalizeText(source.buyerName ?? source.receiverName ?? source.ordererName),
     phoneNumber: normalizeDigits(source.phoneNumber ?? source.receiverPhone ?? source.ordererPhone),
-    statusLabel: String(source.statusLabel ?? source.orderStatusLabel ?? source.status ?? '-').trim(),
-    paymentMethodLabel: String(source.paymentMethodLabel ?? source.payment ?? '-').trim(),
+    statusLabel: normalizeText(source.statusLabel ?? source.orderStatusLabel ?? source.status ?? '-'),
+    paymentMethodLabel: normalizeText(source.paymentMethodLabel ?? source.payment ?? '-'),
     finalTotal: Number(source.finalPrice ?? source.totalPrice ?? source.amount ?? 0) || 0,
     orderItems: unwrapArrayPayload(source.orderItems).map((item) => normalizeGuestOrderItem(item)),
   };
 }
 
-function createUnsupportedGuestLookupError() {
-  const error = new Error('Guest order lookup is not available from the backend yet.');
-  error.status = 404;
-  return error;
+function readStoredGuestOrderHistory() {
+  if (!canUseStorage()) {
+    return [];
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(COMMERCE_SESSION_KEYS.guestOrderHistory);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
-export async function getCustomerSupportQnaRows() {
-  const response = await httpRequester.get('/qna');
-  return unwrapArrayPayload(response).map((item) => normalizeQnaRow(item));
+function lookupGuestOrdersFromSession({ buyerName = '', orderNumber = '', phoneNumber = '' }) {
+  const normalizedBuyerName = normalizeText(buyerName);
+  const normalizedOrderNumber = normalizeOrderNumber(orderNumber);
+  const normalizedPhoneNumber = normalizeDigits(phoneNumber);
+
+  return readStoredGuestOrderHistory()
+    .map((item) => normalizeGuestOrder(item))
+    .filter((order) => {
+      if (normalizedBuyerName && order.buyerName !== normalizedBuyerName) {
+        return false;
+      }
+
+      if (normalizedOrderNumber) {
+        return order.orderNumber === normalizedOrderNumber;
+      }
+
+      if (normalizedPhoneNumber) {
+        return order.phoneNumber === normalizedPhoneNumber;
+      }
+
+      return false;
+    });
+}
+
+export async function getCustomerSupportQnaRows(query = {}, options = {}) {
+  const endpoint = options.includeAll ? '/admin/qna' : '/qna';
+  const response = await httpRequester.get(endpoint, { params: query });
+  return normalizeCustomerSupportQnaRows(response);
 }
 
 export async function createCustomerSupportQna(payload) {
-  return httpRequester.post('/qna', {
-    writer: String(payload.writer ?? '').trim(),
-    title: String(payload.title ?? '').trim(),
-    content: String(payload.content ?? '').trim(),
-  });
+  const requestPayload = {
+    title: normalizeText(payload.title),
+    content: normalizeText(payload.content),
+  };
+
+  return httpRequester.post('/qna', requestPayload);
 }
 
-export async function lookupGuestOrders({ buyerName = '', orderNumber = '', phoneNumber = '' }) {
-  try {
-    const response = await httpRequester.get('/order/guest-lookup', {
-      params: {
-        buyerName: String(buyerName ?? '').trim(),
-        orderNumber: String(orderNumber ?? '').trim(),
-        phoneNumber: normalizeDigits(phoneNumber),
-      },
-    });
+export async function lookupGuestOrders({
+  buyerName = '',
+  name = '',
+  orderNumber = '',
+  phoneNumber = '',
+} = {}) {
+  const normalizedBuyerName = normalizeText(buyerName || name);
 
-    return unwrapArrayPayload(response).map((item) => normalizeGuestOrder(item));
-  } catch (error) {
-    if (error?.status === 404 || error?.status === 405) {
-      throw createUnsupportedGuestLookupError();
-    }
-
-    throw error;
-  }
+  return lookupGuestOrdersFromSession({
+    buyerName: normalizedBuyerName,
+    orderNumber,
+    phoneNumber,
+  });
 }

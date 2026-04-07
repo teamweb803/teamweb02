@@ -7,7 +7,6 @@ import {
   deleteAdminMember,
   getAdminMemberDetail,
   getAdminMembers,
-  getFallbackAdminMembers,
   updateAdminMemberRole,
 } from '../../services/adminService';
 import {
@@ -17,6 +16,8 @@ import {
   normalizeArrayPayload,
   normalizeObjectPayload,
 } from '../../mappers/adminManagementMapper';
+import { useFeedback } from '../../composables/useFeedback';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
 const members = shallowRef([]);
 const selectedMemberId = shallowRef('');
@@ -25,11 +26,32 @@ const roleDraft = shallowRef('USER');
 const searchKeyword = shallowRef('');
 const currentPage = shallowRef(1);
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isDetailLoading = shallowRef(false);
 const isSaving = shallowRef(false);
 const pageSize = 5;
 let latestDetailRequestToken = 0;
+const { requestConfirm } = useFeedback();
+
+const canChangeRole = computed(() => Boolean(
+  selectedMember.value
+  && !selectedMember.value.deleted
+  && !isDetailLoading.value
+  && !isSaving.value
+));
+const canSoftDelete = computed(() => Boolean(
+  selectedMember.value
+  && selectedMember.value.memberRole === 'USER'
+  && !selectedMember.value.deleted
+  && !isSaving.value
+));
+const selectedMemberStatusLabel = computed(() => (
+  selectedMember.value?.deleted ? '탈퇴 회원' : '활성 회원'
+));
+const saveButtonLabel = computed(() => (
+  isSaving.value ? '권한 저장 중...' : '권한 저장'
+));
 
 const filteredMembers = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase();
@@ -92,27 +114,20 @@ function setSelectedMember(member) {
 async function loadMembers(options = {}) {
   const {
     preferredMemberId = selectedMemberId.value,
-    fallbackOnError = true,
   } = options;
   isLoading.value = true;
+  loadErrorMessage.value = '';
   const previousSelectedMemberId = selectedMemberId.value;
-  let didLoadFromServer = true;
 
   try {
     const payload = await getAdminMembers();
-    applyMembers(normalizeArrayPayload(payload, getFallbackAdminMembers()));
-  } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyMembers(getFallbackAdminMembers());
-    }
+    applyMembers(normalizeArrayPayload(payload, []));
+  } catch (error) {
+    applyMembers([]);
+    loadErrorMessage.value = resolveAdminActionErrorMessage(error, '회원 목록을 불러오지 못했습니다.');
+    return false;
   } finally {
     isLoading.value = false;
-  }
-
-  if (!didLoadFromServer && !fallbackOnError) {
-    return false;
   }
 
   syncSelectedMember(preferredMemberId);
@@ -121,7 +136,7 @@ async function loadMembers(options = {}) {
     await loadMemberDetail(selectedMemberId.value);
   }
 
-  return didLoadFromServer;
+  return true;
 }
 
 async function loadMemberDetail(memberId) {
@@ -155,7 +170,7 @@ async function loadMemberDetail(memberId) {
 }
 
 async function submitRoleChange() {
-  if (!selectedMember.value) {
+  if (!selectedMember.value || selectedMember.value.deleted) {
     return;
   }
 
@@ -167,24 +182,32 @@ async function submitRoleChange() {
     await updateAdminMemberRole(memberId, roleDraft.value);
     const didLoadFromServer = await loadMembers({
       preferredMemberId: memberId,
-      fallbackOnError: false,
     });
     statusMessage.value = didLoadFromServer
       ? '회원 권한을 변경했습니다.'
       : '권한은 변경됐지만 목록 재조회는 실패했습니다.';
-  } catch {
-    statusMessage.value = '회원 권한 변경에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '회원 권한 변경에 실패했습니다.');
   }
 
   isSaving.value = false;
 }
 
 async function removeSelectedMember() {
-  if (!selectedMember.value || selectedMember.value.memberRole !== 'USER') {
+  if (!canSoftDelete.value) {
     return;
   }
 
-  const confirmed = window.confirm(`"${selectedMember.value.name}" 회원을 삭제할까요?`);
+  const confirmed = await requestConfirm({
+    title: '회원 탈퇴 처리',
+    message: [
+      `"${selectedMember.value.name}" 회원을 탈퇴 처리할까요?`,
+      '',
+      '진행 중인 주문 또는 취소되지 않은 결제가 있으면 처리되지 않습니다.',
+    ].join('\n'),
+    confirmLabel: '탈퇴 처리',
+  });
+
   if (!confirmed) {
     return;
   }
@@ -195,12 +218,12 @@ async function removeSelectedMember() {
 
   try {
     await deleteAdminMember(memberId);
-    const didLoadFromServer = await loadMembers({ fallbackOnError: false });
+    const didLoadFromServer = await loadMembers();
     statusMessage.value = didLoadFromServer
-      ? '회원을 삭제했습니다.'
-      : '회원은 삭제됐지만 목록 재조회는 실패했습니다.';
-  } catch {
-    statusMessage.value = '회원 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
+      ? '회원 탈퇴 처리를 완료했습니다.'
+      : '회원은 탈퇴 처리됐지만 목록 재조회는 실패했습니다.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '회원 탈퇴 처리에 실패했습니다.');
   }
 
   isSaving.value = false;
@@ -252,10 +275,13 @@ onMounted(loadMembers);
           :key="member.memberId"
           type="button"
           class="admin-members-manager__row"
-          :class="{ 'is-active': selectedMemberId === member.memberId }"
+          :class="{ 'is-active': selectedMemberId === member.memberId, 'is-deleted': member.deleted }"
           @click="setSelectedMember(member)"
         >
-          <strong>{{ member.name }}</strong>
+          <strong>
+            {{ member.name }}
+            <em v-if="member.deleted" class="admin-members-manager__badge">탈퇴</em>
+          </strong>
           <span>{{ member.loginId }}</span>
           <span>{{ member.email }}</span>
           <span>{{ member.memberRole }}</span>
@@ -264,8 +290,9 @@ onMounted(loadMembers);
 
         <CommonStatePanel
           v-if="!pagedMembers.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '회원 목록을 불러오는 중입니다.' : '표시할 회원이 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '회원 목록을 불러오는 중입니다.' : loadErrorMessage ? '회원 목록을 불러오지 못했습니다.' : '표시할 회원이 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>
@@ -297,6 +324,10 @@ onMounted(loadMembers);
             <strong>{{ selectedMember.zoneCode || '-' }}</strong>
           </article>
           <article>
+            <span>회원 상태</span>
+            <strong>{{ selectedMemberStatusLabel }}</strong>
+          </article>
+          <article>
             <span>가입 시각</span>
             <strong>{{ formatAdminDateTime(selectedMember.createdAt) }}</strong>
           </article>
@@ -311,33 +342,39 @@ onMounted(loadMembers);
         <div class="admin-members-manager__role-editor">
           <label>
             <span>권한</span>
-            <select v-model="roleDraft" :disabled="isDetailLoading || isSaving">
+            <select v-model="roleDraft" :disabled="!canChangeRole">
               <option value="USER">USER</option>
               <option value="ADMIN">ADMIN</option>
             </select>
           </label>
 
           <div class="admin-members-manager__actions">
-            <button type="button" class="admin-members-manager__primary" :disabled="isSaving" @click="submitRoleChange">
-              {{ isSaving ? '처리 중..' : '권한 저장' }}
+            <button type="button" class="admin-members-manager__primary" :disabled="!canChangeRole" @click="submitRoleChange">
+              {{ saveButtonLabel }}
             </button>
             <button
               type="button"
               class="admin-members-manager__secondary"
-              :disabled="selectedMember.memberRole !== 'USER' || isSaving"
+              :disabled="!canSoftDelete"
               @click="removeSelectedMember"
             >
-              회원 삭제
+              {{ selectedMember.deleted ? '탈퇴 처리됨' : '회원 탈퇴 처리' }}
             </button>
           </div>
         </div>
+
+        <p v-if="selectedMember.deleted" class="admin-members-manager__notice">
+          탈퇴 처리된 회원은 권한 변경이나 추가 수정이 불가능합니다.
+        </p>
 
         <p v-if="statusMessage" class="admin-members-manager__status">{{ statusMessage }}</p>
       </div>
 
       <CommonStatePanel
         v-else
-        title="회원을 선택하면 상세 정보가 표시됩니다."
+        :tone="loadErrorMessage ? 'error' : 'neutral'"
+        :title="loadErrorMessage ? '회원 상세를 표시할 수 없습니다.' : '회원을 선택하면 상세 정보가 표시됩니다.'"
+        :description="loadErrorMessage"
         align="left"
         compact
       />
@@ -352,11 +389,12 @@ onMounted(loadMembers);
 }
 
 .admin-members-manager__search {
-  width: 280px;
+  width: min(320px, 100%);
   height: 44px;
   padding: 0 14px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .admin-members-manager__table {
@@ -389,6 +427,31 @@ onMounted(loadMembers);
 
 .admin-members-manager__row.is-active {
   background: #f7f9fb;
+}
+
+.admin-members-manager__row.is-deleted {
+  color: #8c8c8c;
+}
+
+.admin-members-manager__row strong,
+.admin-members-manager__row span,
+.admin-members-manager__info-grid strong,
+.admin-members-manager__address strong,
+.admin-members-manager__address p {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.admin-members-manager__badge {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border: 1px solid #d0d7e2;
+  color: #6f7d92;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  vertical-align: middle;
 }
 
 .admin-members-manager__detail {
@@ -478,9 +541,20 @@ onMounted(loadMembers);
 }
 
 .admin-members-manager__status,
-.admin-members-manager__empty {
+.admin-members-manager__empty,
+.admin-members-manager__notice {
   color: #666666;
   font-size: 14px;
+}
+
+.admin-members-manager__status,
+.admin-members-manager__notice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
+  line-height: 1.6;
 }
 
 @media (max-width: 1024px) {
@@ -492,6 +566,11 @@ onMounted(loadMembers);
 
   .admin-members-manager__head {
     display: none;
+  }
+
+  .admin-members-manager__row {
+    gap: 8px;
+    align-items: start;
   }
 }
 
@@ -512,6 +591,11 @@ onMounted(loadMembers);
 
   .admin-members-manager__actions {
     flex-direction: column;
+  }
+
+  .admin-members-manager__primary,
+  .admin-members-manager__secondary {
+    width: 100%;
   }
 }
 </style>

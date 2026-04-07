@@ -3,25 +3,24 @@ import { computed, onMounted, shallowRef, watch } from 'vue';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
 import CommonStatePanel from '../common/CommonStatePanel.vue';
-import {
-  getAdminReviews,
-  getFallbackAdminReviewItems,
-  removeAdminReview,
-} from '../../services/adminService';
+import { getAdminReviews, removeAdminReview } from '../../services/adminService';
 import {
   formatAdminDateTime,
   normalizeAdminReview,
   normalizeArrayPayload,
 } from '../../mappers/adminManagementMapper';
-import { createFallbackReviews } from '../../mappers/adminDashboardMapper';
+import { useFeedback } from '../../composables/useFeedback';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
 const reviews = shallowRef([]);
 const searchKeyword = shallowRef('');
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isRemoving = shallowRef(false);
 const currentPage = shallowRef(1);
 const pageSize = 5;
+const { requestConfirm } = useFeedback();
 
 const filteredReviews = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase();
@@ -55,29 +54,38 @@ function applyReviews(items) {
     .filter((item) => item.reviewId);
 }
 
-async function loadReviews(options = {}) {
-  const { fallbackOnError = true } = options;
+async function loadReviews() {
   isLoading.value = true;
-  let didLoadFromServer = true;
+  loadErrorMessage.value = '';
 
   try {
     const payload = await getAdminReviews();
-    applyReviews(normalizeArrayPayload(payload, createFallbackReviews(getFallbackAdminReviewItems())));
-  } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyReviews(createFallbackReviews(getFallbackAdminReviewItems()));
-    }
+    applyReviews(normalizeArrayPayload(payload, []));
+  } catch (error) {
+    applyReviews([]);
+    loadErrorMessage.value = resolveAdminActionErrorMessage(
+      error,
+      '리뷰 목록을 불러오지 못했습니다.',
+    );
+    return false;
   } finally {
     isLoading.value = false;
   }
 
-  return didLoadFromServer;
+  return true;
 }
 
 async function removeReviewItem(review) {
-  const confirmed = window.confirm('리뷰를 삭제할까요?');
+  if (!review?.reviewId) {
+    return;
+  }
+
+  const confirmed = await requestConfirm({
+    title: '리뷰 삭제',
+    message: `"${review.productName}" 리뷰를 삭제할까요?`,
+    confirmLabel: '삭제',
+  });
+
   if (!confirmed) {
     return;
   }
@@ -87,15 +95,15 @@ async function removeReviewItem(review) {
 
   try {
     await removeAdminReview(review.reviewId);
-    const didLoadFromServer = await loadReviews({ fallbackOnError: false });
+    const didLoadFromServer = await loadReviews();
     statusMessage.value = didLoadFromServer
       ? '리뷰를 삭제했습니다.'
       : '리뷰는 삭제됐지만 목록 재조회는 실패했습니다.';
-  } catch {
-    statusMessage.value = '리뷰 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '리뷰 삭제에 실패했습니다.');
+  } finally {
+    isRemoving.value = false;
   }
-
-  isRemoving.value = false;
 }
 
 watch(searchKeyword, () => {
@@ -116,7 +124,7 @@ onMounted(loadReviews);
 
 <template>
   <section class="admin-reviews-manager">
-    <AdminPanel title="리뷰 목록" description="부적절한 리뷰를 검토하고 필요 시 즉시 삭제합니다.">
+    <AdminPanel title="리뷰 목록" description="작성된 리뷰를 확인하거나 삭제할 수 있습니다.">
       <template #action>
         <input
           v-model="searchKeyword"
@@ -146,31 +154,36 @@ onMounted(loadReviews);
           <p>{{ review.content }}</p>
           <span>{{ review.rating }}점</span>
           <span>{{ formatAdminDateTime(review.createdAt) }}</span>
-          <button type="button" :disabled="isRemoving" @click="removeReviewItem(review)">삭제</button>
+          <div class="admin-reviews-manager__actions">
+            <button type="button" :disabled="isRemoving" @click="removeReviewItem(review)">
+              삭제
+            </button>
+          </div>
         </article>
 
         <CommonStatePanel
           v-if="!filteredReviews.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '리뷰 목록을 불러오는 중입니다.' : '표시할 리뷰가 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '리뷰 목록을 불러오는 중입니다.' : loadErrorMessage ? '리뷰 목록을 불러오지 못했습니다.' : '표시할 리뷰가 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>
 
-      <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
-
       <p v-if="statusMessage" class="admin-reviews-manager__status">{{ statusMessage }}</p>
+      <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
     </AdminPanel>
   </section>
 </template>
 
 <style scoped>
 .admin-reviews-manager__search {
-  width: 280px;
+  width: min(320px, 100%);
   height: 44px;
   padding: 0 14px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .admin-reviews-manager__table {
@@ -180,7 +193,7 @@ onMounted(loadReviews);
 .admin-reviews-manager__head,
 .admin-reviews-manager__row {
   display: grid;
-  grid-template-columns: 180px 120px minmax(0, 1fr) 70px 160px 90px;
+  grid-template-columns: 180px 120px minmax(0, 1fr) 70px 160px 92px;
   gap: 16px;
   align-items: center;
 }
@@ -201,10 +214,18 @@ onMounted(loadReviews);
   color: #333333;
   font-size: 14px;
   line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
-.admin-reviews-manager__row button {
-  min-height: 40px;
+.admin-reviews-manager__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-reviews-manager__actions button {
+  min-height: 38px;
+  padding: 0 14px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
   cursor: pointer;
@@ -218,6 +239,13 @@ onMounted(loadReviews);
   line-height: 1.6;
 }
 
+.admin-reviews-manager__status {
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
+}
+
 @media (max-width: 1024px) {
   .admin-reviews-manager__head,
   .admin-reviews-manager__row {
@@ -226,6 +254,11 @@ onMounted(loadReviews);
 
   .admin-reviews-manager__head {
     display: none;
+  }
+
+  .admin-reviews-manager__row {
+    gap: 8px;
+    align-items: start;
   }
 }
 

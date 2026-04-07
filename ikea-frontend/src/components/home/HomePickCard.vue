@@ -101,26 +101,26 @@ function handleKeydown(event) {
   min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.82);
-  color: #ffffff;
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .hs-pick-card__badge.is-yellow {
-  background: var(--hs-yellow);
-  color: #111827;
+  background: var(--hs-badge-yellow);
+  color: var(--hs-badge-yellow-ink);
 }
 
 .hs-pick-card__badge.is-blue {
-  background: var(--hs-blue);
-  color: #ffffff;
+  background: var(--hs-badge-blue);
+  color: var(--hs-badge-blue-ink);
 }
 
 .hs-pick-card__badge.is-soldout {
-  background: #b42318;
-  color: #ffffff;
+  background: var(--hs-badge-danger);
+  color: var(--hs-badge-danger-ink);
 }
 
 .hs-pick-card__copy {

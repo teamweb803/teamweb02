@@ -1,3 +1,5 @@
+import { ORDER_STATUS_LABELS } from '../constants/orderStatus';
+
 export function cloneCartItems(items = []) {
   return items.map((item) => ({ ...item }));
 }
@@ -22,29 +24,11 @@ function buildOrderNumber(date = new Date()) {
   return `HM${compact}${suffix}`;
 }
 
-function buildVirtualAccount(orderNumber, amount, depositorName, banks = [], dueDays = 3) {
-  const lastDigits = orderNumber.replace(/\D/g, '').slice(-10).padStart(10, '0');
-  const bank = banks[Number(lastDigits.slice(-1)) % banks.length];
-  const dueDate = new Date(Date.now() + dueDays * 24 * 60 * 60 * 1000);
-  const dueDateParts = formatDateParts(dueDate);
-
-  return {
-    bankName: bank.name,
-    accountNumber: `${bank.prefix}-${lastDigits.slice(0, 4)}-${lastDigits.slice(4)}`,
-    depositorName,
-    amount,
-    dueDate: dueDate.toISOString(),
-    dueDateLabel: `${dueDateParts.label}까지`,
-  };
-}
-
 export function getCheckoutItems(items = [], mode = 'all', itemId = '') {
   const purchasableItems = items.filter((item) => !item.isSoldOut);
 
   if (mode === 'single') {
-    const singleItem = purchasableItems.find((item) => item.productId === String(itemId))
-      ?? purchasableItems[0]
-      ?? null;
+    const singleItem = purchasableItems.find((item) => item.productId === String(itemId)) ?? null;
 
     return singleItem ? [singleItem] : [];
   }
@@ -69,25 +53,19 @@ export function removeCheckoutItems(items = [], mode = 'all', itemId = '') {
   return items.filter((item) => item.isSoldOut);
 }
 
-export function buildCompletedOrderSnapshot(
-  payload,
-  {
-    virtualAccountBanks = [],
-    virtualAccountDueDays = 3,
-  } = {},
-) {
+export function buildCompletedOrderSnapshot(payload) {
   const createdAt = new Date();
   const orderNumber = buildOrderNumber(createdAt);
   const orderedAt = formatDateParts(createdAt).label;
   const completedItems = cloneCartItems(payload.orderItems ?? []);
-  const isBankTransfer = payload.paymentMethod === 'bank';
 
   return {
     orderNumber,
     orderedAt,
     orderedAtIso: createdAt.toISOString(),
-    status: isBankTransfer ? 'deposit-pending' : 'paid',
-    statusLabel: isBankTransfer ? '입금 대기' : '결제 완료',
+    status: 'pending',
+    statusCode: 'PENDING',
+    statusLabel: ORDER_STATUS_LABELS.PENDING,
     orderItems: completedItems,
     orderCount: completedItems.reduce((sum, item) => sum + item.quantity, 0),
     ordererName: payload.ordererName ?? '',
@@ -107,14 +85,6 @@ export function buildCompletedOrderSnapshot(
     pointApplied: payload.pointApplied ?? 0,
     shippingTotal: payload.shippingTotal ?? 0,
     finalTotal: payload.finalTotal ?? 0,
-    virtualAccount: isBankTransfer
-      ? buildVirtualAccount(
-        orderNumber,
-        payload.finalTotal ?? 0,
-        payload.ordererName || payload.receiverName || '주문자',
-        virtualAccountBanks,
-        virtualAccountDueDays,
-      )
-      : null,
+    virtualAccount: null,
   };
 }

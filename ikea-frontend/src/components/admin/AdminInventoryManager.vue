@@ -9,6 +9,8 @@ const {
   adjustmentStatusMessage,
   adjustmentForm,
   filteredItems,
+  inventoryLoadErrorMessage,
+  isInventoryLoading,
   resolveStockStateKey,
   resolveStockStateLabel,
   safeStockForm,
@@ -122,9 +124,17 @@ watch(
 
         <CommonStatePanel
           v-if="!filteredItems.length"
-          title="선택한 조건에 맞는 재고 상품이 없습니다."
+          :tone="isInventoryLoading ? 'loading' : inventoryLoadErrorMessage ? 'error' : 'neutral'"
+          :title="isInventoryLoading ? '재고 목록을 불러오는 중입니다.' : inventoryLoadErrorMessage ? '재고 목록을 불러오지 못했습니다.' : '선택한 조건에 맞는 재고 상품이 없습니다.'"
+          :description="inventoryLoadErrorMessage"
           compact
-        />
+        >
+          <template v-if="inventoryLoadErrorMessage" #actions>
+            <button type="button" class="admin-inventory-manager__retry" @click="loadInventoryItems">
+              다시 불러오기
+            </button>
+          </template>
+        </CommonStatePanel>
       </div>
 
       <AdminPagination v-model:current-page="currentPage" :page-count="pageCount" />
@@ -192,10 +202,18 @@ watch(
 
       <CommonStatePanel
         v-else
-        title="조정할 재고 상품을 먼저 선택해 주세요."
+        :tone="inventoryLoadErrorMessage ? 'error' : 'neutral'"
+        :title="inventoryLoadErrorMessage ? '재고 상세를 표시할 수 없습니다.' : '조정할 재고 상품을 먼저 선택해 주세요.'"
+        :description="inventoryLoadErrorMessage"
         align="left"
         compact
-      />
+      >
+        <template v-if="inventoryLoadErrorMessage" #actions>
+          <button type="button" class="admin-inventory-manager__retry" @click="loadInventoryItems">
+            다시 불러오기
+          </button>
+        </template>
+      </CommonStatePanel>
     </AdminPanel>
   </section>
 </template>
@@ -222,8 +240,13 @@ watch(
 .admin-inventory-manager__detail-meta span,
 .admin-inventory-manager__detail-meta p,
 .admin-inventory-manager__status {
-  color: #666666;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
   font-size: 14px;
+  line-height: 1.6;
 }
 
 .admin-inventory-manager__summary strong,
@@ -237,11 +260,12 @@ watch(
 }
 
 .admin-inventory-manager__search {
-  width: 280px;
+  width: min(320px, 100%);
   height: 44px;
   padding: 0 14px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .admin-inventory-manager__chips {
@@ -331,7 +355,7 @@ watch(
 .admin-inventory-manager__product img {
   width: 72px;
   height: 72px;
-  object-fit: cover;
+  object-fit: contain;
   border: 1px solid #ececec;
   background: #f7f9fb;
 }
@@ -341,6 +365,8 @@ watch(
   color: #111111;
   font-size: 15px;
   line-height: 1.4;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .admin-inventory-manager__product span {
@@ -348,6 +374,8 @@ watch(
   margin-top: 6px;
   color: #7a7a7a;
   font-size: 13px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .admin-inventory-manager__state {
@@ -464,6 +492,17 @@ watch(
   cursor: pointer;
 }
 
+.admin-inventory-manager__retry {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @media (max-width: 1024px) {
   .admin-inventory-manager__summary,
   .admin-inventory-manager__detail-grid,
@@ -476,6 +515,11 @@ watch(
   .admin-inventory-manager__head {
     display: none;
   }
+
+  .admin-inventory-manager__row {
+    gap: 8px;
+    align-items: start;
+  }
 }
 
 @media (max-width: 720px) {
@@ -483,8 +527,23 @@ watch(
     width: 100%;
   }
 
+  .admin-inventory-manager__product {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .admin-inventory-manager__product img {
+    width: 64px;
+    height: 64px;
+  }
+
   .admin-inventory-manager__actions {
     justify-content: stretch;
+  }
+
+  .admin-inventory-manager__actions button {
+    width: 100%;
   }
 }
 </style>

@@ -1,4 +1,10 @@
 import { ADMIN_PRODUCT_ATTRIBUTE_FIELD_IDS } from '../constants/productAttributeConfig';
+import {
+  getAdminPaymentMethodLabel,
+  getAdminPaymentStatusLabel,
+  normalizeAdminPaymentMethodCode,
+} from '../constants/adminOrderConfig';
+import { resolveOrderDateTimeValue, resolveOrderDateValue } from '../utils/orderDate';
 
 export function formatAdminNumber(value) {
   return Number(value ?? 0).toLocaleString('ko-KR');
@@ -146,6 +152,7 @@ export function normalizeAdminMember(member) {
   const addressMain = member.addressMain ?? '';
   const addressDetail = member.addressDetail ?? '';
   const displayAddress = member.address ?? [addressMain, addressDetail].filter(Boolean).join(' ');
+  const deleted = Boolean(member.deleted);
 
   return {
     memberId: String(member.memberId ?? member.id ?? ''),
@@ -159,6 +166,7 @@ export function normalizeAdminMember(member) {
     addressDetail,
     address: displayAddress,
     createdAt: member.createdAt ?? '',
+    deleted,
   };
 }
 
@@ -177,18 +185,130 @@ export function normalizeAdminOrder(order) {
   const orderItems = Array.isArray(order.orderItems)
     ? order.orderItems.map((item) => normalizeAdminOrderItem(item))
     : [];
+  const createdAt = resolveOrderDateTimeValue(order);
+  const hasRecordedCreatedAt = Boolean(order.createdAt ?? order.orderedAt);
+  const createdAtDisplay = hasRecordedCreatedAt
+    ? formatAdminDateTime(createdAt)
+    : formatAdminDate(resolveOrderDateValue(order));
 
   return {
     orderId: String(order.orderId ?? order.id ?? ''),
     orderNo: String(order.orderNo ?? order.orderId ?? order.id ?? ''),
-    orderStatus: order.orderStatus ?? 'ORDERED',
-    payment: order.payment ?? '',
+    orderStatus: order.orderStatus ?? 'PENDING',
+    paymentMethod: order.paymentMethod ?? order.payment ?? '',
+    paymentStatus: order.paymentStatus ?? order.status ?? '',
     totalPrice: Number(order.finalPrice ?? order.totalPrice ?? order.finalTotal ?? 0),
     rawTotalPrice: Number(order.totalPrice ?? order.finalTotal ?? 0),
     address: order.address ?? [order.addressMain, order.addressDetail].filter(Boolean).join(' '),
-    createdAt: order.createdAt ?? order.orderedAt ?? '',
+    createdAt,
+    createdAtDisplay,
     orderItems,
   };
+}
+
+export function normalizeAdminPayment(payment) {
+  return {
+    paymentId: String(payment.paymentId ?? payment.id ?? ''),
+    orderId: String(payment.orderId ?? ''),
+    orderNo: String(payment.orderNo ?? ''),
+    paymentMethod: payment.paymentMethod ?? payment.method ?? '',
+    paymentStatus: payment.paymentStatus ?? payment.status ?? '',
+    createdAt: payment.createdAt ?? '',
+    paidAt: payment.paidAt ?? '',
+  };
+}
+
+function resolveAdminPaymentTimestamp(payment) {
+  const dateValue = payment.paidAt ?? payment.createdAt ?? '';
+  const timestamp = dateValue ? new Date(dateValue).getTime() : Number.NaN;
+
+  if (!Number.isNaN(timestamp)) {
+    return timestamp;
+  }
+
+  return Number(payment.paymentId ?? 0);
+}
+
+export function mergeAdminOrdersWithPayments(orders = [], payments = []) {
+  const normalizedPayments = payments
+    .map((payment) => normalizeAdminPayment(payment))
+    .sort((left, right) => resolveAdminPaymentTimestamp(left) - resolveAdminPaymentTimestamp(right));
+
+  const paymentByOrderId = new Map();
+  const paymentByOrderNo = new Map();
+
+  normalizedPayments.forEach((payment) => {
+    if (payment.orderId) {
+      paymentByOrderId.set(payment.orderId, payment);
+    }
+
+    if (payment.orderNo) {
+      paymentByOrderNo.set(payment.orderNo, payment);
+    }
+  });
+
+  return orders.map((order) => {
+    const matchedPayment = paymentByOrderId.get(order.orderId) ?? paymentByOrderNo.get(order.orderNo) ?? null;
+
+    if (!matchedPayment) {
+      return order;
+    }
+
+    return {
+      ...order,
+      paymentMethod: matchedPayment.paymentMethod,
+      paymentStatus: matchedPayment.paymentStatus,
+      paymentCreatedAt: matchedPayment.createdAt,
+      paymentPaidAt: matchedPayment.paidAt,
+    };
+  });
+}
+
+export function resolveAdminOrderPaymentLabel(order = {}) {
+  const paymentLabel = getAdminPaymentMethodLabel(order.paymentMethod);
+
+  if (paymentLabel) {
+    return paymentLabel;
+  }
+
+  return '-';
+}
+
+export function resolveAdminOrderPaymentStatusLabel(order = {}) {
+  const paymentStatusLabel = getAdminPaymentStatusLabel(order.paymentStatus);
+
+  if (paymentStatusLabel) {
+    return paymentStatusLabel;
+  }
+
+  if (order.orderStatus === 'PENDING') {
+    return '결제 대기';
+  }
+
+  return '-';
+}
+
+export function resolveAdminOrderPaymentSummary(order = {}) {
+  const paymentLabel = resolveAdminOrderPaymentLabel(order);
+  const paymentStatusLabel = resolveAdminOrderPaymentStatusLabel(order);
+
+  if (paymentLabel === '-' && paymentStatusLabel === '-') {
+    return '-';
+  }
+
+  if (paymentLabel === '-' || paymentLabel === paymentStatusLabel) {
+    return paymentStatusLabel;
+  }
+
+  if (paymentStatusLabel === '-') {
+    return paymentLabel;
+  }
+
+  return `${paymentLabel} · ${paymentStatusLabel}`;
+}
+
+export function resolveAdminOrderPaymentCode(order = {}) {
+  return normalizeAdminPaymentMethodCode(order.paymentMethod);
 }
 
 export function normalizeAdminReview(review) {

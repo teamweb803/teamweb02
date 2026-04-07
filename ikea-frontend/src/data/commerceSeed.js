@@ -1,10 +1,16 @@
-import { findCatalogProductById, getProductDetailSeed } from './catalog';
+import {
+  catalogProducts,
+  findCatalogProductById,
+} from './catalog';
+import { useCatalogStore } from '../stores/catalog';
 
-const DEFAULT_CART_PRODUCT_IDS = ['10489009', '90592738'];
-const DEFAULT_RECOMMENDATION_PRODUCT_IDS = ['60470050', 's29416857', '40568019', '80586356'];
+const RECOMMENDATION_LIMIT = 4;
+const RECOMMENDATION_SESSION_KEY = 'homio-cart-recommendation-seed';
 
 function resolveProduct(productId) {
-  const product = findCatalogProductById(productId);
+  const normalizedProductId = String(productId ?? '').trim();
+  const catalogStore = resolveCatalogStore();
+  const product = catalogStore?.findProductById?.(normalizedProductId) ?? findCatalogProductById(normalizedProductId);
 
   if (!product) {
     throw new Error(`Unknown commerce seed product: ${productId}`);
@@ -13,10 +19,23 @@ function resolveProduct(productId) {
   return product;
 }
 
-function getPrimaryImage(product) {
-  const detailSeed = getProductDetailSeed(product.id);
+function resolveCatalogStore() {
+  try {
+    return useCatalogStore();
+  } catch {
+    return null;
+  }
+}
 
-  return detailSeed?.galleryImages?.[0] ?? product.image;
+function resolveCatalogProducts() {
+  const catalogStore = resolveCatalogStore();
+  const runtimeProducts = Array.isArray(catalogStore?.products) ? catalogStore.products : [];
+
+  return runtimeProducts.length ? runtimeProducts : catalogProducts;
+}
+
+function getPrimaryImage(product) {
+  return product.image ?? product.imgPath ?? '';
 }
 
 function getOptionSummary(product) {
@@ -107,18 +126,79 @@ function buildRecommendation(productId) {
   };
 }
 
+function canUseSessionStorage() {
+  return typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';
+}
+
+function getRecommendationSessionSeed() {
+  if (!canUseSessionStorage()) {
+    return 'server';
+  }
+
+  const storedSeed = String(window.sessionStorage.getItem(RECOMMENDATION_SESSION_KEY) ?? '').trim();
+
+  if (storedSeed) {
+    return storedSeed;
+  }
+
+  const nextSeed = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  window.sessionStorage.setItem(RECOMMENDATION_SESSION_KEY, nextSeed);
+  return nextSeed;
+}
+
+function createSeededRandom(seed) {
+  let hash = 2166136261;
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return () => {
+    hash += 0x6d2b79f5;
+    let next = Math.imul(hash ^ (hash >>> 15), 1 | hash);
+    next ^= next + Math.imul(next ^ (next >>> 7), 61 | next);
+    return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleWithSeed(items, seed) {
+  const randomizedItems = [...items];
+  const nextRandom = createSeededRandom(seed);
+
+  for (let index = randomizedItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(nextRandom() * (index + 1));
+    [randomizedItems[index], randomizedItems[swapIndex]] = [randomizedItems[swapIndex], randomizedItems[index]];
+  }
+
+  return randomizedItems;
+}
+
 export function createCommerceCartSeed() {
-  return [
-    createCommerceCartItem(DEFAULT_CART_PRODUCT_IDS[0]),
-    createCommerceCartItem(DEFAULT_CART_PRODUCT_IDS[1], { quantity: 2 }),
-  ];
+  return [];
 }
 
 export function createCommerceRecommendations(excludeIds = []) {
   const blocked = new Set(excludeIds.map((value) => String(value)));
+  const sessionSeed = getRecommendationSessionSeed();
+  const cartSeed = excludeIds
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean)
+    .sort()
+    .join('|');
+  const recommendationSeed = `${sessionSeed}:${cartSeed}`;
 
-  return DEFAULT_RECOMMENDATION_PRODUCT_IDS
-    .filter((productId) => !blocked.has(String(productId)))
-    .map((productId) => buildRecommendation(productId));
+  const randomizedCatalogIds = shuffleWithSeed(
+    resolveCatalogProducts()
+      .filter((product) => !blocked.has(String(product.id)))
+      .filter((product) => String(product.image ?? '').trim())
+      .map((product) => String(product.id)),
+    recommendationSeed,
+  );
+
+  const candidateIds = [...randomizedCatalogIds];
+  const dedupedIds = [...new Set(candidateIds)].slice(0, RECOMMENDATION_LIMIT);
+
+  return dedupedIds.map((productId) => buildRecommendation(productId));
 }
 

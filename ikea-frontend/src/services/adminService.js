@@ -1,11 +1,4 @@
 import httpRequester from '../libs/httpRequester';
-import { orderReviewItems, qnaThreads } from '../data/adminDashboardSeed';
-import { adminMemberSeed, adminOrderSeed } from '../data/adminManagementSeed';
-import { adminNoticeSeed } from '../data/adminNoticeSeed';
-import {
-  getFallbackCatalogCategories,
-  getFallbackCatalogProducts,
-} from './catalogFallbackService';
 
 export function getAdminProductCount() {
   return httpRequester.get('/admin/product/count');
@@ -17,6 +10,10 @@ export function getAdminOrderCount() {
 
 export function getAdminOrders(query) {
   return httpRequester.get('/admin/order', { params: query });
+}
+
+export function getAdminPayments() {
+  return httpRequester.get('/admin/payment');
 }
 
 export function getAdminOrdersByStatus(status) {
@@ -62,6 +59,13 @@ function buildJsonPartFormData(dto, files = [], fileFieldName) {
   });
 
   return formData;
+}
+
+function buildAdminQnaAnswerPayload(payload = {}) {
+  return {
+    title: String(payload.title ?? '').trim(),
+    content: String(payload.content ?? '').trim(),
+  };
 }
 
 export function getProductCatalog(query) {
@@ -115,15 +119,17 @@ export function removeAdminReview(reviewId) {
 }
 
 export function createAdminQnaAnswer(parentId, payload) {
-  return httpRequester.post(`/admin/qna/${parentId}/answer`, null, {
-    params: payload,
-  });
+  return httpRequester.post(
+    `/admin/qna/${parentId}/answer`,
+    buildAdminQnaAnswerPayload(payload),
+  );
 }
 
 export function updateAdminQnaAnswer(qnaId, payload) {
-  return httpRequester.put(`/admin/qna/${qnaId}/answer`, null, {
-    params: payload,
-  });
+  return httpRequester.put(
+    `/admin/qna/${qnaId}/answer`,
+    buildAdminQnaAnswerPayload(payload),
+  );
 }
 
 export function deleteAdminQnaAnswer(qnaId) {
@@ -168,36 +174,3 @@ export function deleteAdminNotice(noticeId) {
   return httpRequester.delete(`/admin/notice/${noticeId}`);
 }
 
-export function getFallbackAdminCategories() {
-  return getFallbackCatalogCategories();
-}
-
-export function getFallbackAdminProducts() {
-  return getFallbackCatalogProducts().map((product) => ({
-    ...product,
-    productId: String(product.id),
-    imgPath: product.image,
-    categoryName: product.categoryLabel,
-    createdAt: product.createdAt ?? null,
-  }));
-}
-
-export function getFallbackAdminReviewItems() {
-  return orderReviewItems;
-}
-
-export function getFallbackAdminQnaThreads() {
-  return qnaThreads;
-}
-
-export function getFallbackAdminMembers() {
-  return adminMemberSeed;
-}
-
-export function getFallbackAdminOrders() {
-  return adminOrderSeed;
-}
-
-export function getFallbackAdminNotices() {
-  return adminNoticeSeed;
-}

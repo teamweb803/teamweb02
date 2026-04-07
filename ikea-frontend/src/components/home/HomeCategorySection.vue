@@ -30,17 +30,21 @@ defineProps({
     type: Array,
     required: true,
   },
-  moreTarget: {
+  moreTo: {
     type: String,
     default: '',
+  },
+  isProductWishlisted: {
+    type: Function,
+    default: () => false,
   },
 });
 
 const emit = defineEmits([
   'banner-activate',
   'filter-change',
-  'more-click',
   'product-activate',
+  'toggle-wishlist',
 ]);
 
 function handleBannerKeydown(event) {
@@ -55,10 +59,10 @@ function handleBannerKeydown(event) {
   <section :id="id" class="hs-section">
     <div class="hs-section__title-wrap">
       <h2>{{ title }}</h2>
-      <a v-if="moreTarget" href="/" @click.prevent="emit('more-click', moreTarget)">더보기</a>
+      <RouterLink v-if="moreTo" :to="moreTo">더보기</RouterLink>
     </div>
     <p v-if="subtitle" class="hs-section__subtitle">{{ subtitle }}</p>
-    <div class="hs-filter-row">
+    <div v-if="filters.length" class="hs-filter-row">
       <button
         v-for="filter in filters"
         :key="filter.id"
@@ -95,8 +99,11 @@ function handleBannerKeydown(event) {
         v-for="item in items"
         :key="item.id"
         :item="item"
+        :show-wishlist="true"
+        :is-wishlisted="isProductWishlisted(item.productId)"
         image-loading="lazy"
         @activate="emit('product-activate', $event)"
+        @toggle-wishlist="emit('toggle-wishlist', $event)"
       />
     </div>
   </section>
@@ -159,9 +166,9 @@ function handleBannerKeydown(event) {
 }
 
 .hs-filter-chip.is-active {
-  border-color: var(--hs-ink);
-  background: var(--hs-ink);
-  color: #ffffff;
+  border-color: var(--hs-badge-dark);
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
 }
 
 .hs-banner {

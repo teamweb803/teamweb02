@@ -3,24 +3,18 @@ import {
   getAdminMembers,
   getAdminOrderCount,
   getAdminOrders,
+  getAdminPayments,
   getAdminProductCount,
   getAdminQnas,
   getAdminReviews,
-  getFallbackAdminCategories,
-  getFallbackAdminMembers,
-  getFallbackAdminOrders,
-  getFallbackAdminProducts,
-  getFallbackAdminQnaThreads,
-  getFallbackAdminReviewItems,
   getProductCatalog,
 } from '../services/adminService';
 import {
   buildAdminDashboard,
-  createFallbackQnas,
-  createFallbackReviews,
 } from '../mappers/adminDashboardMapper';
+import { resolveAdminActionErrorMessage } from '../utils/apiErrorMessage';
 
-function normalizeArrayPayload(payload, fallback) {
+function normalizeArrayPayload(payload, fallback = []) {
   if (Array.isArray(payload)) {
     return payload;
   }
@@ -41,27 +35,55 @@ function normalizeArrayPayload(payload, fallback) {
 }
 
 function normalizeMembers(payload) {
-  return normalizeArrayPayload(payload, getFallbackAdminMembers()).map((item) => ({
+  return normalizeArrayPayload(payload).map((item) => ({
     ...item,
     password: undefined,
   }));
 }
 
-function createFallbackDashboard() {
+function deriveCategoriesFromProducts(products = []) {
+  const categoryMap = new Map();
+
+  products.forEach((product) => {
+    const slug = String(product.categorySlug ?? '').trim();
+    const label = String(product.categoryLabel ?? product.categoryName ?? '').trim();
+
+    if (!slug && !label) {
+      return;
+    }
+
+    const key = slug || label;
+
+    if (!categoryMap.has(key)) {
+      categoryMap.set(key, {
+        slug: slug || key,
+        label: label || slug || key,
+      });
+    }
+  });
+
+  return Array.from(categoryMap.values());
+}
+
+function createEmptyDashboard() {
   return buildAdminDashboard({
-    categories: getFallbackAdminCategories(),
-    products: getFallbackAdminProducts(),
-    orders: getFallbackAdminOrders(),
-    members: getFallbackAdminMembers(),
-    reviews: createFallbackReviews(getFallbackAdminReviewItems()),
-    qnas: createFallbackQnas(getFallbackAdminQnaThreads()),
+    categories: [],
+    products: [],
+    orders: [],
+    payments: [],
+    members: [],
+    reviews: [],
+    qnas: [],
+    productCount: 0,
+    orderCount: 0,
   });
 }
 
 export const useAdminDashboardStore = defineStore('adminDashboard', {
   state: () => ({
-    dashboard: createFallbackDashboard(),
+    dashboard: createEmptyDashboard(),
     isDashboardLoading: false,
+    loadErrorMessage: '',
     loaded: false,
   }),
   actions: {
@@ -92,6 +114,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
     },
     async loadDashboard() {
       this.isDashboardLoading = true;
+      this.loadErrorMessage = '';
 
       try {
         const [
@@ -99,6 +122,7 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
           orderCountResult,
           productsResult,
           ordersResult,
+          paymentsResult,
           membersResult,
           reviewsResult,
           qnasResult,
@@ -107,45 +131,70 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
           getAdminOrderCount(),
           getProductCatalog(),
           getAdminOrders(),
+          getAdminPayments(),
           getAdminMembers(),
           getAdminReviews(),
           getAdminQnas(),
         ]);
 
         const products = productsResult.status === 'fulfilled'
-          ? normalizeArrayPayload(productsResult.value, getFallbackAdminProducts())
-          : getFallbackAdminProducts();
+          ? normalizeArrayPayload(productsResult.value)
+          : [];
         const orders = ordersResult.status === 'fulfilled'
-          ? normalizeArrayPayload(ordersResult.value, getFallbackAdminOrders())
-          : getFallbackAdminOrders();
+          ? normalizeArrayPayload(ordersResult.value)
+          : [];
+        const payments = paymentsResult.status === 'fulfilled'
+          ? normalizeArrayPayload(paymentsResult.value)
+          : [];
         const members = membersResult.status === 'fulfilled'
           ? normalizeMembers(membersResult.value)
-          : getFallbackAdminMembers();
+          : [];
         const reviews = reviewsResult.status === 'fulfilled'
-          ? normalizeArrayPayload(reviewsResult.value, createFallbackReviews(getFallbackAdminReviewItems()))
-          : createFallbackReviews(getFallbackAdminReviewItems());
+          ? normalizeArrayPayload(reviewsResult.value)
+          : [];
         const qnas = qnasResult.status === 'fulfilled'
-          ? normalizeArrayPayload(qnasResult.value, createFallbackQnas(getFallbackAdminQnaThreads()))
-          : createFallbackQnas(getFallbackAdminQnaThreads());
+          ? normalizeArrayPayload(qnasResult.value)
+          : [];
         const productCount = productCountResult.status === 'fulfilled'
           ? Number(productCountResult.value)
-          : products.length;
+          : 0;
         const orderCount = orderCountResult.status === 'fulfilled'
           ? Number(orderCountResult.value)
-          : orders.length;
+          : 0;
+        const categories = deriveCategoriesFromProducts(products);
+
+        const hasRejectedRequest = [
+          productCountResult,
+          orderCountResult,
+          productsResult,
+          ordersResult,
+          paymentsResult,
+          membersResult,
+          reviewsResult,
+          qnasResult,
+        ].some((result) => result.status === 'rejected');
+
+        if (hasRejectedRequest) {
+          this.loadErrorMessage = '일부 관리자 통계를 불러오지 못했습니다.';
+        }
 
         this.dashboard = buildAdminDashboard({
-          categories: getFallbackAdminCategories(),
+          categories,
           products,
           orders,
+          payments,
           members,
           reviews,
           qnas,
           productCount,
           orderCount,
         });
-      } catch {
-        this.dashboard = createFallbackDashboard();
+      } catch (error) {
+        this.dashboard = createEmptyDashboard();
+        this.loadErrorMessage = resolveAdminActionErrorMessage(
+          error,
+          '관리자 대시보드를 불러오지 못했습니다.',
+        );
       } finally {
         this.isDashboardLoading = false;
         this.loaded = true;

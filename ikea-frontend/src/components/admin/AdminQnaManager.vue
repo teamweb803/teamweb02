@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onMounted, reactive, shallowRef, watch } from 'vue';
-import { storeToRefs } from 'pinia';
 import AdminPagination from './AdminPagination.vue';
 import AdminPanel from './AdminPanel.vue';
 import CommonStatePanel from '../common/CommonStatePanel.vue';
@@ -8,7 +7,6 @@ import {
   createAdminQnaAnswer,
   deleteAdminQnaAnswer,
   getAdminQnas,
-  getFallbackAdminQnaThreads,
   updateAdminQnaAnswer,
 } from '../../services/adminService';
 import {
@@ -16,23 +14,22 @@ import {
   normalizeAdminQnaThreads,
   normalizeArrayPayload,
 } from '../../mappers/adminManagementMapper';
-import { useAccountStore } from '../../stores/account';
-
-const accountStore = useAccountStore();
-const { memberName, loginId } = storeToRefs(accountStore);
+import { useFeedback } from '../../composables/useFeedback';
+import { resolveAdminActionErrorMessage } from '../../utils/apiErrorMessage';
 
 const threads = shallowRef([]);
 const selectedThreadId = shallowRef('');
 const searchKeyword = shallowRef('');
 const statusFilter = shallowRef('ALL');
 const statusMessage = shallowRef('');
+const loadErrorMessage = shallowRef('');
 const isLoading = shallowRef(false);
 const isSubmitting = shallowRef(false);
 const currentPage = shallowRef(1);
 const pageSize = 5;
+const { requestConfirm } = useFeedback();
 
 const answerForm = reactive({
-  writer: '',
   content: '',
 });
 
@@ -79,17 +76,19 @@ const pagedThreads = computed(() => {
 const selectedThread = computed(
   () => threads.value.find((thread) => thread.id === selectedThreadId.value) ?? null,
 );
+const submitButtonLabel = computed(() => {
+  if (isSubmitting.value) {
+    return selectedThread.value?.answer ? '답변 수정 중...' : '답변 등록 중...';
+  }
 
-function resolveOperatorName() {
-  return memberName.value || loginId.value || '운영 관리자';
-}
+  return selectedThread.value?.answer ? '답변 수정' : '답변 등록';
+});
 
 function getThreadStatus(thread) {
   return thread?.answer ? '답변완료' : '답변대기';
 }
 
 function syncAnswerForm(thread) {
-  answerForm.writer = thread?.answer?.writer || resolveOperatorName();
   answerForm.content = thread?.answer?.content || '';
 }
 
@@ -113,31 +112,27 @@ function applyThreads(items) {
 async function loadThreads(options = {}) {
   const {
     preferredThreadId = selectedThreadId.value,
-    fallbackOnError = true,
   } = options;
   isLoading.value = true;
-  let didLoadFromServer = true;
+  loadErrorMessage.value = '';
 
   try {
     const payload = await getAdminQnas();
-    applyThreads(normalizeArrayPayload(payload, getFallbackAdminQnaThreads()));
-  } catch {
-    didLoadFromServer = false;
-
-    if (fallbackOnError) {
-      applyThreads(getFallbackAdminQnaThreads());
-    }
+    applyThreads(normalizeArrayPayload(payload, []));
+  } catch (error) {
+    applyThreads([]);
+    loadErrorMessage.value = resolveAdminActionErrorMessage(
+      error,
+      '문의 목록을 불러오지 못했습니다.',
+    );
+    return false;
   } finally {
     isLoading.value = false;
   }
 
-  if (!didLoadFromServer && !fallbackOnError) {
-    return false;
-  }
-
   syncSelectedThread(preferredThreadId);
 
-  return didLoadFromServer;
+  return true;
 }
 
 function selectThread(thread) {
@@ -162,7 +157,6 @@ async function submitAnswer() {
   const payload = {
     title: `${selectedThread.value.title} 답변`,
     content: answerForm.content.trim(),
-    writer: answerForm.writer.trim() || resolveOperatorName(),
   };
 
   try {
@@ -170,7 +164,6 @@ async function submitAnswer() {
       await updateAdminQnaAnswer(answerId, payload);
       const didLoadFromServer = await loadThreads({
         preferredThreadId: threadId,
-        fallbackOnError: false,
       });
       statusMessage.value = didLoadFromServer
         ? '답변을 수정했습니다.'
@@ -179,16 +172,16 @@ async function submitAnswer() {
       await createAdminQnaAnswer(questionId, payload);
       const didLoadFromServer = await loadThreads({
         preferredThreadId: threadId,
-        fallbackOnError: false,
       });
       statusMessage.value = didLoadFromServer
         ? '답변을 등록했습니다.'
         : '답변은 등록됐지만 목록 재조회는 실패했습니다.';
     }
-  } catch {
-    statusMessage.value = hasAnswer
-      ? '답변 수정에 실패했습니다. 서버 상태를 확인해 주세요.'
-      : '답변 등록에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(
+      error,
+      hasAnswer ? '답변 수정에 실패했습니다.' : '답변 등록에 실패했습니다.',
+    );
   }
 
   isSubmitting.value = false;
@@ -199,7 +192,12 @@ async function removeAnswer() {
     return;
   }
 
-  const confirmed = window.confirm('현재 답변을 삭제할까요?');
+  const confirmed = await requestConfirm({
+    title: '답변 삭제',
+    message: '현재 답변을 삭제할까요?',
+    confirmLabel: '삭제',
+  });
+
   if (!confirmed) {
     return;
   }
@@ -213,13 +211,12 @@ async function removeAnswer() {
     await deleteAdminQnaAnswer(answerId);
     const didLoadFromServer = await loadThreads({
       preferredThreadId: threadId,
-      fallbackOnError: false,
     });
     statusMessage.value = didLoadFromServer
       ? '답변을 삭제했습니다.'
       : '답변은 삭제됐지만 목록 재조회는 실패했습니다.';
-  } catch {
-    statusMessage.value = '답변 삭제에 실패했습니다. 서버 상태를 확인해 주세요.';
+  } catch (error) {
+    statusMessage.value = resolveAdminActionErrorMessage(error, '답변 삭제에 실패했습니다.');
   }
 
   isSubmitting.value = false;
@@ -292,8 +289,9 @@ onMounted(loadThreads);
 
         <CommonStatePanel
           v-if="!filteredThreads.length"
-          :tone="isLoading ? 'loading' : 'neutral'"
-          :title="isLoading ? '문의 목록을 불러오는 중입니다.' : '표시할 문의가 없습니다.'"
+          :tone="isLoading ? 'loading' : loadErrorMessage ? 'error' : 'neutral'"
+          :title="isLoading ? '문의 목록을 불러오는 중입니다.' : loadErrorMessage ? '문의 목록을 불러오지 못했습니다.' : '표시할 문의가 없습니다.'"
+          :description="loadErrorMessage"
           compact
         />
       </div>
@@ -316,18 +314,13 @@ onMounted(loadThreads);
 
         <form class="admin-qna-manager__answer-form" @submit.prevent="submitAnswer">
           <label>
-            <span>답변 작성자</span>
-            <input v-model="answerForm.writer" type="text" />
-          </label>
-
-          <label>
             <span>답변 내용</span>
             <textarea v-model="answerForm.content" rows="8" />
           </label>
 
           <div class="admin-qna-manager__actions">
             <button type="submit" class="admin-qna-manager__primary" :disabled="isSubmitting">
-              {{ isSubmitting ? '처리 중..' : selectedThread.answer ? '답변 수정' : '답변 등록' }}
+              {{ submitButtonLabel }}
             </button>
             <button
               type="button"
@@ -345,7 +338,9 @@ onMounted(loadThreads);
 
       <CommonStatePanel
         v-else
-        title="문의를 선택하면 상세 내용이 표시됩니다."
+        :tone="loadErrorMessage ? 'error' : 'neutral'"
+        :title="loadErrorMessage ? '문의 상세를 표시할 수 없습니다.' : '문의를 선택하면 상세 내용이 표시됩니다.'"
+        :description="loadErrorMessage"
         align="left"
         compact
       />
@@ -360,11 +355,12 @@ onMounted(loadThreads);
 }
 
 .admin-qna-manager__search {
-  width: 280px;
+  width: min(320px, 100%);
   height: 44px;
   padding: 0 14px;
   border: 1px solid #d9d9d9;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .admin-qna-manager__list {
@@ -532,6 +528,14 @@ onMounted(loadThreads);
   color: #666666;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.admin-qna-manager__status {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e6edf5;
+  background: #f7f9fb;
+  color: #556070;
 }
 
 @media (max-width: 720px) {

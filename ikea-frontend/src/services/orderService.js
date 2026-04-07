@@ -8,8 +8,13 @@ function resolveOrderRequest(memberIdOrOrderRequest, maybeOrderRequest) {
   return memberIdOrOrderRequest ?? {};
 }
 
-export function createMyOrder(memberIdOrOrderRequest, maybeOrderRequest) {
-  return httpRequester.post('/order', resolveOrderRequest(memberIdOrOrderRequest, maybeOrderRequest));
+export async function createMyOrder(memberIdOrOrderRequest, maybeOrderRequest) {
+  const orderRequest = resolveOrderRequest(memberIdOrOrderRequest, maybeOrderRequest);
+  return httpRequester.post('/order', orderRequest);
+}
+
+export async function createGuestOrder(orderRequest = {}) {
+  return httpRequester.post('/order/guest', orderRequest);
 }
 
 export function createMemberOrder(memberIdOrOrderRequest, maybeOrderRequest) {
@@ -20,11 +25,11 @@ export function getOrderDetail(orderId) {
   return httpRequester.get(`/order/detail/${orderId}`);
 }
 
-export function getMyOrders() {
+export async function getMyOrders() {
   return httpRequester.get('/order');
 }
 
-export function getMemberOrders() {
+export function getMemberOrders(_memberId) {
   return getMyOrders();
 }
 

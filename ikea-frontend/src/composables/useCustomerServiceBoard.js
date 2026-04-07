@@ -7,16 +7,24 @@ import {
 } from '../constants/customerServiceContent';
 import { resolveCustomerServiceSection } from '../constants/customerServiceNavigation';
 import { getCustomerSupportQnaRows } from '../services/customerSupportService';
+import { getCurrentMember } from '../services/memberService';
 import { getCustomerNoticeRows } from '../services/noticeService';
+import { useAccountStore } from '../stores/account';
+import { resolveLookupErrorMessage } from '../utils/apiErrorMessage';
+import { hasAdminAccess, hasAuthenticatedSession } from '../utils/accessControl';
 
 const BOARD_PAGE_SIZE = 6;
 
 export function useCustomerServiceBoard() {
   const route = useRoute();
+  const accountStore = useAccountStore();
+
+  accountStore.hydrate();
 
   const noticeKeyword = ref('');
   const activeFaqCategory = ref(CUSTOMER_SERVICE_FAQ_CATEGORIES[0]);
   const openFaqIds = ref(['faq-1']);
+  const faqPage = ref(1);
   const qnaKeyword = ref('');
   const noticePage = ref(1);
   const qnaPage = ref(1);
@@ -32,6 +40,18 @@ export function useCustomerServiceBoard() {
   const qnaSubmitted = computed(
     () => currentSection.value === 'qna' && route.query.submitted === '1',
   );
+  const qnaViewerMode = computed(() => {
+    if (!hasAuthenticatedSession(accountStore)) {
+      return 'guest';
+    }
+
+    if (hasAdminAccess(accountStore)) {
+      return 'admin';
+    }
+
+    return 'member';
+  });
+  const canBrowseQnaRows = computed(() => qnaViewerMode.value !== 'guest');
 
   const filteredNotices = computed(() => {
     const keyword = noticeKeyword.value.trim();
@@ -61,16 +81,35 @@ export function useCustomerServiceBoard() {
     return CUSTOMER_SERVICE_FAQ_ROWS.filter((row) => row.category === activeFaqCategory.value);
   });
 
+  const faqTotalPages = computed(() =>
+    Math.max(1, Math.ceil(filteredFaqRows.value.length / BOARD_PAGE_SIZE)),
+  );
+
+  const pagedFaqRows = computed(() => {
+    const start = (faqPage.value - 1) * BOARD_PAGE_SIZE;
+    return filteredFaqRows.value.slice(start, start + BOARD_PAGE_SIZE);
+  });
+
   const filteredQnaRows = computed(() => {
-    const keyword = qnaKeyword.value.trim();
+    const keyword = qnaKeyword.value.trim().toLowerCase();
 
     if (!keyword) {
       return qnaRows.value;
     }
 
-    return qnaRows.value.filter((row) => row.title.includes(keyword));
+    return qnaRows.value.filter((row) => (
+      [
+        row.title,
+        row.questionContent,
+        row.answerContent,
+        row.writer,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    ));
   });
 
+  const filteredQnaCount = computed(() => filteredQnaRows.value.length);
   const qnaTotalPages = computed(() =>
     Math.max(1, Math.ceil(filteredQnaRows.value.length / BOARD_PAGE_SIZE)),
   );
@@ -89,7 +128,7 @@ export function useCustomerServiceBoard() {
       noticeRows.value = await getCustomerNoticeRows();
     } catch (error) {
       noticeRows.value = CUSTOMER_SERVICE_NOTICE_ROWS;
-      noticeLoadError.value = error?.message ?? '공지사항을 불러오지 못했습니다.';
+      noticeLoadError.value = resolveLookupErrorMessage(error, '공지사항을 불러오지 못했습니다.');
     } finally {
       hasLoadedNoticeRows.value = true;
       isNoticeLoading.value = false;
@@ -97,14 +136,36 @@ export function useCustomerServiceBoard() {
   }
 
   async function loadQnaRows() {
+    if (!canBrowseQnaRows.value) {
+      qnaRows.value = [];
+      qnaLoadError.value = '';
+      isQnaLoading.value = false;
+      return;
+    }
+
     isQnaLoading.value = true;
     qnaLoadError.value = '';
+    const previousRows = Array.isArray(qnaRows.value) ? [...qnaRows.value] : [];
 
     try {
-      qnaRows.value = await getCustomerSupportQnaRows();
+      try {
+        const currentMember = await getCurrentMember();
+        const memberSession = currentMember?.data ?? currentMember ?? null;
+
+        if (memberSession && typeof memberSession === 'object') {
+          accountStore.setMemberSession(memberSession);
+          accountStore.setProfileHydrated(true);
+        }
+      } catch {
+        // Keep the last known session so QnA loading can continue.
+      }
+
+      qnaRows.value = await getCustomerSupportQnaRows({}, {
+        includeAll: hasAdminAccess(accountStore),
+      });
     } catch (error) {
-      qnaRows.value = [];
-      qnaLoadError.value = error?.message ?? '문의 내역을 불러오지 못했습니다.';
+      qnaRows.value = previousRows;
+      qnaLoadError.value = resolveLookupErrorMessage(error, '등록 내역을 불러오지 못했습니다.');
     } finally {
       isQnaLoading.value = false;
     }
@@ -112,6 +173,7 @@ export function useCustomerServiceBoard() {
 
   function selectFaqCategory(category) {
     activeFaqCategory.value = category;
+    faqPage.value = 1;
   }
 
   function toggleFaq(id) {
@@ -122,6 +184,11 @@ export function useCustomerServiceBoard() {
 
   function changeNoticePage(page) {
     noticePage.value = page;
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }
+
+  function changeFaqPage(page) {
+    faqPage.value = page;
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
 
@@ -144,11 +211,18 @@ export function useCustomerServiceBoard() {
     noticePage.value = 1;
   });
 
+  watch(faqTotalPages, (pageCount) => {
+    if (faqPage.value > pageCount) {
+      faqPage.value = pageCount;
+    }
+  });
+
   watch(qnaKeyword, () => {
     qnaPage.value = 1;
   });
 
   watch(currentSection, (section) => {
+    faqPage.value = 1;
     noticePage.value = 1;
     qnaPage.value = 1;
 
@@ -161,13 +235,27 @@ export function useCustomerServiceBoard() {
     }
   });
 
+  watch(
+    () => [accountStore.accessToken, accountStore.role],
+    () => {
+      if (currentSection.value === 'qna') {
+        void loadQnaRows();
+      }
+    },
+  );
+
   return {
     activeFaqCategory,
+    canBrowseQnaRows,
+    changeFaqPage,
     changeNoticePage,
     changeQnaPage,
     currentSection,
     faqCategories: CUSTOMER_SERVICE_FAQ_CATEGORIES,
+    faqPage,
+    faqTotalPages,
     filteredFaqRows,
+    filteredQnaCount,
     isNoticeLoading,
     isQnaLoading,
     noticeLoadError,
@@ -175,6 +263,7 @@ export function useCustomerServiceBoard() {
     noticePage,
     noticeTotalPages,
     openFaqIds,
+    pagedFaqRows,
     pagedNotices,
     pagedQnaRows,
     qnaPage,
@@ -182,6 +271,8 @@ export function useCustomerServiceBoard() {
     qnaLoadError,
     qnaSubmitted,
     qnaTotalPages,
+    qnaViewerMode,
+    reloadQnaRows: loadQnaRows,
     selectFaqCategory,
     toggleFaq,
   };

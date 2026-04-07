@@ -2,6 +2,7 @@ import { shallowRef } from 'vue';
 import { createMyReview } from '../services/reviewService';
 import { useAccountStore } from '../stores/account';
 import { useMyPageStore } from '../stores/myPage';
+import { resolveReviewErrorMessage } from '../utils/apiErrorMessage';
 
 function createReviewKey(order = {}) {
   return [order.orderId, order.productId].map((value) => String(value ?? '').trim()).join(':');
@@ -96,7 +97,7 @@ export function useMyPageReviewComposer() {
         markWritten(selectedOrder.value);
       }
 
-      statusMessage.value = error?.message ?? '리뷰 등록에 실패했습니다.';
+      statusMessage.value = resolveReviewErrorMessage(error, '리뷰 등록에 실패했습니다.');
       statusTone.value = 'error';
       return false;
     } finally {
@@ -105,6 +106,7 @@ export function useMyPageReviewComposer() {
   }
 
   return {
+    clearStatus,
     closeDialog,
     getActionLabel,
     isActionDisabled,

@@ -1,6 +1,7 @@
 export const COMMERCE_SESSION_KEYS = Object.freeze({
   cart: 'homio-commerce-cart',
   orderCompletion: 'homio-last-completed-order',
+  guestOrderHistory: 'homio-guest-order-history',
   pendingPayment: 'homio-pending-payment',
 });
 

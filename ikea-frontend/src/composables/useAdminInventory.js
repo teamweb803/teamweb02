@@ -4,6 +4,7 @@ import {
   getAdminInventoryItems,
   updateAdminInventorySafeStock,
 } from '../services/adminInventoryService';
+import { resolveAdminActionErrorMessage } from '../utils/apiErrorMessage';
 
 const STOCK_STATUS_OPTIONS = [
   { value: 'ALL', label: '전체' },
@@ -45,6 +46,8 @@ export function useAdminInventory() {
   const stockStatusFilter = shallowRef('ALL');
   const adjustmentStatusMessage = shallowRef('');
   const safeStockStatusMessage = shallowRef('');
+  const inventoryLoadErrorMessage = shallowRef('');
+  const isInventoryLoading = shallowRef(false);
   const adjustmentForm = reactive({
     type: 'increase',
     quantity: 1,
@@ -108,10 +111,21 @@ export function useAdminInventory() {
   });
 
   async function loadInventoryItems() {
-    inventoryItems.value = await getAdminInventoryItems();
+    isInventoryLoading.value = true;
+    inventoryLoadErrorMessage.value = '';
 
-    if (!selectedProductId.value && inventoryItems.value[0]) {
-      selectedProductId.value = inventoryItems.value[0].productId;
+    try {
+      inventoryItems.value = await getAdminInventoryItems();
+
+      if (!selectedProductId.value && inventoryItems.value[0]) {
+        selectedProductId.value = inventoryItems.value[0].productId;
+      }
+    } catch (error) {
+      inventoryItems.value = [];
+      selectedProductId.value = '';
+      inventoryLoadErrorMessage.value = resolveAdminActionErrorMessage(error, '재고 목록을 불러오지 못했습니다.');
+    } finally {
+      isInventoryLoading.value = false;
     }
   }
 
@@ -158,7 +172,7 @@ export function useAdminInventory() {
       safeStockStatusMessage.value = '';
       adjustmentForm.quantity = 1;
     } catch (error) {
-      adjustmentStatusMessage.value = error?.message ?? '재고를 업데이트하지 못했습니다.';
+      adjustmentStatusMessage.value = resolveAdminActionErrorMessage(error, '재고를 업데이트하지 못했습니다.');
     }
   }
 
@@ -220,6 +234,8 @@ export function useAdminInventory() {
     adjustmentStatusMessage,
     adjustmentForm,
     filteredItems,
+    inventoryLoadErrorMessage,
+    isInventoryLoading,
     loadInventoryItems,
     resolveStockStateKey,
     resolveStockStateLabel,

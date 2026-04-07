@@ -5,6 +5,7 @@ import { ROUTE_PATHS } from '../constants/routes';
 import { logoutAuth } from '../services/authService';
 import { getCurrentMember, loginMember } from '../services/memberService';
 import { useAccountStore } from '../stores/account';
+import { resolveLoginErrorMessage } from '../utils/apiErrorMessage';
 
 function unwrapPayload(payload) {
   return payload?.data ?? payload ?? {};
@@ -146,7 +147,8 @@ export function useAccountSession() {
       const tokens = extractTokens(response);
 
       if (!tokens.accessToken) {
-        throw new Error('로그인 응답에 accessToken이 없습니다.');
+        loginError.value = '로그인 정보를 다시 확인해 주세요.';
+        return null;
       }
 
       accountStore.setTokens(tokens);
@@ -165,8 +167,8 @@ export function useAccountSession() {
       router.push(resolveRedirectPath(redirectPath));
       return response;
     } catch (error) {
-      loginError.value = error?.message ?? '로그인에 실패했습니다.';
-      throw error;
+      loginError.value = resolveLoginErrorMessage(error);
+      return null;
     } finally {
       loginSubmitting.value = false;
     }

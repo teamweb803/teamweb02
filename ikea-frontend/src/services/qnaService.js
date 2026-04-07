@@ -4,12 +4,6 @@ export function getQnaList(query) {
   return httpRequester.get('/qna', { params: query });
 }
 
-export function searchQnaList(title) {
-  return httpRequester.get('/qna/search', {
-    params: { title },
-  });
-}
-
 export function getQnaDetail(qnaId) {
   return httpRequester.get(`/qna/${qnaId}`);
 }

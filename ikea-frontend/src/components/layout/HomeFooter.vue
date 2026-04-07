@@ -101,17 +101,6 @@ onBeforeUnmount(() => {
             </button>
           </template>
         </nav>
-        <button class="hs-footer__family" type="button">
-          <span>FAMILY SITE</span>
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M7 10L12 15L17 10"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
       </div>
 
       <section class="hs-footer__service">
@@ -124,7 +113,7 @@ onBeforeUnmount(() => {
           </div>
 
           <article
-            v-for="card in footerSupportCards"
+            v-for="card in footerSupportCards ?? []"
             :key="card.title"
             class="hs-support-inline"
           >
@@ -146,7 +135,7 @@ onBeforeUnmount(() => {
 
       <section class="hs-footer__company">
         <div class="hs-footer__company-lines">
-          <p v-for="line in footerInfoLines" :key="line">{{ line }}</p>
+          <p v-for="line in footerInfoLines ?? []" :key="line">{{ line }}</p>
         </div>
       </section>
 
@@ -207,7 +196,7 @@ onBeforeUnmount(() => {
 .hs-footer__top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 18px;
 }
 
@@ -245,24 +234,6 @@ onBeforeUnmount(() => {
 .hs-footer__link-button:focus-visible,
 .hs-footer__link-button:active {
   transform: none !important;
-}
-
-.hs-footer__family {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid #d8dde5;
-  background: #ffffff;
-  color: var(--hs-ink, #111827);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.hs-footer__family svg {
-  width: 18px;
-  height: 18px;
 }
 
 .hs-footer__service-grid {
@@ -475,8 +446,42 @@ onBeforeUnmount(() => {
   }
 
   .hs-footer__top {
-    flex-direction: column;
     align-items: flex-start;
+  }
+
+  .hs-footer__links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+    width: 100%;
+  }
+
+  .hs-footer__brand-logo {
+    width: 124px;
+  }
+
+  .hs-support-inline {
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid #d8dde5;
+    background: #ffffff;
+  }
+
+  .hs-footer__qr {
+    display: none;
+  }
+
+  .hs-footer__company-lines {
+    display: grid;
+    gap: 4px;
+  }
+
+  .hs-footer__company-lines p {
+    padding-right: 0;
+  }
+
+  .hs-footer__company-lines p::after {
+    display: none;
   }
 
   .hs-footer-modal {

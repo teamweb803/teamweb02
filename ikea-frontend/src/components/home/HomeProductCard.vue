@@ -1,4 +1,6 @@
 <script setup>
+import WishlistToggleButton from '../common/WishlistToggleButton.vue';
+
 const props = defineProps({
   item: {
     type: Object,
@@ -12,19 +14,35 @@ const props = defineProps({
     type: String,
     default: 'lazy',
   },
+  showWishlist: {
+    type: Boolean,
+    default: false,
+  },
+  isWishlisted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(['activate']);
+const emit = defineEmits(['activate', 'toggle-wishlist']);
 
 function handleActivate() {
   emit('activate', props.item);
 }
 
 function handleKeydown(event) {
+  if (event.target !== event.currentTarget) {
+    return;
+  }
+
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
     handleActivate();
   }
+}
+
+function handleWishlistToggle() {
+  emit('toggle-wishlist', props.item);
 }
 </script>
 
@@ -39,6 +57,12 @@ function handleKeydown(event) {
   >
     <div class="hs-product-card__image-wrap">
       <img :src="item.image" :alt="item.title" :loading="imageLoading" decoding="async" />
+      <WishlistToggleButton
+        v-if="showWishlist"
+        class="hs-product-card__wishlist"
+        :active="isWishlisted"
+        @toggle="handleWishlistToggle"
+      />
       <span
         v-if="item.isSoldOut"
         class="hs-product-card__badge hs-product-card__badge--soldout"
@@ -48,7 +72,10 @@ function handleKeydown(event) {
       <span
         v-else-if="item.badge"
         class="hs-product-card__badge"
-        :class="{ 'hs-product-card__badge--yellow': badgeVariant === 'yellow' }"
+        :class="{
+          'hs-product-card__badge--yellow': badgeVariant === 'yellow',
+          'hs-product-card__badge--blue': badgeVariant === 'blue',
+        }"
       >
         {{ item.badge }}
       </span>
@@ -101,6 +128,13 @@ function handleKeydown(event) {
   object-fit: contain;
 }
 
+.hs-product-card__wishlist {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 1;
+}
+
 .hs-product-card__badge {
   position: absolute;
   top: 14px;
@@ -111,21 +145,26 @@ function handleKeydown(event) {
   min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.82);
-  color: #ffffff;
+  background: var(--hs-badge-dark);
+  color: var(--hs-badge-dark-ink);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .hs-product-card__badge--yellow {
-  background: var(--hs-yellow);
-  color: #111827;
+  background: var(--hs-badge-yellow);
+  color: var(--hs-badge-yellow-ink);
+}
+
+.hs-product-card__badge--blue {
+  background: var(--hs-badge-blue);
+  color: var(--hs-badge-blue-ink);
 }
 
 .hs-product-card__badge--soldout {
-  background: #b42318;
-  color: #ffffff;
+  background: var(--hs-badge-danger);
+  color: var(--hs-badge-danger-ink);
 }
 
 .hs-product-card__copy {

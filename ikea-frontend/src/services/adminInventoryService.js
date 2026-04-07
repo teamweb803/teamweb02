@@ -1,5 +1,5 @@
 import { normalizeProductCollection } from '../mappers/catalogMapper';
-import { getFallbackProductList, getProductList } from './productService';
+import { getProductList } from './productService';
 import { getAdminProductStock, updateAdminProductStock } from './productStockService';
 
 const ADMIN_SAFE_STOCK_STORAGE_KEY = 'homio-admin-inventory-safe-stock';
@@ -47,10 +47,6 @@ function formatInventoryTimestamp(value) {
   }).format(date);
 }
 
-function buildSeedSafeStock(index) {
-  return 4 + (index % 3);
-}
-
 function readStoredSafeStockMap() {
   if (!canUseStorage()) {
     return {};
@@ -74,12 +70,8 @@ function writeStoredSafeStockMap(safeStockMap) {
 }
 
 async function loadCatalogProducts() {
-  try {
-    const response = await getProductList();
-    return normalizeProductCollection(response, getFallbackProductList());
-  } catch {
-    return normalizeProductCollection(getFallbackProductList());
-  }
+  const response = await getProductList();
+  return normalizeProductCollection(response, []);
 }
 
 async function loadAdminStock(productId) {
@@ -94,12 +86,12 @@ async function loadAdminStock(productId) {
   }
 }
 
-function buildInventoryItem(product, index, safeStockMap = {}, stockPayload = null) {
+function buildInventoryItem(product, safeStockMap = {}, stockPayload = null) {
   const productId = normalizeProductId(product.productId ?? product.id);
   const stockSource = stockPayload?.data ?? stockPayload ?? {};
   const stock = normalizeInteger(stockSource.quantity, 0);
   const storedSafeStock = safeStockMap[productId];
-  const safeStock = Math.max(0, normalizeInteger(storedSafeStock, buildSeedSafeStock(index)));
+  const safeStock = Math.max(0, normalizeInteger(storedSafeStock, 0));
 
   return {
     productId,
@@ -122,7 +114,7 @@ export async function getAdminInventoryItems() {
   );
 
   return products.map((product, index) => (
-    buildInventoryItem(product, index, safeStockMap, stockPayloads[index])
+    buildInventoryItem(product, safeStockMap, stockPayloads[index])
   ));
 }
 
@@ -130,7 +122,7 @@ export async function adjustAdminInventoryItem(productId, { type, quantity, curr
   const normalizedProductId = normalizeProductId(productId);
 
   if (!isTrackableProductId(normalizedProductId)) {
-    throw new Error('백엔드 재고와 연결할 수 없는 상품입니다.');
+    throw new Error('재고 수량을 조정할 수 없는 상품입니다.');
   }
 
   const delta = Math.max(0, normalizeInteger(quantity, 0));

@@ -19,6 +19,9 @@ onMounted(() => {
 
 const requestedOrderNumber = computed(() => String(route.query.orderNumber ?? '').trim());
 const requestedOrderType = computed(() => String(route.query.orderType ?? '').trim().toLowerCase());
+const requestedBuyerName = computed(() => String(
+  route.query.buyerName ?? route.query.name ?? '',
+).trim());
 const hasMatchingStoredOrder = computed(() => {
   const storedOrderNumber = String(storedOrder.value?.orderNumber ?? '').trim();
 
@@ -38,10 +41,23 @@ const order = computed(() => (
     : null
 ));
 const hasOrder = computed(() => Boolean(order.value?.orderNumber));
-const isBankTransfer = computed(() => order.value?.paymentMethod === 'bank');
 const isGuestOrder = computed(() => Boolean(order.value?.isGuestOrder));
+const normalizedOrderStatus = computed(() => (
+  String(order.value?.statusCode ?? order.value?.status ?? '')
+    .trim()
+    .toUpperCase()
+));
+const isPendingOrder = computed(() => normalizedOrderStatus.value === 'PENDING');
 const recoveryOrderNumber = computed(() => (
   requestedOrderNumber.value || String(storedOrder.value?.orderNumber ?? '').trim()
+));
+const recoveryBuyerName = computed(() => (
+  String(
+    order.value?.ordererName
+    ?? storedOrder.value?.ordererName
+    ?? storedOrder.value?.buyerName
+    ?? requestedBuyerName.value,
+  ).trim()
 ));
 const recoveryOrderType = computed(() => {
   if (hasOrder.value) {
@@ -60,13 +76,13 @@ const recoveryOrderType = computed(() => {
 });
 const hasRecoveryOrderNumber = computed(() => Boolean(recoveryOrderNumber.value));
 const pageTitle = computed(() => (
-  isBankTransfer.value
+  isPendingOrder.value
     ? '주문이 접수되었습니다.'
     : '결제가 완료되었습니다.'
 ));
 const pageDescription = computed(() => {
-  if (isBankTransfer.value) {
-    return '가상계좌 입금이 확인되면 배송 준비가 시작됩니다. 아래 계좌 정보와 입금기한을 꼭 확인해 주세요.';
+  if (isPendingOrder.value) {
+    return '주문 정보를 확인한 뒤 다음 단계가 순차적으로 진행됩니다. 주문 내역과 배송 상태는 아래에서 다시 확인할 수 있습니다.';
   }
 
   if (isGuestOrder.value) {
@@ -167,6 +183,7 @@ const recoveryActions = computed(() => {
           path: ROUTE_PATHS.guestOrderLookup,
           query: buildGuestOrderLookupQuery({
             inquiryType: 'order',
+            buyerName: recoveryBuyerName.value,
             orderNumber: recoveryOrderNumber.value,
           }),
         },
@@ -202,6 +219,7 @@ const recoveryActions = computed(() => {
         path: ROUTE_PATHS.guestOrderLookup,
         query: buildGuestOrderLookupQuery({
           inquiryType: 'order',
+          buyerName: recoveryBuyerName.value,
           orderNumber: recoveryOrderNumber.value,
         }),
       },
@@ -210,6 +228,42 @@ const recoveryActions = computed(() => {
     {
       label: accountStore.accessToken ? '마이페이지로 이동' : '로그인하고 주문내역 보기',
       to: ROUTE_PATHS.memberMyPage,
+      variant: 'secondary',
+    },
+  ];
+});
+const completionActions = computed(() => {
+  if (isGuestOrder.value) {
+    return [
+      {
+        label: '비회원 주문 조회',
+        to: {
+          path: ROUTE_PATHS.guestOrderLookup,
+          query: buildGuestOrderLookupQuery({
+            inquiryType: 'order',
+            buyerName: order.value?.ordererName ?? '',
+            orderNumber: order.value?.orderNumber ?? '',
+          }),
+        },
+        variant: 'primary',
+      },
+      {
+        label: '쇼핑 계속하기',
+        to: ROUTE_PATHS.home,
+        variant: 'secondary',
+      },
+    ];
+  }
+
+  return [
+    {
+      label: '주문내역 확인',
+      to: ROUTE_PATHS.memberMyPage,
+      variant: 'primary',
+    },
+    {
+      label: '쇼핑 계속하기',
+      to: ROUTE_PATHS.home,
       variant: 'secondary',
     },
   ];
@@ -244,7 +298,7 @@ function resolveDetailPath(item) {
         <template v-if="hasOrder">
           <section class="order-complete-hero">
             <div class="order-complete-hero__copy">
-              <span class="order-complete-hero__eyebrow">ORDER COMPLETE</span>
+              <span class="order-complete-hero__eyebrow">주문 완료</span>
               <h1>{{ pageTitle }}</h1>
               <p v-if="pageDescription">{{ pageDescription }}</p>
               <p v-if="isGuestOrder" class="order-complete-hero__guest-note">
@@ -400,7 +454,7 @@ function resolveDetailPath(item) {
                 </div>
 
                 <div class="order-complete-side-card__total">
-                  <span>{{ isBankTransfer ? '입금 예정금액' : '최종 결제금액' }}</span>
+                  <span>{{ isPendingOrder ? '최종 주문금액' : '최종 결제금액' }}</span>
                   <strong>{{ formatPrice(order.finalTotal) }}</strong>
                 </div>
               </section>
@@ -410,24 +464,21 @@ function resolveDetailPath(item) {
                 <ul class="order-complete-note-list order-complete-note-list--compact">
                   <li v-if="isGuestOrder">주문번호와 주문자명을 함께 보관해 두면 주문 확인이 쉬워집니다.</li>
                   <li v-else>주문 내역과 배송 진행 상태는 마이페이지에서 다시 확인할 수 있습니다.</li>
-                  <li v-if="isBankTransfer">입금 확인 후 배송 준비가 시작되며, 상태가 자동으로 업데이트됩니다.</li>
+                  <li v-if="isPendingOrder">주문 상태는 주문내역에서 계속 확인할 수 있습니다.</li>
                   <li v-else>결제가 완료된 주문은 상품 준비 상태에 따라 배송 일정이 순차적으로 반영됩니다.</li>
                 </ul>
 
                 <div class="order-complete-actions">
                   <RouterLink
-                    v-if="!isGuestOrder"
-                    :to="ROUTE_PATHS.memberMyPage"
-                    class="order-complete-action order-complete-action--primary"
-                  >
-                    주문내역 확인
-                  </RouterLink>
-                  <RouterLink
-                    :to="ROUTE_PATHS.home"
+                    v-for="action in completionActions"
+                    :key="action.label"
+                    :to="action.to"
                     class="order-complete-action"
-                    :class="isGuestOrder ? 'order-complete-action--primary' : 'order-complete-action--secondary'"
+                    :class="action.variant === 'primary'
+                      ? 'order-complete-action--primary'
+                      : 'order-complete-action--secondary'"
                   >
-                    쇼핑 계속하기
+                    {{ action.label }}
                   </RouterLink>
                 </div>
               </section>
