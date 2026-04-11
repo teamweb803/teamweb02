@@ -106,9 +106,9 @@ function toggleWishlist(item) {
           <option>할인율순</option>
         </select>
         <select :value="selectedPageSize" aria-label="페이지 크기 선택" @change="updatePageSize($event.target.value)">
+          <option :value="10">10개씩 보기</option>
           <option :value="20">20개씩 보기</option>
-          <option :value="40">40개씩 보기</option>
-          <option :value="60">60개씩 보기</option>
+          <option :value="30">30개씩 보기</option>
         </select>
       </div>
     </div>
